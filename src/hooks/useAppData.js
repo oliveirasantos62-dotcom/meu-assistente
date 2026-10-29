@@ -14,6 +14,7 @@ import { loadCloudData, saveCloudData } from '../services/cloudStorage';
  * Garante que os dados tenham uma estrutura válida,
  * mesmo quando vêm de uma versão antiga do aplicativo.
  */
+
 function normalizeAppData(rawData) {
   const source = rawData && typeof rawData === 'object' ? rawData : {};
 
@@ -23,6 +24,7 @@ function normalizeAppData(rawData) {
 
     habits: Array.isArray(source.habits) ? source.habits : [],
     tasks: Array.isArray(source.tasks) ? source.tasks : [],
+
     calendarEvents: Array.isArray(source.calendarEvents)
       ? source.calendarEvents
       : [],
@@ -43,6 +45,9 @@ function normalizeAppData(rawData) {
     knowledgeItems: Array.isArray(source.knowledgeItems)
       ? source.knowledgeItems
       : [],
+
+    // NOVO: dados da página Coleções & Conquistas
+    collections: Array.isArray(source.collections) ? source.collections : [],
 
     errors: Array.isArray(source.errors) ? source.errors : [],
 

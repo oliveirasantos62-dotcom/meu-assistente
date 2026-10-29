@@ -20,11 +20,12 @@ export default function Sidebar({
   // Organização e desenvolvimento
   const developmentSections = [
     { id: 'projects', label: '📁 Projetos' },
+    { id: 'collections', label: '🏆 Coleções & Conquistas' },
     { id: 'fase12', label: '📊 Ciência de Dados' },
     { id: 'gamification', label: '🎮 Gamificação' },
   ];
 
-  // Finanças: duas páginas independentes
+  // Finanças
   const financeSections = [
     { id: 'fase13', label: '💵 Finanças Pessoais' },
     { id: 'investments', label: '📈 Investimentos' },
@@ -64,33 +65,25 @@ export default function Sidebar({
 
       {/* Navegação */}
       <nav className='sidebar-nav' aria-label='Navegação principal'>
-        {/* Principal */}
         <div className='sidebar-group'>
           <span className='sidebar-group-title'>PRINCIPAL</span>
-
           {mainSections.map(renderSection)}
         </div>
 
-        {/* Organização e desenvolvimento */}
         <div className='sidebar-group'>
           <span className='sidebar-group-title'>
             ORGANIZAÇÃO & DESENVOLVIMENTO
           </span>
-
           {developmentSections.map(renderSection)}
         </div>
 
-        {/* Finanças */}
         <div className='sidebar-group'>
           <span className='sidebar-group-title'>FINANÇAS</span>
-
           {financeSections.map(renderSection)}
         </div>
 
-        {/* Assistente */}
         <div className='sidebar-group'>
           <span className='sidebar-group-title'>ASSISTENTE</span>
-
           {assistantSections.map(renderSection)}
         </div>
       </nav>

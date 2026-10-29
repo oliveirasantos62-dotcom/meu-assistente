@@ -16,6 +16,9 @@ import Diario from './components/Diario';
 import Goals from './components/Goals';
 import HabitsPage from './components/HabitsPage';
 
+// Coleções e conquistas
+import ColecoesConquistas from './components/ColecoesConquistas';
+
 // Ciência de dados
 import DataDashboard from './components/DataDashboard';
 import AdvancedDataScience from './components/AdvancedDataScience';
@@ -344,6 +347,11 @@ export default function App() {
 
         {/* PROJETOS */}
         {activeSection === 'projects' && <Projects data={data} save={save} />}
+
+        {/* COLEÇÕES E CONQUISTAS */}
+        {activeSection === 'collections' && (
+          <ColecoesConquistas data={data} save={save} />
+        )}
 
         {/* CIÊNCIA DE DADOS */}
         {activeSection === 'fase12' && (

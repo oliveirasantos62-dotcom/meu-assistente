@@ -39,6 +39,8 @@ export const emptyAppData = {
   errors: [],
   weeklyReflections: [],
 
+  collections: [], // NOVO: categorias e itens das coleções
+
   settings: {},
 };
 
@@ -131,6 +133,10 @@ function normalizeData(data) {
 
   if (!Array.isArray(merged.tasks)) {
     merged.tasks = [];
+  }
+
+  if (!Array.isArray(merged.collections)) {
+    merged.collections = [];
   }
 
   if (!Array.isArray(merged.calendarEvents)) {
