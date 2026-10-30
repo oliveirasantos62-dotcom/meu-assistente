@@ -171,3 +171,38 @@ Projeto pessoal desenvolvido com o objetivo de praticar desenvolvimento web, Rea
 ---
 
 **Meu Assistente Pessoal** — organização, tecnologia e produtividade em um só lugar.
+
+## Fase 2 — Contas e Conexões
+
+A Fase 2 usa uma API Node/Express separada com MySQL e JWT.
+
+### Frontend
+
+Configure `.env` a partir de `.env.example`:
+
+```env
+VITE_API_URL=http://localhost:3001
+```
+
+O frontend implementa:
+
+- cadastro com nome, e-mail, senha e nome de usuário;
+- login;
+- sessão persistida por JWT;
+- recuperação da sessão com `/api/auth/me`;
+- logout local;
+- pesquisa de usuários;
+- envio de convite de conexão;
+- aceitar/recusar convite;
+- bloqueio de conexão pela API;
+- menu lateral personalizado por conta.
+
+### Backend
+
+O backend fica na pasta separada `backend/` do projeto de desenvolvimento e não deve ser enviado para o deploy do frontend na Vercel.
+
+Para desenvolvimento local, mantenha a API em `http://localhost:3001` e o frontend em `http://localhost:5173`.
+
+### Limite desta fase
+
+As informações dos módulos pessoais (tarefas, hábitos, diário, calendário, finanças etc.) ainda usam a persistência local existente. A migração desses dados para MySQL será uma etapa posterior.

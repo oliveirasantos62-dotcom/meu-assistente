@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 
-import { supabase } from './services/supabase';
+import { clearSession, getCurrentUser } from './services/api';
 import { useAppData } from './hooks/useAppData';
 
 // Autenticação e navegação
@@ -13,6 +13,7 @@ import PainelPrincipal from './components/PainelPrincipal';
 // Organização pessoal
 import SmartCalendar from './components/SmartCalendar';
 import Diario from './components/Diario';
+import Estudos from './components/Estudos';
 import Goals from './components/Goals';
 import HabitsPage from './components/HabitsPage';
 
@@ -29,15 +30,18 @@ import Investments from './components/Investments';
 
 // Projetos e tarefas
 import Tasks from './components/Tasks';
-import Projects from './components/Projects';
+import ProjetosColaborativos from './components/ProjetosColaborativos';
 
 // Assistente e gamificação
 import Assistant from './components/Assistant';
 import Gamification from './components/Gamification';
+import Connections from './components/Connections';
+import Foguinho from './components/Foguinho';
+import Grupos from './components/Grupos';
 
 export default function App() {
   // =========================================
-  // USUÁRIO E SESSÃO SUPABASE
+  // USUÁRIO E SESSÃO DO BACKEND
   // =========================================
   const [currentUser, setCurrentUser] = useState(null);
   const [checkingSession, setCheckingSession] = useState(true);
@@ -48,42 +52,22 @@ export default function App() {
 
     async function loadSession() {
       try {
-        const { data, error } = await supabase.auth.getSession();
-
-        if (error) throw error;
-
-        if (active) {
-          setCurrentUser(data.session?.user ?? null);
-        }
+        const user = await getCurrentUser();
+        if (active) setCurrentUser(user);
       } catch (error) {
-        console.error('Erro ao recuperar sessão:', error);
-
         if (active) {
-          setAuthError('Não foi possível verificar sua sessão.');
+          setCurrentUser(null);
+          if (error.status !== 401 && error.status !== 404) {
+            setAuthError(error.message || 'Não foi possível verificar sua sessão.');
+          }
         }
       } finally {
-        if (active) {
-          setCheckingSession(false);
-        }
+        if (active) setCheckingSession(false);
       }
     }
 
     loadSession();
-
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (active) {
-        setCurrentUser(session?.user ?? null);
-        setAuthError('');
-        setCheckingSession(false);
-      }
-    });
-
-    return () => {
-      active = false;
-      subscription.unsubscribe();
-    };
+    return () => { active = false; };
   }, []);
 
   // O hook recebe o usuário completo, incluindo o UUID do Supabase.
@@ -118,6 +102,7 @@ export default function App() {
   // ESTADO DA INTERFACE
   // =========================================
   const [activeSection, setActiveSection] = useState('dashboard');
+  const [focusMode, setFocusMode] = useState(false);
 
   const [darkMode, setDarkMode] = useState(() => {
     try {
@@ -150,17 +135,8 @@ export default function App() {
   // =========================================
   // LOGOUT
   // =========================================
-  async function handleLogout() {
-    setAuthError('');
-
-    const { error } = await supabase.auth.signOut();
-
-    if (error) {
-      console.error('Erro ao sair:', error);
-      setAuthError('Não foi possível encerrar a sessão.');
-      return;
-    }
-
+  function handleLogout() {
+    clearSession();
     setCurrentUser(null);
     setActiveSection('dashboard');
     setAnswer('');
@@ -236,8 +212,9 @@ export default function App() {
   // RENDERIZAÇÃO
   // =========================================
   return (
-    <div id='app' className='app-layout'>
+    <div id='app' className={`app-layout ${focusMode ? 'focus-mode' : ''}`}>
       <Sidebar
+        currentUser={currentUser}
         activeSection={activeSection}
         setActiveSection={setActiveSection}
         darkMode={darkMode}
@@ -283,18 +260,9 @@ export default function App() {
           </div>
 
           <div className='actions'>
-            <button
-              type='button'
-              className='ghost'
-              onClick={() =>
-                save({
-                  ...data,
-                  focus:
-                    'Modo foco: escolha uma tarefa e termine antes de trocar de contexto.',
-                })
-              }
-            >
-              🎯 Modo foco
+            <button type='button' className={`ghost focus-mode-toggle ${focusMode ? 'is-active' : ''}`}
+              onClick={() => setFocusMode(active => !active)} aria-pressed={focusMode}>
+              {focusMode ? '↩️ Sair do foco' : '🎯 Modo foco'}
             </button>
 
             <button
@@ -334,6 +302,9 @@ export default function App() {
         {/* DIÁRIO */}
         {activeSection === 'diario' && <Diario data={data} save={save} />}
 
+        {/* ESTUDOS + LEITURA */}
+        {activeSection === 'estudos' && <Estudos appData={data} saveAppData={save} />}
+
         {/* OBJETIVOS */}
         {activeSection === 'goals' && <Goals data={data} save={save} />}
 
@@ -346,7 +317,7 @@ export default function App() {
         )}
 
         {/* PROJETOS */}
-        {activeSection === 'projects' && <Projects data={data} save={save} />}
+        {activeSection === 'projects' && <ProjetosColaborativos />}
 
         {/* COLEÇÕES E CONQUISTAS */}
         {activeSection === 'collections' && (
@@ -395,6 +366,13 @@ export default function App() {
             save={save}
           />
         )}
+
+        {/* CONEXÕES */}
+        {activeSection === 'connections' && <Connections />}
+
+        {/* FOGUINHO */}
+        {activeSection === 'foguinho' && <Foguinho currentUser={currentUser} />}
+        {activeSection === 'groups' && <Grupos />}
 
         {/* ASSISTENTE */}
         {activeSection === 'assistant' && (

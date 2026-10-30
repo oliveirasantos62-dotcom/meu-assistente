@@ -181,4 +181,32 @@ const styles = `
 .shop-panel .shop-form{display:grid;grid-template-columns:2fr 1fr auto;gap:8px;margin-top:10px}
 @media(max-width:850px){.gami-stats{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:600px){.gamification-page{padding:14px}.gamification-header{align-items:flex-start;flex-direction:column}.level-badge{width:100%}.gami-panel{padding:16px}.achievement-grid{grid-template-columns:1fr}.achievement-status{display:none}.section-heading{align-items:flex-start}.section-heading>strong,.achievement-count{white-space:normal;text-align:right}.difficulty-row{gap:7px;flex-wrap:wrap}.difficulty-task{flex-basis:100%}.shop-panel .shop-form{grid-template-columns:1fr}.shop-panel .task{align-items:flex-start}.shop-panel .task>div{width:100%}}
+/* Contraste no tema escuro */
+body.dark .gamification-page{color:var(--site-on-background,#f0f2f5)}
+body.dark .gamification-header p,
+body.dark .section-heading p,
+body.dark .gami-stat span:last-child,
+body.dark .achievement p,
+body.dark .progress-labels{color:var(--site-text-muted,#aeb4c7)}
+body.dark .gami-stat,
+body.dark .gami-panel{background:var(--site-card-bg,#1a1d2b);border-color:var(--site-border,#34394f);color:var(--site-on-background,#f0f2f5)}
+body.dark .stat-icon,
+body.dark .section-icon{background:rgba(139,121,255,.17)}
+body.dark .achievement{border-color:var(--site-border,#34394f)}
+body.dark .achievement.unlocked{background:rgba(33,132,84,.15);border-color:rgba(82,196,139,.3)}
+body.dark .achievement.locked{background:#202437}
+body.dark .achievement-status{color:#aeb4c7}
+body.dark .status-unlocked{color:#83dfb4}
+body.dark .difficulty-easy{background:rgba(33,132,84,.2);color:#83dfb4}
+body.dark .difficulty-medium{background:rgba(152,112,24,.2);color:#f1d078}
+body.dark .difficulty-hard{background:rgba(182,87,38,.2);color:#ffb18a}
+body.dark .difficulty-epic{background:rgba(116,74,196,.22);color:#c7aaff}
+body.dark .empty-state{background:#202437;color:#c5cad9}
+body.dark .milestone-panel{background:linear-gradient(115deg,#25213a,#302b25);border-color:#49405f}
+body.dark .milestone-panel p{color:#c5cad9}
+body.dark .shop-balance{background:rgba(154,107,5,.2);color:#f3cf78}
+body.dark .shop-panel .focus{background:#202437;border-color:var(--site-border)}
+body.dark .shop-panel input{background:#141724;color:var(--site-on-background);border-color:#3a4058}
+body.dark .shop-panel .tag{background:rgba(139,121,255,.17);color:#c3b8ff}
+
 `;

@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 
 const EVENT_TYPES = {
   task: {
@@ -127,6 +127,15 @@ export default function SmartCalendar({ data, save }) {
 
   const [view, setView] = useState('month');
 
+  const [weekStart, setWeekStart] = useState(() => {
+    const d = new Date(today);
+    const day = d.getDay();
+    const mondayOffset = day === 0 ? -6 : 1 - day;
+    d.setDate(d.getDate() + mondayOffset);
+    d.setHours(0, 0, 0, 0);
+    return d;
+  });
+
   const [showModal, setShowModal] = useState(false);
 
   const [editingEvent, setEditingEvent] = useState(null);
@@ -147,6 +156,11 @@ export default function SmartCalendar({ data, save }) {
 
   const [xp, setXp] = useState('40');
 
+  const [recurrence, setRecurrence] = useState('none');
+  const [recurrenceEnd, setRecurrenceEnd] = useState('');
+  const [notes, setNotes] = useState('');
+  const [reminder, setReminder] = useState('none');
+
   const [message, setMessage] = useState('');
 
   /*
@@ -156,6 +170,9 @@ export default function SmartCalendar({ data, save }) {
    */
 
   const events = data.calendarEvents || [];
+
+  const yearForExpansion = currentDate?.getFullYear?.() || today.getFullYear();
+  const monthForExpansion = currentDate?.getMonth?.() ?? today.getMonth();
 
   /*
    * Tarefas antigas continuam aparecendo
@@ -171,13 +188,53 @@ export default function SmartCalendar({ data, save }) {
 
   const allEvents = useMemo(() => {
     const calendarIds = new Set(events.map((event) => event.id));
-
-    return [
+    const baseEvents = [
       ...events,
-
       ...legacyTasks.filter((task) => !calendarIds.has(task.id)),
     ];
-  }, [events, legacyTasks]);
+
+    const rangeStart = new Date(yearForExpansion, monthForExpansion, 1);
+    const rangeEnd = new Date(yearForExpansion, monthForExpansion + 2, 0);
+
+    return baseEvents.flatMap((event) => {
+      if (!event.recurrence || event.recurrence === 'none' || !event.date) {
+        return [event];
+      }
+
+      const start = new Date(`${event.date}T00:00:00`);
+      const end = event.recurrenceEnd
+        ? new Date(`${event.recurrenceEnd}T00:00:00`)
+        : rangeEnd;
+      const last = end < rangeEnd ? end : rangeEnd;
+      const occurrences = [];
+      const cursor = new Date(start);
+
+      while (cursor <= last) {
+        const dateString = formatDate(cursor);
+        const afterStart = cursor >= rangeStart;
+        let matches = false;
+
+        if (event.recurrence === 'daily') matches = true;
+        if (event.recurrence === 'weekly') matches = cursor.getDay() === start.getDay();
+        if (event.recurrence === 'weekdays') matches = cursor.getDay() >= 1 && cursor.getDay() <= 5;
+        if (event.recurrence === 'monthly') matches = cursor.getDate() === start.getDate();
+
+        if (afterStart && matches) {
+          occurrences.push({
+            ...event,
+            id: `${event.id}__${dateString}`,
+            masterId: event.id,
+            date: dateString,
+            isOccurrence: dateString !== event.date,
+          });
+        }
+
+        cursor.setDate(cursor.getDate() + 1);
+      }
+
+      return occurrences.length ? occurrences : [event];
+    });
+  }, [events, legacyTasks, currentDate]);
 
   /*
    * -------------------------------------------------------
@@ -255,6 +312,41 @@ export default function SmartCalendar({ data, save }) {
 
   const balance = income - expenses - investments;
 
+  useEffect(() => {
+    const interval = window.setInterval(() => {
+      if (!('Notification' in window) || Notification.permission !== 'granted') return;
+      const now = Date.now();
+      const notifiedKey = 'meu-assistente-reminders-notified';
+      let notified = {};
+      try { notified = JSON.parse(localStorage.getItem(notifiedKey) || '{}'); } catch { notified = {}; }
+
+      allEvents.forEach((event) => {
+        if (!event.scheduledTime || !event.reminder || event.reminder === 'none') return;
+        const target = new Date(`${event.date}T${event.scheduledTime}:00`).getTime();
+        const reminderAt = target - Number(event.reminder) * 60000;
+        const key = `${event.id}-${event.date}-${event.reminder}`;
+        if (now >= reminderAt && now < target + 60000 && !notified[key]) {
+          new Notification(`⏰ ${event.name}`, { body: `${event.reminder} min antes · ${event.scheduledTime}` });
+          notified[key] = true;
+        }
+      });
+
+      try { localStorage.setItem(notifiedKey, JSON.stringify(notified)); } catch {}
+    }, 30000);
+
+    return () => window.clearInterval(interval);
+  }, [allEvents]);
+
+  const requestNotifications = async () => {
+    if (!('Notification' in window)) {
+      setMessage('Seu navegador não oferece notificações.');
+      return;
+    }
+    const permission = await Notification.requestPermission();
+    setMessage(permission === 'granted' ? '🔔 Lembretes ativados!' : 'As notificações não foram autorizadas.');
+    window.setTimeout(() => setMessage(''), 2500);
+  };
+
   /*
    * -------------------------------------------------------
    * NAVEGAÇÃO
@@ -277,6 +369,37 @@ export default function SmartCalendar({ data, save }) {
     setSelectedDate(formatDate(now));
   };
 
+  const syncWeekToDate = (dateString) => {
+    const d = new Date(`${dateString}T00:00:00`);
+    const day = d.getDay();
+    const mondayOffset = day === 0 ? -6 : 1 - day;
+    d.setDate(d.getDate() + mondayOffset);
+    d.setHours(0, 0, 0, 0);
+    setWeekStart(d);
+  };
+
+  const previousWeek = () => {
+    const d = new Date(weekStart);
+    d.setDate(d.getDate() - 7);
+    setWeekStart(d);
+  };
+
+  const nextWeek = () => {
+    const d = new Date(weekStart);
+    d.setDate(d.getDate() + 7);
+    setWeekStart(d);
+  };
+
+  const goWeekToday = () => {
+    const now = new Date();
+    const day = now.getDay();
+    const mondayOffset = day === 0 ? -6 : 1 - day;
+    now.setDate(now.getDate() + mondayOffset);
+    now.setHours(0, 0, 0, 0);
+    setWeekStart(now);
+    setSelectedDate(formatDate(new Date()));
+  };
+
   /*
    * -------------------------------------------------------
    * FORMULÁRIO
@@ -291,6 +414,10 @@ export default function SmartCalendar({ data, save }) {
     setCategory('');
     setPriority('normal');
     setXp('40');
+    setRecurrence('none');
+    setRecurrenceEnd('');
+    setNotes('');
+    setReminder('none');
     setEventType('task');
     setEditingEvent(null);
   };
@@ -320,25 +447,33 @@ export default function SmartCalendar({ data, save }) {
   };
 
   const openEditEvent = (event) => {
-    setEditingEvent(event);
+    const sourceEvent = event.masterId
+      ? events.find((item) => item.id === event.masterId) || event
+      : event;
 
-    setName(event.name || '');
+    setEditingEvent(sourceEvent);
 
-    setTime(event.scheduledTime || '');
+    setName(sourceEvent.name || '');
 
-    setDuration(String(event.duration || 60));
+    setTime(sourceEvent.scheduledTime || '');
 
-    setAmount(event.amount || '');
+    setDuration(String(sourceEvent.duration || 60));
 
-    setCategory(event.category || '');
+    setAmount(sourceEvent.amount || '');
 
-    setPriority(event.priority || 'normal');
+    setCategory(sourceEvent.category || '');
 
-    setXp(String(event.xp || 40));
+    setPriority(sourceEvent.priority || 'normal');
 
-    setEventType(event.type || 'task');
+    setXp(String(sourceEvent.xp || 40));
+    setRecurrence(sourceEvent.recurrence || 'none');
+    setRecurrenceEnd(sourceEvent.recurrenceEnd || '');
+    setNotes(sourceEvent.notes || '');
+    setReminder(sourceEvent.reminder || 'none');
 
-    setSelectedDate(event.date || selectedDate);
+    setEventType(sourceEvent.type || 'task');
+
+    setSelectedDate(event.date || sourceEvent.date || selectedDate);
 
     setShowModal(true);
   };
@@ -396,6 +531,14 @@ export default function SmartCalendar({ data, save }) {
       priority: eventType === 'task' ? priority : '',
 
       xp: eventType === 'task' ? Number(xp || 0) : 0,
+
+      recurrence: requiresTime ? recurrence : 'none',
+
+      recurrenceEnd: requiresTime && recurrence !== 'none' ? recurrenceEnd : '',
+
+      notes: notes.trim(),
+
+      reminder: requiresTime ? reminder : 'none',
 
       done: editingEvent?.done || false,
     };
@@ -463,10 +606,12 @@ export default function SmartCalendar({ data, save }) {
       return;
     }
 
+    const targetId = event.masterId || event.id;
+
     save({
       ...data,
 
-      calendarEvents: events.filter((item) => item.id !== event.id),
+      calendarEvents: events.filter((item) => item.id !== targetId),
     });
 
     setMessage('🗑️ Evento excluído.');
@@ -481,8 +626,10 @@ export default function SmartCalendar({ data, save }) {
    */
 
   const toggleDone = (event) => {
+    const targetId = event.masterId || event.id;
+
     const updatedEvents = events.map((item) =>
-      item.id === event.id
+      item.id === targetId
         ? {
             ...item,
             done: !item.done,
@@ -606,6 +753,10 @@ export default function SmartCalendar({ data, save }) {
             Hoje
           </button>
 
+          <button className='ghost' onClick={requestNotifications}>
+            🔔 Lembretes
+          </button>
+
           <button
             className={view === 'month' ? 'primary' : 'ghost'}
             onClick={() => setView('month')}
@@ -618,6 +769,13 @@ export default function SmartCalendar({ data, save }) {
             onClick={() => setView('day')}
           >
             Dia
+          </button>
+
+          <button
+            className={view === 'week' ? 'primary' : 'ghost'}
+            onClick={() => { syncWeekToDate(selectedDate); setView('week'); }}
+          >
+            Semana
           </button>
 
           <button
@@ -849,6 +1007,45 @@ export default function SmartCalendar({ data, save }) {
       )}
 
       {/* ===================================================
+          VISÃO SEMANAL
+          =================================================== */}
+
+      {view === 'week' && (
+        <div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12, gap: 8 }}>
+            <button className='ghost' onClick={previousWeek}>‹ Semana anterior</button>
+            <strong>
+              {weekStart.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' })}
+              {' — '}
+              {(() => { const d = new Date(weekStart); d.setDate(d.getDate() + 6); return d.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' }); })()}
+            </strong>
+            <button className='ghost' onClick={nextWeek}>Próxima semana ›</button>
+          </div>
+
+          <div style={{ overflowX: 'auto' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, minmax(135px, 1fr))', gap: 6, minWidth: 960 }}>
+              {Array.from({ length: 7 }, (_, index) => {
+                const date = new Date(weekStart);
+                date.setDate(date.getDate() + index);
+                const dateString = formatDate(date);
+                const dayEvents = allEvents.filter((event) => event.date === dateString).sort((a, b) => getMinutes(a.scheduledTime) - getMinutes(b.scheduledTime));
+                const isToday = dateString === todayString;
+                return (
+                  <div key={dateString} style={{ minHeight: 420, border: isToday ? '2px solid var(--site-primary)' : '1px solid var(--site-border)', borderRadius: 10, padding: 8, background: 'var(--site-card)' }}>
+                    <button type='button' className='ghost' onClick={() => { setSelectedDate(dateString); setView('day'); }} style={{ width: '100%', marginBottom: 8, textAlign: 'left' }}>
+                      <strong>{date.toLocaleDateString('pt-BR', { weekday: 'short' })}</strong> · {date.getDate()}
+                    </button>
+                    {dayEvents.length === 0 && <small className='subtitle'>Livre</small>}
+                    {dayEvents.map((event) => renderEvent(event, true))}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ===================================================
           VISÃO DIÁRIA
           =================================================== */}
 
@@ -971,6 +1168,12 @@ export default function SmartCalendar({ data, save }) {
                           }}
                         >
                           {formatMoney(event.amount)}
+                        </small>
+                      )}
+
+                      {event.notes && (
+                        <small style={{ display: 'block', marginTop: 5, opacity: 0.75 }}>
+                          📝 {event.notes}
                         </small>
                       )}
 
@@ -1434,6 +1637,58 @@ export default function SmartCalendar({ data, save }) {
                     </div>
                   </div>
                 )}
+
+                {/* RECORRÊNCIA E LEMBRETE */}
+
+                {(eventType === 'task' || eventType === 'appointment') && (
+                  <div
+                    style={{
+                      display: 'grid',
+                      gridTemplateColumns: '1fr 1fr',
+                      gap: 12,
+                    }}
+                  >
+                    <div>
+                      <label style={{ display: 'block', fontWeight: 700, marginBottom: 7 }}>
+                        Repetir
+                      </label>
+                      <select value={recurrence} onChange={(e) => setRecurrence(e.target.value)} style={{ width: '100%', boxSizing: 'border-box' }}>
+                        <option value='none'>Não repetir</option>
+                        <option value='daily'>Todos os dias</option>
+                        <option value='weekdays'>Dias úteis</option>
+                        <option value='weekly'>Toda semana</option>
+                        <option value='monthly'>Todo mês</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label style={{ display: 'block', fontWeight: 700, marginBottom: 7 }}>
+                        Lembrete
+                      </label>
+                      <select value={reminder} onChange={(e) => setReminder(e.target.value)} style={{ width: '100%', boxSizing: 'border-box' }}>
+                        <option value='none'>Sem lembrete</option>
+                        <option value='5'>5 min antes</option>
+                        <option value='10'>10 min antes</option>
+                        <option value='30'>30 min antes</option>
+                        <option value='60'>1 hora antes</option>
+                      </select>
+                    </div>
+                  </div>
+                )}
+
+                {recurrence !== 'none' && (eventType === 'task' || eventType === 'appointment') && (
+                  <div>
+                    <label style={{ display: 'block', fontWeight: 700, marginBottom: 7 }}>
+                      Repetir até (opcional)
+                    </label>
+                    <input type='date' value={recurrenceEnd} min={selectedDate} onChange={(e) => setRecurrenceEnd(e.target.value)} style={{ width: '100%', boxSizing: 'border-box' }} />
+                  </div>
+                )}
+
+                <div>
+                  <label style={{ display: 'block', fontWeight: 700, marginBottom: 7 }}>Observações</label>
+                  <textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={3} placeholder='Detalhes, local, materiais ou observações...' style={{ width: '100%', boxSizing: 'border-box', resize: 'vertical' }} />
+                </div>
 
                 {/* FINANCEIRO */}
 

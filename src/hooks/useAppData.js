@@ -8,7 +8,6 @@ import {
   generatePeriodRecords,
   MOOD_SCORES,
 } from '../utils/calculations';
-import { loadCloudData, saveCloudData } from '../services/cloudStorage';
 
 /**
  * Garante que os dados tenham uma estrutura válida,
@@ -94,6 +93,7 @@ function getUserInfo(user) {
 
 export function useAppData(user) {
   const { userId, storageKey } = getUserInfo(user);
+  const backendUser = user?.authProvider === 'backend';
 
   const [data, setData] = useState(() =>
     normalizeAppData(storageKey ? storageService.loadData(storageKey) : null),
@@ -101,147 +101,36 @@ export function useAppData(user) {
 
   const [period, setPeriod] = useState('7');
 
-  // A nuvem só fica pronta depois que os dados forem carregados.
-  const [cloudReady, setCloudReady] = useState(false);
+  // O backend de autenticação já identifica cada conta.
+  // Os dados de produtividade continuam locais nesta etapa da migração.
+  const [cloudReady] = useState(true);
   const [syncError, setSyncError] = useState('');
-  const [syncStatus, setSyncStatus] = useState('loading');
+  const [syncStatus, setSyncStatus] = useState('local');
 
-  /**
-   * Carrega os dados locais e depois verifica a nuvem.
-   *
-   * Se já houver dados na nuvem, eles prevalecem.
-   * Se não houver registro, os dados locais são migrados.
-   * Não salvamos dados vazios antes de concluir essa etapa.
-   */
   useEffect(() => {
-    let cancelled = false;
-
-    setCloudReady(false);
-    setSyncError('');
-
-    if (!userId) {
-      setData(
-        normalizeAppData(
-          storageKey ? storageService.loadData(storageKey) : null,
-        ),
-      );
-
+    if (!storageKey) {
+      setData(normalizeAppData(null));
       setSyncStatus('local');
-      return () => {
-        cancelled = true;
-      };
-    }
-
-    async function initializeUserData() {
-      setSyncStatus('loading');
-
-      const localData = normalizeAppData(
-        storageKey ? storageService.loadData(storageKey) : null,
-      );
-
-      try {
-        const result = await loadCloudData(userId);
-
-        if (cancelled) return;
-
-        if (result.exists) {
-          const cloudData = normalizeAppData(result.appData);
-
-          setData(cloudData);
-
-          // Atualiza a cópia local com a versão da nuvem.
-          if (storageKey) {
-            storageService.saveData(storageKey, cloudData);
-          }
-
-          setSyncStatus('synced');
-          setCloudReady(true);
-          return;
-        }
-
-        // Primeira entrada nesta conta:
-        // preserva os dados locais e tenta migrá-los para a nuvem.
-        setData(localData);
-
-        await saveCloudData(userId, localData);
-
-        if (cancelled) return;
-
-        setSyncStatus('synced');
-        setCloudReady(true);
-      } catch (error) {
-        if (cancelled) return;
-
-        console.error('Erro ao inicializar dados:', error);
-
-        setSyncError(
-          'Não foi possível confirmar os dados da nuvem. ' +
-            'As alterações não serão sincronizadas até resolver a conexão.',
-        );
-
-        setSyncStatus('error');
-
-        // Não habilita o salvamento automático se o carregamento
-        // falhar. Isso evita sobrescrever os dados da nuvem
-        // com uma cópia local possivelmente desatualizada.
-      }
-    }
-
-    initializeUserData();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [userId, storageKey]);
-
-  /**
-   * Persiste as alterações locais e sincroniza com a nuvem.
-   * Só executa depois de a inicialização terminar.
-   */
-  useEffect(() => {
-    if (!userId || !storageKey || !cloudReady || !data) {
       return;
     }
 
-    const normalizedData = normalizeAppData(data);
+    setData(normalizeAppData(storageService.loadData(storageKey)));
+    setSyncStatus('local');
+    setSyncError('');
+  }, [storageKey]);
 
-    // Mantém a cópia local e os backups gerenciados pelo serviço.
-    const localSaved = storageService.saveData(storageKey, normalizedData);
+  useEffect(() => {
+    if (!storageKey || !data) return;
 
-    if (localSaved === false) {
-      setSyncError('Não foi possível salvar a cópia local dos dados.');
+    const result = storageService.saveData(storageKey, normalizeAppData(data));
+    if (result === false) {
+      setSyncError('Não foi possível salvar os dados neste dispositivo.');
+      setSyncStatus('error');
+    } else {
+      setSyncError('');
+      setSyncStatus('local');
     }
-
-    let cancelled = false;
-
-    async function synchronize() {
-      try {
-        await saveCloudData(userId, normalizedData);
-
-        if (cancelled) return;
-
-        setSyncError('');
-        setSyncStatus('synced');
-      } catch (error) {
-        if (cancelled) return;
-
-        console.error('Erro ao sincronizar dados:', error);
-
-        setSyncError(
-          'Os dados estão no dispositivo, mas não foi possível ' +
-            'sincronizar com a nuvem.',
-        );
-
-        setSyncStatus('error');
-      }
-    }
-
-    synchronize();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [data, userId, storageKey, cloudReady]);
+  }, [data, storageKey]);
 
   /**
    * Função principal usada pelas páginas.
