@@ -5,7 +5,7 @@ import { query } from '../db/pool.js';
 
 function createToken(userId) {
   return jwt.sign({}, process.env.JWT_SECRET, {
-    subject: String(userId), // <-- Convertido para string aqui
+    subject: String(userId),
     expiresIn: '7d',
   });
 }
@@ -60,24 +60,36 @@ export async function register(req, res) {
 
     const passwordHash = await bcrypt.hash(password, 12);
 
-    // Insere sem enviar o ID, deixando o AUTO_INCREMENT fazer o trabalho
-    const result = await query(
+    // O banco usa CHAR(36), então o ID é gerado pelo backend
+    // usando UUID em vez de AUTO_INCREMENT.
+    const userId = randomUUID();
+
+    await query(
       `INSERT INTO users
-       (name, email, username, password_hash)
-       VALUES (?, ?, ?, ?)`,
-      [name.trim(), normalizedEmail, normalizedUsername, passwordHash],
+       (id, name, email, username, password_hash)
+       VALUES (?, ?, ?, ?, ?)`,
+      [userId, name.trim(), normalizedEmail, normalizedUsername, passwordHash],
     );
 
-    const userId = result.insertId;
-
     const userRows = await query(
-      `SELECT id, name, email, username
+      `SELECT
+         id,
+         name,
+         email,
+         username
        FROM users
-       WHERE id = ?`,
+       WHERE id = ?
+       LIMIT 1`,
       [userId],
     );
 
     const user = userRows[0];
+
+    if (!user) {
+      return res.status(500).json({
+        message: 'Usuário criado, mas não foi possível carregá-lo.',
+      });
+    }
 
     return res.status(201).json({
       user: publicUser(user),
@@ -103,7 +115,12 @@ export async function login(req, res) {
     }
 
     const rows = await query(
-      `SELECT *
+      `SELECT
+         id,
+         name,
+         email,
+         username,
+         password_hash
        FROM users
        WHERE email = ?
        LIMIT 1`,
