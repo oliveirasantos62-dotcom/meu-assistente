@@ -22,6 +22,7 @@ const SECTIONS = [
 
 const STORAGE_PREFIX = 'meu-assistente-sidebar-config-';
 
+// Páginas que aparecem inicialmente para contas novas.
 const DEFAULT_VISIBLE = {
   dashboard: true,
   tasks: true,
@@ -32,7 +33,6 @@ const DEFAULT_VISIBLE = {
   habits: true,
   projects: true,
 
-  // Recursos opcionais começam desativados
   collections: false,
   fase12: false,
   gamification: false,
@@ -48,6 +48,7 @@ const DEFAULT_ORDER = SECTIONS.map((section) => section.id);
 
 function getStorageKey(currentUser) {
   const id = currentUser?.id || currentUser?.email || 'guest';
+
   return `${STORAGE_PREFIX}${String(id).toLowerCase()}`;
 }
 
@@ -62,12 +63,14 @@ function loadSidebarConfig(currentUser) {
   try {
     const saved = localStorage.getItem(getStorageKey(currentUser));
 
-    if (!saved) return createDefaultConfig();
+    if (!saved) {
+      return createDefaultConfig();
+    }
 
     const parsed = JSON.parse(saved);
 
-    // Compatibilidade com a configuração antiga,
-    // que armazenava somente as páginas ativadas.
+    // Compatibilidade com a versão antiga,
+    // que salvava somente as páginas ativadas.
     const oldVisible = parsed.visibleSections || parsed;
 
     const visibleSections = {
@@ -80,18 +83,25 @@ function loadSidebarConfig(currentUser) {
       ? parsed.order
       : DEFAULT_ORDER;
 
-    // Remove IDs inválidos e adiciona páginas novas.
+    // Remove IDs inválidos e duplicados.
     const validOrder = savedOrder.filter(
       (id, index) =>
         DEFAULT_ORDER.includes(id) && savedOrder.indexOf(id) === index,
     );
 
-    const order = [
+    // Adiciona páginas novas que não existiam na configuração salva.
+    let order = [
       ...validOrder,
       ...DEFAULT_ORDER.filter((id) => !validOrder.includes(id)),
     ];
 
-    return { visibleSections, order };
+    // O Painel Principal permanece sempre na primeira posição.
+    order = ['dashboard', ...order.filter((id) => id !== 'dashboard')];
+
+    return {
+      visibleSections,
+      order,
+    };
   } catch {
     return createDefaultConfig();
   }
@@ -116,7 +126,7 @@ export default function Sidebar({
   const [draggedId, setDraggedId] = useState(null);
   const [dragOverId, setDragOverId] = useState(null);
 
-  // Evita exibir a configuração de uma conta na outra.
+  // Evita mostrar a configuração de uma conta na outra.
   const config =
     configState.owner === storageKey
       ? configState.config
@@ -124,15 +134,18 @@ export default function Sidebar({
 
   const visibleSections = config.visibleSections;
 
-  // Carrega a configuração da conta atual.
+  // Carrega a configuração correspondente à conta atual.
   useEffect(() => {
     setConfigState({
       owner: storageKey,
       config: loadSidebarConfig(currentUser),
     });
+
+    setDraggedId(null);
+    setDragOverId(null);
   }, [storageKey]);
 
-  // Salva automaticamente quando a configuração muda.
+  // Salva automaticamente as configurações.
   useEffect(() => {
     if (configState.owner !== storageKey) return;
 
@@ -143,6 +156,7 @@ export default function Sidebar({
     }
   }, [configState, storageKey]);
 
+  // Atualiza a configuração preservando os dados atuais.
   function updateConfig(updater) {
     setConfigState((current) => {
       const base =
@@ -150,13 +164,17 @@ export default function Sidebar({
           ? current.config
           : loadSidebarConfig(currentUser);
 
+      const nextConfig =
+        typeof updater === 'function' ? updater(base) : updater;
+
       return {
         owner: storageKey,
-        config: typeof updater === 'function' ? updater(base) : updater,
+        config: nextConfig,
       };
     });
   }
 
+  // Ativa ou desativa uma página.
   function toggleSection(id) {
     if (id === 'dashboard') return;
 
@@ -169,55 +187,73 @@ export default function Sidebar({
     }));
   }
 
+  // Restaura as páginas e a ordem padrão.
   function restoreDefault() {
     updateConfig(createDefaultConfig());
   }
 
-  function moveSection(id, direction) {
-    updateConfig((current) => {
-      const order = [...current.order];
-      const index = order.indexOf(id);
-      const newIndex = index + direction;
+  // Calcula a posição do mouse: antes ou depois do item.
+  function getDropPosition(event) {
+    const rect = event.currentTarget.getBoundingClientRect();
 
-      if (index < 0 || newIndex < 0 || newIndex >= order.length) {
-        return current;
-      }
-
-      [order[index], order[newIndex]] = [order[newIndex], order[index]];
-
-      return { ...current, order };
-    });
+    return event.clientY < rect.top + rect.height / 2 ? 'before' : 'after';
   }
 
-  function handleDrop(targetId) {
+  // Insere a página arrastada na posição escolhida.
+  function handleDrop(targetId, position) {
     if (!draggedId || draggedId === targetId) {
       setDraggedId(null);
       setDragOverId(null);
       return;
     }
 
+    // O Painel Principal não pode ser ultrapassado.
+    if (targetId === 'dashboard') {
+      position = 'after';
+    }
+
     updateConfig((current) => {
       const order = [...current.order];
 
-      const fromIndex = order.indexOf(draggedId);
-      const toIndex = order.indexOf(targetId);
+      const draggedIndex = order.indexOf(draggedId);
 
-      if (fromIndex < 0 || toIndex < 0) return current;
+      if (draggedIndex < 0) return current;
 
-      order.splice(fromIndex, 1);
-      order.splice(toIndex, 0, draggedId);
+      // Retira o item da posição original.
+      order.splice(draggedIndex, 1);
 
-      return { ...current, order };
+      // Encontra a posição de destino depois da remoção.
+      const targetIndex = order.indexOf(targetId);
+
+      if (targetIndex < 0) return current;
+
+      // Insere antes ou depois do destino.
+      const insertIndex = position === 'after' ? targetIndex + 1 : targetIndex;
+
+      order.splice(insertIndex, 0, draggedId);
+
+      // Garante que o Painel Principal continue no início.
+      const finalOrder = [
+        'dashboard',
+        ...order.filter((id) => id !== 'dashboard'),
+      ];
+
+      return {
+        ...current,
+        order: finalOrder,
+      };
     });
 
     setDraggedId(null);
     setDragOverId(null);
   }
 
+  // Organiza as páginas conforme a ordem salva.
   const orderedSections = config.order
     .map((id) => SECTIONS.find((section) => section.id === id))
     .filter(Boolean);
 
+  // Exibe somente as páginas ativadas.
   const menuSections = orderedSections.filter(
     (section) => visibleSections[section.id],
   );
@@ -235,7 +271,7 @@ export default function Sidebar({
           </div>
         </div>
 
-        {/* MENU COM ROLAGEM */}
+        {/* MENU PRINCIPAL COM ROLAGEM */}
         <nav className='sidebar-nav' aria-label='Navegação principal'>
           {menuSections.map((section) => {
             const isActive = activeSection === section.id;
@@ -272,6 +308,7 @@ export default function Sidebar({
             type='button'
             className='ghost theme-toggle'
             onClick={() => setDarkMode(!darkMode)}
+            aria-label={darkMode ? 'Ativar modo claro' : 'Ativar modo escuro'}
           >
             {darkMode ? '☀️ Modo Claro' : '🌙 Modo Escuro'}
           </button>
@@ -324,16 +361,24 @@ export default function Sidebar({
               </button>
             </div>
 
-            {/* INFORMAÇÕES */}
+            {/* INSTRUÇÕES */}
             <div className='sidebar-settings-info'>
-              <span>☰ Arraste as páginas para mudar a ordem.</span>
-              <span>✓ Ative somente os recursos que utiliza.</span>
+              <span>⠿ Arraste as páginas para reorganizar.</span>
+
+              <span>↕ Solte entre duas páginas para escolher a posição.</span>
+
+              <span>✓ Ative somente os recursos que deseja visualizar.</span>
             </div>
 
             {/* LISTA DE PÁGINAS */}
             <div className='sidebar-settings-content'>
-              {orderedSections.map((section, index) => {
+              {orderedSections.map((section) => {
                 const checked = visibleSections[section.id];
+
+                const isDragging = draggedId === section.id;
+
+                const dropPosition =
+                  dragOverId?.id === section.id ? dragOverId.position : null;
 
                 return (
                   <div
@@ -342,9 +387,12 @@ export default function Sidebar({
                       'sidebar-option',
                       checked ? 'checked' : '',
                       section.fixed ? 'disabled' : '',
-                      draggedId === section.id ? 'dragging' : '',
-                      dragOverId === section.id ? 'drag-over' : '',
-                    ].join(' ')}
+                      isDragging ? 'dragging' : '',
+                      dropPosition === 'before' ? 'drag-over-before' : '',
+                      dropPosition === 'after' ? 'drag-over-after' : '',
+                    ]
+                      .filter(Boolean)
+                      .join(' ')}
                     draggable={!section.fixed}
                     onDragStart={(event) => {
                       if (section.fixed) {
@@ -353,62 +401,75 @@ export default function Sidebar({
                       }
 
                       setDraggedId(section.id);
+
                       event.dataTransfer.effectAllowed = 'move';
                       event.dataTransfer.setData('text/plain', section.id);
                     }}
                     onDragOver={(event) => {
                       event.preventDefault();
-                      if (draggedId !== section.id) {
-                        setDragOverId(section.id);
+
+                      if (!draggedId || draggedId === section.id) {
+                        return;
                       }
+
+                      const position = getDropPosition(event);
+
+                      setDragOverId({
+                        id: section.id,
+                        position,
+                      });
                     }}
                     onDrop={(event) => {
                       event.preventDefault();
-                      handleDrop(section.id);
+
+                      const dragged =
+                        event.dataTransfer.getData('text/plain') || draggedId;
+
+                      if (dragged && dragged !== draggedId) {
+                        setDraggedId(dragged);
+                      }
+
+                      const position = getDropPosition(event);
+
+                      handleDrop(section.id, position);
                     }}
                     onDragEnd={() => {
                       setDraggedId(null);
                       setDragOverId(null);
                     }}
                   >
-                    <span className='sidebar-drag-handle' aria-hidden='true'>
+                    {/* ALÇA DE ARRASTE */}
+                    <span
+                      className='sidebar-drag-handle'
+                      title={
+                        section.fixed
+                          ? 'Página fixa'
+                          : 'Arraste para reorganizar'
+                      }
+                      aria-hidden='true'
+                    >
                       {section.fixed ? '🔒' : '⠿'}
                     </span>
 
+                    {/* NOME DA PÁGINA */}
                     <div className='sidebar-option-left'>
                       <span className='sidebar-option-label'>
                         {section.label}
                       </span>
 
-                      {section.fixed && <small>Sempre ativo</small>}
+                      {section.fixed && (
+                        <small>Sempre ativo e na primeira posição</small>
+                      )}
+
+                      {!section.fixed && (
+                        <small>
+                          {checked ? 'Visível no menu' : 'Oculta no menu'}
+                        </small>
+                      )}
                     </div>
 
+                    {/* INTERRUPTOR */}
                     <div className='sidebar-option-actions'>
-                      {/* MOVER PARA CIMA */}
-                      <button
-                        type='button'
-                        className='sidebar-move-button'
-                        disabled={index === 0}
-                        onClick={() => moveSection(section.id, -1)}
-                        aria-label={`Mover ${section.label} para cima`}
-                        title='Mover para cima'
-                      >
-                        ↑
-                      </button>
-
-                      {/* MOVER PARA BAIXO */}
-                      <button
-                        type='button'
-                        className='sidebar-move-button'
-                        disabled={index === orderedSections.length - 1}
-                        onClick={() => moveSection(section.id, 1)}
-                        aria-label={`Mover ${section.label} para baixo`}
-                        title='Mover para baixo'
-                      >
-                        ↓
-                      </button>
-
-                      {/* ATIVAR / DESATIVAR */}
                       <label className='sidebar-switch-label'>
                         <input
                           type='checkbox'

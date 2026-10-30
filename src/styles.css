@@ -5942,9 +5942,9 @@ body.dark textarea {
   color-scheme: dark;
 }
 
-/* =========================================
-   SIDEBAR COM ROLAGEM
-========================================= */
+/* ==========================================
+   SIDEBAR - ESTRUTURA E ROLAGEM
+========================================== */
 
 .sidebar {
   display: flex;
@@ -5985,9 +5985,9 @@ body.dark textarea {
   flex-shrink: 0;
 }
 
-/* =========================================
-   MODAL DE PERSONALIZAÇÃO
-========================================= */
+/* ==========================================
+   MODAL - FUNDO
+========================================== */
 
 .sidebar-settings-overlay {
   position: fixed;
@@ -6001,6 +6001,10 @@ body.dark textarea {
   backdrop-filter: blur(5px);
 }
 
+/* ==========================================
+   MODAL - CONTAINER
+========================================== */
+
 .sidebar-settings-modal {
   width: min(540px, 100%);
   max-height: min(85vh, 780px);
@@ -6013,6 +6017,10 @@ body.dark textarea {
   color: var(--text-color, inherit);
   box-shadow: 0 25px 80px rgba(0, 0, 0, 0.3);
 }
+
+/* ==========================================
+   CABEÇALHO
+========================================== */
 
 .sidebar-settings-header {
   display: flex;
@@ -6051,7 +6059,16 @@ body.dark textarea {
   color: inherit;
   font-size: 23px;
   cursor: pointer;
+  flex-shrink: 0;
 }
+
+.sidebar-settings-close:hover {
+  filter: brightness(0.92);
+}
+
+/* ==========================================
+   INSTRUÇÕES
+========================================== */
 
 .sidebar-settings-info {
   display: flex;
@@ -6063,19 +6080,35 @@ body.dark textarea {
   flex-shrink: 0;
 }
 
+/* ==========================================
+   LISTA DE PÁGINAS
+========================================== */
+
 .sidebar-settings-content {
   flex: 1;
   min-height: 0;
   overflow-y: auto;
+  overflow-x: hidden;
   padding: 8px 18px 16px;
   scrollbar-width: thin;
+  scrollbar-color: var(--border-color, #777) transparent;
 }
 
-/* =========================================
-   CADA PÁGINA
-========================================= */
+.sidebar-settings-content::-webkit-scrollbar {
+  width: 6px;
+}
+
+.sidebar-settings-content::-webkit-scrollbar-thumb {
+  background: var(--border-color, #777);
+  border-radius: 10px;
+}
+
+/* ==========================================
+   ITEM DA SIDEBAR
+========================================== */
 
 .sidebar-option {
+  position: relative;
   display: flex;
   align-items: center;
   gap: 10px;
@@ -6089,6 +6122,7 @@ body.dark textarea {
   transition:
     background 0.18s,
     border-color 0.18s,
+    opacity 0.18s,
     transform 0.18s;
 }
 
@@ -6107,7 +6141,7 @@ body.dark textarea {
 
 .sidebar-option.disabled {
   cursor: default;
-  opacity: 0.8;
+  opacity: 0.85;
 }
 
 .sidebar-option.dragging {
@@ -6115,23 +6149,59 @@ body.dark textarea {
   transform: scale(0.98);
 }
 
-.sidebar-option.drag-over {
-  border: 2px dashed var(--primary-color, #7c5cff);
-  background: color-mix(
-    in srgb,
-    var(--primary-color, #7c5cff) 14%,
-    transparent
-  );
+/* ==========================================
+   INDICADORES DE POSIÇÃO
+========================================== */
+
+.sidebar-option.drag-over-before::before {
+  content: '';
+  position: absolute;
+  top: -5px;
+  left: 8px;
+  right: 8px;
+  height: 4px;
+  border-radius: 5px;
+  background: var(--primary-color, #7c5cff);
+  box-shadow: 0 0 10px var(--primary-color, #7c5cff);
+  pointer-events: none;
+  z-index: 2;
 }
+
+.sidebar-option.drag-over-after::after {
+  content: '';
+  position: absolute;
+  bottom: -5px;
+  left: 8px;
+  right: 8px;
+  height: 4px;
+  border-radius: 5px;
+  background: var(--primary-color, #7c5cff);
+  box-shadow: 0 0 10px var(--primary-color, #7c5cff);
+  pointer-events: none;
+  z-index: 2;
+}
+
+/* ==========================================
+   ALÇA DE ARRASTE
+========================================== */
 
 .sidebar-drag-handle {
   flex-shrink: 0;
   width: 22px;
   text-align: center;
   font-size: 19px;
-  opacity: 0.55;
+  opacity: 0.6;
   cursor: grab;
+  user-select: none;
 }
+
+.sidebar-option.disabled .sidebar-drag-handle {
+  cursor: default;
+}
+
+/* ==========================================
+   NOME DA PÁGINA
+========================================== */
 
 .sidebar-option-left {
   flex: 1;
@@ -6144,6 +6214,7 @@ body.dark textarea {
 .sidebar-option-label {
   font-size: 13px;
   font-weight: 600;
+  overflow-wrap: anywhere;
 }
 
 .sidebar-option-left small {
@@ -6151,40 +6222,15 @@ body.dark textarea {
   opacity: 0.6;
 }
 
+/* ==========================================
+   INTERRUPTOR
+========================================== */
+
 .sidebar-option-actions {
   display: flex;
   align-items: center;
-  gap: 5px;
   flex-shrink: 0;
 }
-
-/* =========================================
-   BOTÕES DE ORDEM
-========================================= */
-
-.sidebar-move-button {
-  width: 27px;
-  height: 27px;
-  border: 1px solid var(--border-color, rgba(128, 128, 128, 0.25));
-  border-radius: 7px;
-  background: transparent;
-  color: inherit;
-  cursor: pointer;
-}
-
-.sidebar-move-button:hover:not(:disabled) {
-  background: var(--primary-color, #7c5cff);
-  color: white;
-}
-
-.sidebar-move-button:disabled {
-  opacity: 0.25;
-  cursor: not-allowed;
-}
-
-/* =========================================
-   SWITCH
-========================================= */
 
 .sidebar-switch-label {
   display: flex;
@@ -6194,8 +6240,9 @@ body.dark textarea {
 
 .sidebar-switch-label input {
   position: absolute;
+  width: 1px;
+  height: 1px;
   opacity: 0;
-  pointer-events: none;
 }
 
 .sidebar-switch {
@@ -6224,13 +6271,14 @@ body.dark textarea {
   transform: translateX(17px);
 }
 
-.sidebar-switch-label input:disabled {
+.sidebar-switch-label input:disabled + .sidebar-switch {
+  opacity: 0.6;
   cursor: not-allowed;
 }
 
-/* =========================================
+/* ==========================================
    RODAPÉ DO MODAL
-========================================= */
+========================================== */
 
 .sidebar-settings-footer {
   display: flex;
@@ -6250,21 +6298,26 @@ body.dark textarea {
   color: white;
   font-weight: 700;
   cursor: pointer;
+  transition:
+    filter 0.2s,
+    transform 0.2s;
 }
 
 .sidebar-settings-primary:hover {
   filter: brightness(1.1);
+  transform: translateY(-1px);
 }
 
 .sidebar-empty {
   padding: 15px;
   font-size: 13px;
   opacity: 0.65;
+  text-align: center;
 }
 
-/* =========================================
+/* ==========================================
    RESPONSIVIDADE
-========================================= */
+========================================== */
 
 @media (max-width: 600px) {
   .sidebar-settings-overlay {
@@ -6279,6 +6332,11 @@ body.dark textarea {
     padding: 18px;
   }
 
+  .sidebar-settings-info {
+    padding: 12px 18px;
+    font-size: 11px;
+  }
+
   .sidebar-settings-content {
     padding: 8px 12px 12px;
   }
@@ -6290,5 +6348,9 @@ body.dark textarea {
 
   .sidebar-option-label {
     font-size: 12px;
+  }
+
+  .sidebar-settings-footer {
+    padding: 12px;
   }
 }
