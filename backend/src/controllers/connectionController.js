@@ -1,12 +1,18 @@
-import { randomUUID } from "crypto";
-import { query } from "../db/pool.js";
+import { randomUUID } from 'crypto';
+import { query } from '../db/pool.js';
 
 export async function searchUsers(req, res) {
   try {
-    const term = String(
-      req.query.q || ""
-    ).trim().toLowerCase();
+    let term = String(req.query.q || '')
+      .trim()
+      .toLowerCase();
 
+    // Permite pesquisar também digitando @usuario
+    if (term.startsWith('@')) {
+      term = term.substring(1);
+    }
+
+    // Não pesquisa com menos de 2 caracteres
     if (term.length < 2) {
       return res.json({
         users: [],
@@ -21,27 +27,22 @@ export async function searchUsers(req, res) {
        FROM users
        WHERE id <> ?
          AND (
-           LOWER(name) LIKE ?
-           OR LOWER(COALESCE(username, '')) LIKE ?
+           LOWER(TRIM(name)) = ?
+           OR LOWER(TRIM(COALESCE(username, ''))) = ?
          )
        ORDER BY name
        LIMIT 20`,
-      [
-        req.user.id,
-        `%${term}%`,
-        `%${term}%`,
-      ]
+      [req.user.id, term, term],
     );
 
     return res.json({
       users: rows,
     });
   } catch (error) {
-    console.error(error);
+    console.error('Erro ao pesquisar usuários:', error);
 
     return res.status(500).json({
-      message:
-        "Erro ao pesquisar usuários.",
+      message: 'Erro ao pesquisar usuários.',
     });
   }
 }
@@ -70,12 +71,7 @@ export async function listConnections(req, res) {
        WHERE c.requester_id = ?
           OR c.receiver_id = ?
        ORDER BY c.created_at DESC`,
-      [
-        req.user.id,
-        req.user.id,
-        req.user.id,
-        req.user.id,
-      ]
+      [req.user.id, req.user.id, req.user.id, req.user.id],
     );
 
     return res.json({
@@ -85,26 +81,18 @@ export async function listConnections(req, res) {
     console.error(error);
 
     return res.status(500).json({
-      message:
-        "Erro ao buscar conexões.",
+      message: 'Erro ao buscar conexões.',
     });
   }
 }
 
-export async function createConnection(
-  req,
-  res
-) {
+export async function createConnection(req, res) {
   try {
     const { userId } = req.body;
 
-    if (
-      !userId ||
-      userId === req.user.id
-    ) {
+    if (!userId || userId === req.user.id) {
       return res.status(400).json({
-        message:
-          "Usuário inválido.",
+        message: 'Usuário inválido.',
       });
     }
 
@@ -113,13 +101,12 @@ export async function createConnection(
        FROM users
        WHERE id = ?
        LIMIT 1`,
-      [userId]
+      [userId],
     );
 
     if (!target[0]) {
       return res.status(404).json({
-        message:
-          "Usuário não encontrado.",
+        message: 'Usuário não encontrado.',
       });
     }
 
@@ -139,33 +126,22 @@ export async function createConnection(
            AND receiver_id = ?
          )
        LIMIT 1`,
-      [
-        req.user.id,
-        userId,
-        userId,
-        req.user.id,
-      ]
+      [req.user.id, userId, userId, req.user.id],
     );
 
     if (existing[0]) {
       return res.status(409).json({
-        message:
-          `Já existe uma conexão com status "${existing[0].status}".`,
+        message: `Já existe uma conexão com status "${existing[0].status}".`,
       });
     }
 
-    const connectionId =
-      randomUUID();
+    const connectionId = randomUUID();
 
     await query(
       `INSERT INTO connections
        (id, requester_id, receiver_id)
        VALUES (?, ?, ?)`,
-      [
-        connectionId,
-        req.user.id,
-        userId,
-      ]
+      [connectionId, req.user.id, userId],
     );
 
     const rows = await query(
@@ -175,7 +151,7 @@ export async function createConnection(
          created_at
        FROM connections
        WHERE id = ?`,
-      [connectionId]
+      [connectionId],
     );
 
     return res.status(201).json({
@@ -185,30 +161,19 @@ export async function createConnection(
     console.error(error);
 
     return res.status(500).json({
-      message:
-        "Erro ao enviar solicitação.",
+      message: 'Erro ao enviar solicitação.',
     });
   }
 }
 
-export async function updateConnection(
-  req,
-  res
-) {
+export async function updateConnection(req, res) {
   try {
     const { id } = req.params;
     const { status } = req.body;
 
-    if (
-      ![
-        "accepted",
-        "rejected",
-        "blocked",
-      ].includes(status)
-    ) {
+    if (!['accepted', 'rejected', 'blocked'].includes(status)) {
       return res.status(400).json({
-        message:
-          "Status inválido.",
+        message: 'Status inválido.',
       });
     }
 
@@ -225,31 +190,26 @@ export async function updateConnection(
            OR receiver_id = ?
          )
        LIMIT 1`,
-      [
-        id,
-        req.user.id,
-        req.user.id,
-      ]
+      [id, req.user.id, req.user.id],
     );
 
     if (!existing[0]) {
       return res.status(404).json({
-        message:
-          "Conexão não encontrada.",
+        message: 'Conexão não encontrada.',
       });
     }
 
     // Aceitar/recusar só pode ser feito por quem recebeu o convite.
     // Bloquear pode ser feito por qualquer participante da conexão.
-    if (status !== "blocked" && existing[0].receiver_id !== req.user.id) {
+    if (status !== 'blocked' && existing[0].receiver_id !== req.user.id) {
       return res.status(403).json({
-        message: "Somente quem recebeu o convite pode aceitar ou recusar.",
+        message: 'Somente quem recebeu o convite pode aceitar ou recusar.',
       });
     }
 
-    if (status !== "blocked" && existing[0].status !== "pending") {
+    if (status !== 'blocked' && existing[0].status !== 'pending') {
       return res.status(409).json({
-        message: "Este convite não está mais pendente.",
+        message: 'Este convite não está mais pendente.',
       });
     }
 
@@ -257,7 +217,7 @@ export async function updateConnection(
       `UPDATE connections
        SET status = ?
        WHERE id = ?`,
-      [status, id]
+      [status, id],
     );
 
     const rows = await query(
@@ -268,7 +228,7 @@ export async function updateConnection(
          receiver_id
        FROM connections
        WHERE id = ?`,
-      [id]
+      [id],
     );
 
     return res.json({
@@ -278,8 +238,7 @@ export async function updateConnection(
     console.error(error);
 
     return res.status(500).json({
-      message:
-        "Erro ao atualizar conexão.",
+      message: 'Erro ao atualizar conexão.',
     });
   }
 }
