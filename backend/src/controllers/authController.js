@@ -5,7 +5,7 @@ import { query } from '../db/pool.js';
 
 function createToken(userId) {
   return jwt.sign({}, process.env.JWT_SECRET, {
-    subject: userId,
+    subject: String(userId), // <-- Convertido para string aqui
     expiresIn: '7d',
   });
 }
