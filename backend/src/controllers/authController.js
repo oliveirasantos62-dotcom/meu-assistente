@@ -1,17 +1,13 @@
-import bcrypt from "bcryptjs";
-import jwt from "jsonwebtoken";
-import { randomUUID } from "crypto";
-import { query } from "../db/pool.js";
+import bcrypt from 'bcryptjs';
+import jwt from 'jsonwebtoken';
+import { randomUUID } from 'crypto';
+import { query } from '../db/pool.js';
 
 function createToken(userId) {
-  return jwt.sign(
-    {},
-    process.env.JWT_SECRET,
-    {
-      subject: userId,
-      expiresIn: "7d",
-    }
-  );
+  return jwt.sign({}, process.env.JWT_SECRET, {
+    subject: userId,
+    expiresIn: '7d',
+  });
 }
 
 function publicUser(user) {
@@ -25,36 +21,26 @@ function publicUser(user) {
 
 export async function register(req, res) {
   try {
-    const {
-      name,
-      email,
-      password,
-      username,
-    } = req.body;
+    const { name, email, password, username } = req.body;
 
     if (!name || !email || !password) {
       return res.status(400).json({
-        message:
-          "Nome, e-mail e senha são obrigatórios.",
+        message: 'Nome, e-mail e senha são obrigatórios.',
       });
     }
 
     if (password.length < 6) {
       return res.status(400).json({
-        message:
-          "A senha precisa ter pelo menos 6 caracteres.",
+        message: 'A senha precisa ter pelo menos 6 caracteres.',
       });
     }
 
-    const normalizedEmail =
-      email.trim().toLowerCase();
+    const normalizedEmail = email.trim().toLowerCase();
 
-    let normalizedUsername =
-      username?.trim().toLowerCase() || null;
+    let normalizedUsername = username?.trim().toLowerCase() || null;
 
-    if (normalizedUsername?.startsWith("@")) {
-      normalizedUsername =
-        normalizedUsername.substring(1);
+    if (normalizedUsername?.startsWith('@')) {
+      normalizedUsername = normalizedUsername.substring(1);
     }
 
     const existing = await query(
@@ -63,43 +49,32 @@ export async function register(req, res) {
        WHERE email = ?
           OR (? IS NOT NULL AND username = ?)
        LIMIT 1`,
-      [
-        normalizedEmail,
-        normalizedUsername,
-        normalizedUsername,
-      ]
+      [normalizedEmail, normalizedUsername, normalizedUsername],
     );
 
     if (existing.length > 0) {
       return res.status(409).json({
-        message:
-          "E-mail ou nome de usuário já está em uso.",
+        message: 'E-mail ou nome de usuário já está em uso.',
       });
     }
 
-    const passwordHash =
-      await bcrypt.hash(password, 12);
+    const passwordHash = await bcrypt.hash(password, 12);
 
-    const userId = randomUUID();
-
-    await query(
+    // Insere sem enviar o ID, deixando o AUTO_INCREMENT fazer o trabalho
+    const result = await query(
       `INSERT INTO users
-       (id, name, email, username, password_hash)
-       VALUES (?, ?, ?, ?, ?)`,
-      [
-        userId,
-        name.trim(),
-        normalizedEmail,
-        normalizedUsername,
-        passwordHash,
-      ]
+       (name, email, username, password_hash)
+       VALUES (?, ?, ?, ?)`,
+      [name.trim(), normalizedEmail, normalizedUsername, passwordHash],
     );
+
+    const userId = result.insertId;
 
     const userRows = await query(
       `SELECT id, name, email, username
        FROM users
        WHERE id = ?`,
-      [userId]
+      [userId],
     );
 
     const user = userRows[0];
@@ -112,22 +87,18 @@ export async function register(req, res) {
     console.error(error);
 
     return res.status(500).json({
-      message: "Erro ao criar conta.",
+      message: 'Erro ao criar conta.',
     });
   }
 }
 
 export async function login(req, res) {
   try {
-    const {
-      email,
-      password,
-    } = req.body;
+    const { email, password } = req.body;
 
     if (!email || !password) {
       return res.status(400).json({
-        message:
-          "E-mail e senha são obrigatórios.",
+        message: 'E-mail e senha são obrigatórios.',
       });
     }
 
@@ -136,21 +107,14 @@ export async function login(req, res) {
        FROM users
        WHERE email = ?
        LIMIT 1`,
-      [email.trim().toLowerCase()]
+      [email.trim().toLowerCase()],
     );
 
     const user = rows[0];
 
-    if (
-      !user ||
-      !(await bcrypt.compare(
-        password,
-        user.password_hash
-      ))
-    ) {
+    if (!user || !(await bcrypt.compare(password, user.password_hash))) {
       return res.status(401).json({
-        message:
-          "E-mail ou senha incorretos.",
+        message: 'E-mail ou senha incorretos.',
       });
     }
 
@@ -162,7 +126,7 @@ export async function login(req, res) {
     console.error(error);
 
     return res.status(500).json({
-      message: "Erro ao entrar.",
+      message: 'Erro ao entrar.',
     });
   }
 }
@@ -179,12 +143,12 @@ export async function me(req, res) {
        FROM users
        WHERE id = ?
        LIMIT 1`,
-      [req.user.id]
+      [req.user.id],
     );
 
     if (!rows[0]) {
       return res.status(404).json({
-        message: "Usuário não encontrado.",
+        message: 'Usuário não encontrado.',
       });
     }
 
@@ -195,8 +159,7 @@ export async function me(req, res) {
     console.error(error);
 
     return res.status(500).json({
-      message:
-        "Erro ao buscar usuário.",
+      message: 'Erro ao buscar usuário.',
     });
   }
 }
