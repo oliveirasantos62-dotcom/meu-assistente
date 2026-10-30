@@ -5870,3 +5870,425 @@ body.dark .connection-row {
     flex: 1;
   }
 }
+
+/* =========================================================
+   AJUSTES DE MODO ESCURO — superfícies que ainda eram claras
+   Escopo restrito aos componentes que tinham cores fixas.
+   ========================================================= */
+body.dark {
+  --site-card: var(--site-card-bg);
+  --site-surface: #20243a;
+  --site-surface-secondary: #20243a;
+  --site-text: var(--site-on-background);
+  --site-muted: var(--site-text-muted);
+  --card-bg: var(--site-card-bg);
+  --text-color: var(--site-on-background);
+  --border-color: var(--site-border);
+  --hover-bg: #292e49;
+  --input-bg: #121624;
+}
+body.dark .auth-page {
+  background: var(--site-background);
+}
+body.dark .auth-card {
+  background: var(--site-card-bg);
+  border: 1px solid var(--site-border);
+  color: var(--site-on-background);
+}
+body.dark .auth-card input {
+  background: #121624;
+  color: var(--site-on-background);
+  border-color: #3a4058;
+  color-scheme: dark;
+}
+body.dark .auth-card input::placeholder {
+  color: #9299ad;
+}
+body.dark .auth-switch {
+  color: var(--site-on-background);
+}
+body.dark .connection-row,
+body.dark .collab-task {
+  background: var(--site-card-bg);
+  border-color: var(--site-border);
+  color: var(--site-on-background);
+}
+body.dark .study-tab,
+body.dark .study-action-button.secondary,
+body.dark .study-reading-actions select,
+[data-theme='dark'] .study-tab,
+[data-theme='dark'] .study-action-button.secondary,
+[data-theme='dark'] .study-reading-actions select {
+  background: #1b1f2a;
+  border-color: #343b4d;
+  color: #f1f5f9;
+}
+body.dark .study-tab:hover,
+body.dark .study-action-button.secondary:hover,
+[data-theme='dark'] .study-tab:hover,
+[data-theme='dark'] .study-action-button.secondary:hover {
+  background: #252b39;
+}
+body.dark .study-tab.active,
+[data-theme='dark'] .study-tab.active {
+  background: var(--site-primary);
+  border-color: var(--site-primary);
+  color: #fff;
+}
+body.dark .study-reading-actions select,
+body.dark input,
+body.dark select,
+body.dark textarea {
+  color-scheme: dark;
+}
+
+/* =========================================
+   SIDEBAR COM ROLAGEM
+========================================= */
+
+.sidebar {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.sidebar-brand {
+  flex-shrink: 0;
+}
+
+.sidebar-nav {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 12px 10px;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-color, #777) transparent;
+}
+
+.sidebar-nav::-webkit-scrollbar {
+  width: 6px;
+}
+
+.sidebar-nav::-webkit-scrollbar-thumb {
+  background: var(--border-color, #777);
+  border-radius: 10px;
+}
+
+.sidebar-nav::-webkit-scrollbar-thumb:hover {
+  background: var(--text-secondary, #999);
+}
+
+.sidebar-footer {
+  flex-shrink: 0;
+}
+
+/* =========================================
+   MODAL DE PERSONALIZAÇÃO
+========================================= */
+
+.sidebar-settings-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 20px;
+  background: rgba(0, 0, 0, 0.65);
+  backdrop-filter: blur(5px);
+}
+
+.sidebar-settings-modal {
+  width: min(540px, 100%);
+  max-height: min(85vh, 780px);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid var(--border-color, rgba(128, 128, 128, 0.3));
+  border-radius: 18px;
+  background: var(--card-bg, var(--bg-secondary, #fff));
+  color: var(--text-color, inherit);
+  box-shadow: 0 25px 80px rgba(0, 0, 0, 0.3);
+}
+
+.sidebar-settings-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 15px;
+  padding: 22px 24px 16px;
+  border-bottom: 1px solid var(--border-color, rgba(128, 128, 128, 0.2));
+  flex-shrink: 0;
+}
+
+.sidebar-settings-eyebrow {
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 1.5px;
+  color: var(--primary-color, #7c5cff);
+}
+
+.sidebar-settings-header h2 {
+  margin: 7px 0;
+  font-size: 22px;
+}
+
+.sidebar-settings-header p {
+  margin: 0;
+  font-size: 13px;
+  opacity: 0.7;
+}
+
+.sidebar-settings-close {
+  width: 34px;
+  height: 34px;
+  border: 0;
+  border-radius: 9px;
+  background: var(--bg-secondary, rgba(128, 128, 128, 0.12));
+  color: inherit;
+  font-size: 23px;
+  cursor: pointer;
+}
+
+.sidebar-settings-info {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 13px 24px;
+  font-size: 12px;
+  opacity: 0.75;
+  flex-shrink: 0;
+}
+
+.sidebar-settings-content {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 8px 18px 16px;
+  scrollbar-width: thin;
+}
+
+/* =========================================
+   CADA PÁGINA
+========================================= */
+
+.sidebar-option {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 58px;
+  padding: 9px 11px;
+  margin-bottom: 7px;
+  border: 1px solid var(--border-color, rgba(128, 128, 128, 0.2));
+  border-radius: 11px;
+  background: var(--bg-secondary, rgba(128, 128, 128, 0.05));
+  cursor: grab;
+  transition:
+    background 0.18s,
+    border-color 0.18s,
+    transform 0.18s;
+}
+
+.sidebar-option:active {
+  cursor: grabbing;
+}
+
+.sidebar-option.checked {
+  border-color: var(--primary-color, #7c5cff);
+  background: color-mix(
+    in srgb,
+    var(--primary-color, #7c5cff) 8%,
+    var(--card-bg, transparent)
+  );
+}
+
+.sidebar-option.disabled {
+  cursor: default;
+  opacity: 0.8;
+}
+
+.sidebar-option.dragging {
+  opacity: 0.35;
+  transform: scale(0.98);
+}
+
+.sidebar-option.drag-over {
+  border: 2px dashed var(--primary-color, #7c5cff);
+  background: color-mix(
+    in srgb,
+    var(--primary-color, #7c5cff) 14%,
+    transparent
+  );
+}
+
+.sidebar-drag-handle {
+  flex-shrink: 0;
+  width: 22px;
+  text-align: center;
+  font-size: 19px;
+  opacity: 0.55;
+  cursor: grab;
+}
+
+.sidebar-option-left {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.sidebar-option-label {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.sidebar-option-left small {
+  font-size: 10px;
+  opacity: 0.6;
+}
+
+.sidebar-option-actions {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  flex-shrink: 0;
+}
+
+/* =========================================
+   BOTÕES DE ORDEM
+========================================= */
+
+.sidebar-move-button {
+  width: 27px;
+  height: 27px;
+  border: 1px solid var(--border-color, rgba(128, 128, 128, 0.25));
+  border-radius: 7px;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+}
+
+.sidebar-move-button:hover:not(:disabled) {
+  background: var(--primary-color, #7c5cff);
+  color: white;
+}
+
+.sidebar-move-button:disabled {
+  opacity: 0.25;
+  cursor: not-allowed;
+}
+
+/* =========================================
+   SWITCH
+========================================= */
+
+.sidebar-switch-label {
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+}
+
+.sidebar-switch-label input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.sidebar-switch {
+  width: 38px;
+  height: 21px;
+  padding: 3px;
+  border-radius: 20px;
+  background: #777;
+  transition: background 0.2s;
+}
+
+.sidebar-switch span {
+  display: block;
+  width: 15px;
+  height: 15px;
+  border-radius: 50%;
+  background: white;
+  transition: transform 0.2s;
+}
+
+.sidebar-switch-label input:checked + .sidebar-switch {
+  background: var(--primary-color, #7c5cff);
+}
+
+.sidebar-switch-label input:checked + .sidebar-switch span {
+  transform: translateX(17px);
+}
+
+.sidebar-switch-label input:disabled {
+  cursor: not-allowed;
+}
+
+/* =========================================
+   RODAPÉ DO MODAL
+========================================= */
+
+.sidebar-settings-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 15px 20px;
+  border-top: 1px solid var(--border-color, rgba(128, 128, 128, 0.2));
+  flex-shrink: 0;
+}
+
+.sidebar-settings-primary {
+  padding: 10px 22px;
+  border: 0;
+  border-radius: 9px;
+  background: var(--primary-color, #7c5cff);
+  color: white;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.sidebar-settings-primary:hover {
+  filter: brightness(1.1);
+}
+
+.sidebar-empty {
+  padding: 15px;
+  font-size: 13px;
+  opacity: 0.65;
+}
+
+/* =========================================
+   RESPONSIVIDADE
+========================================= */
+
+@media (max-width: 600px) {
+  .sidebar-settings-overlay {
+    padding: 10px;
+  }
+
+  .sidebar-settings-modal {
+    max-height: 90vh;
+  }
+
+  .sidebar-settings-header {
+    padding: 18px;
+  }
+
+  .sidebar-settings-content {
+    padding: 8px 12px 12px;
+  }
+
+  .sidebar-option {
+    gap: 6px;
+    padding: 8px;
+  }
+
+  .sidebar-option-label {
+    font-size: 12px;
+  }
+}

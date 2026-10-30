@@ -143,3 +143,13 @@
   .goals-page .goal-progress-panel { flex-wrap:wrap; }
   .goals-page .goal-progress-panel > div { width:100%; }
 }
+
+
+/* Consistência dos controles nativos no tema escuro */
+.goals-page, .goals-page input, .goals-page select, .goals-page textarea { color-scheme: dark; }
+.goals-page input::placeholder, .goals-page textarea::placeholder { color: #8795b7; opacity: 1; }
+.goals-page .goal-modal select option { background: #0c1428; color: #edf1ff; }
+.goals-page .goal-modal input:disabled,
+.goals-page .goal-modal select:disabled,
+.goals-page .goal-modal textarea:disabled { background: #18223a; color: #8997b8; opacity: 1; }
+.goals-page .goal-modal, .goals-page .goal-modal * { scrollbar-color: #46547a #111a30; }

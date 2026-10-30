@@ -1101,4 +1101,40 @@ body.dark .assistant-integrated-summary>div{background:var(--site-card-bg)}
     padding: 12px;
   }
 }
+
+/* Correções de contraste no modo escuro — somente dentro do Assistente */
+body.dark .assistant-page { color: var(--site-on-background, #f0f2f5); }
+body.dark .assistant-page .assistant-panel,
+body.dark .assistant-page .assistant-metric,
+body.dark .assistant-page .assistant-integrated-summary > div,
+body.dark .assistant-page .assistant-result,
+body.dark .assistant-page .assistant-response,
+body.dark .assistant-page .assistant-card {
+  background: var(--site-card-bg, #1a1d2b);
+  border-color: var(--site-border, #2a2e43);
+  color: var(--site-on-background, #f0f2f5);
+}
+body.dark .assistant-page .panel-icon,
+body.dark .assistant-page .quick-prompt,
+body.dark .assistant-page .assistant-analysis-button,
+body.dark .assistant-page .workload-warning,
+body.dark .assistant-page .workload-balanced {
+  background: #20243a; border-color: #373d59; color: #e8eaf5;
+}
+body.dark .assistant-page .workload-warning h2 { color: #ffb18a; }
+body.dark .assistant-page .workload-balanced h2 { color: #83d6ae; }
+body.dark .assistant-page input,
+body.dark .assistant-page select,
+body.dark .assistant-page textarea {
+  background: #121624; border-color: #3a4058; color: #f0f2f5; color-scheme: dark;
+}
+body.dark .assistant-page input::placeholder,
+body.dark .assistant-page textarea::placeholder { color: #9299ad; }
+body.dark .assistant-page .assistant-analysis-button small,
+body.dark .assistant-page .assistant-disclaimer,
+body.dark .assistant-page .assistant-metric small { color: #aab1c5; }
+body.dark .assistant-page .assistant-analysis-button strong,
+body.dark .assistant-page .assistant-integrated-summary strong { color: #f0f2f5; }
+body.dark .assistant-page .quick-prompt:hover { background: #292e49; border-color: #7667e8; }
+
 `;

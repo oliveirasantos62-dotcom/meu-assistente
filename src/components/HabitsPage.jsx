@@ -104,6 +104,7 @@ const calculateBestStreak = (habit) => {
 
 export default function HabitsPage({ data, save }) {
   const [habitName, setHabitName] = useState('');
+  const [habitFeedback, setHabitFeedback] = useState('');
 
   const habits = Array.isArray(data?.habits) ? data.habits : [];
 
@@ -218,41 +219,50 @@ export default function HabitsPage({ data, save }) {
 
     const name = habitName.trim();
 
-    if (!name) return;
+    if (!name) {
+      setHabitFeedback('Digite o nome do hábito antes de criar.');
+      return;
+    }
 
-    /*
-     * Evita criar dois hábitos com o mesmo nome.
-     */
+    if (typeof save !== 'function') {
+      setHabitFeedback(
+        'Não foi possível salvar: a função de salvamento não foi recebida.',
+      );
+      return;
+    }
+
     const alreadyExists = habits.some(
-      (habit) => habit.name.trim().toLowerCase() === name.toLowerCase(),
+      (habit) =>
+        String(habit?.name || '')
+          .trim()
+          .toLocaleLowerCase('pt-BR') === name.toLocaleLowerCase('pt-BR'),
     );
 
     if (alreadyExists) {
-      alert('Você já possui um hábito com esse nome.');
+      setHabitFeedback('Você já possui um hábito com esse nome.');
       return;
     }
 
     const newHabit = {
       id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-
       name,
-
       streak: 0,
-
       bestStreak: 0,
-
       xp: 30,
-
       history: {},
     };
 
-    save({
-      ...data,
-
-      habits: [...habits, newHabit],
-    });
-
-    setHabitName('');
+    try {
+      save({
+        ...(data || {}),
+        habits: [...habits, newHabit],
+      });
+      setHabitName('');
+      setHabitFeedback(`Hábito "${name}" criado com sucesso!`);
+    } catch (error) {
+      console.error('Erro ao criar hábito:', error);
+      setHabitFeedback('Ocorreu um erro ao criar o hábito. Tente novamente.');
+    }
   };
 
   /* =======================================================
@@ -635,6 +645,23 @@ export default function HabitsPage({ data, save }) {
           + Criar hábito
         </button>
       </form>
+
+      {habitFeedback && (
+        <p
+          role='status'
+          aria-live='polite'
+          style={{
+            margin: '-12px 0 18px',
+            color: habitFeedback.includes('sucesso')
+              ? 'var(--site-primary)'
+              : 'var(--site-danger, #ef4444)',
+            fontSize: 13,
+            fontWeight: 600,
+          }}
+        >
+          {habitFeedback}
+        </p>
+      )}
 
       {/* ===================================================
           MATRIZ DE HÁBITOS

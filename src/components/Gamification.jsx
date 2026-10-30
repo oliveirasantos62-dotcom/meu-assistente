@@ -234,4 +234,49 @@ const styles = `
 .shop-panel .shop-form{display:grid;grid-template-columns:2fr 1fr auto;gap:8px;margin-top:10px}
 @media(max-width:850px){.gami-stats{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:600px){.gamification-page{padding:14px}.gamification-header{align-items:flex-start;flex-direction:column}.level-badge{width:100%}.gami-panel{padding:16px}.achievement-grid{grid-template-columns:1fr}.achievement-status{display:none}.section-heading{align-items:flex-start}.section-heading>strong,.achievement-count{white-space:normal;text-align:right}.difficulty-row{gap:7px;flex-wrap:wrap}.difficulty-task{flex-basis:100%}.shop-panel .shop-form{grid-template-columns:1fr}.shop-panel .task{align-items:flex-start}.shop-panel .task>div{width:100%}}
+/* Tema escuro: remove superfícies claras sem alterar a estrutura ou as ações */
+body.dark .gamification-page {
+  color: var(--site-on-background, #f0f2f5);
+  --gami-panel: var(--site-card-bg, #1a1d2b);
+  --gami-border: var(--site-border, #2a2e43);
+  --gami-muted: var(--site-text-muted, #aab1c5);
+}
+body.dark .gamification-page .gami-stat,
+body.dark .gamification-page .gami-panel,
+body.dark .gamification-page .mission-card,
+body.dark .gamification-page .achievement.locked,
+body.dark .gamification-page .empty-state {
+  background: var(--gami-panel); border-color: var(--gami-border); color: #f0f2f5;
+}
+body.dark .gamification-page .stat-icon,
+body.dark .gamification-page .section-icon { background: #292541; }
+body.dark .gamification-page .gami-stat span:last-child,
+body.dark .gamification-page .gamification-header p,
+body.dark .gamification-page .section-heading p,
+body.dark .gamification-page .progress-labels,
+body.dark .gamification-page .achievement p,
+body.dark .gamification-page .mission-card small,
+body.dark .gamification-page .empty-state { color: var(--gami-muted); }
+body.dark .gamification-page .achievement.unlocked { background: #17352d; border-color: #285b49; }
+body.dark .gamification-page .achievement.unlocked p,
+body.dark .gamification-page .status-unlocked { color: #83d6ae; }
+body.dark .gamification-page .difficulty-easy { background: #173b2c; color: #8de0b3; }
+body.dark .gamification-page .difficulty-medium { background: #40351b; color: #f2d27b; }
+body.dark .gamification-page .difficulty-hard { background: #46291f; color: #ffb18a; }
+body.dark .gamification-page .difficulty-epic { background: #302449; color: #c8a8ff; }
+body.dark .gamification-page .milestone-panel { background: linear-gradient(115deg, #25213c, #302b25); border-color: #494064; }
+body.dark .gamification-page .milestone-panel p { color: #c5c9d8; }
+body.dark .gamification-page .shop-balance { color: #f4d783; background: #40351b; }
+body.dark .gamification-page .shop-panel .focus { background: #20243a; border-color: var(--gami-border); }
+body.dark .gamification-page .shop-panel input,
+body.dark .gamification-page .shop-panel select,
+body.dark .gamification-page .shop-panel textarea {
+  background: #121624; border-color: #3a4058; color: #f0f2f5; color-scheme: dark;
+}
+body.dark .gamification-page .shop-panel input::placeholder,
+body.dark .gamification-page .shop-panel textarea::placeholder { color: #9299ad; }
+body.dark .gamification-page .shop-panel .tag { background: #292541; color: #c8bcff; }
+body.dark .gamification-page .shop-panel .ghost { background: #20243a; border-color: #3a4058; color: #e8eaf5; }
+body.dark .gamification-page .shop-panel .ghost:hover { background: #292e49; }
+
 `;
