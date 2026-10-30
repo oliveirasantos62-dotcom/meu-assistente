@@ -4,3 +4,16 @@ dist/
 .env.*
 !.env.example
 .vercel/
+
+# Backend local
+backend/
+
+# Ambiente
+.env
+.env.*
+
+# Dependências
+node_modules/
+
+# Build
+dist/

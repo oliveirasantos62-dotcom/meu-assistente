@@ -4485,7 +4485,6 @@ svg {
   color: #166534;
 }
 
-
 /* =========================================================
    POLIMENTO VISUAL — MEU ASSISTENTE
    Overrides seguros: preservam os estilos e componentes existentes.
@@ -4521,7 +4520,7 @@ button:focus-visible,
 input:focus-visible,
 select:focus-visible,
 textarea:focus-visible,
-[role="button"]:focus-visible {
+[role='button']:focus-visible {
   outline: 3px solid color-mix(in srgb, var(--site-primary) 45%, transparent);
   outline-offset: 2px;
   box-shadow: none;
@@ -4537,7 +4536,7 @@ textarea {
 input:disabled,
 select:disabled,
 textarea:disabled {
-  opacity: .65;
+  opacity: 0.65;
   cursor: not-allowed;
 }
 
@@ -4555,10 +4554,10 @@ textarea:disabled {
 .investment-kpi,
 .diario-summary-card {
   transition:
-    background-color .22s ease,
-    border-color .22s ease,
-    box-shadow .22s ease,
-    transform .22s ease;
+    background-color 0.22s ease,
+    border-color 0.22s ease,
+    box-shadow 0.22s ease,
+    transform 0.22s ease;
 }
 
 .card:hover,
@@ -4569,7 +4568,7 @@ textarea:disabled {
 .card h2,
 .card h3,
 .card h4 {
-  letter-spacing: -.025em;
+  letter-spacing: -0.025em;
 }
 
 .subtitle,
@@ -4579,7 +4578,7 @@ textarea:disabled {
 }
 
 .primary,
-.auth-card button[type="submit"] {
+.auth-card button[type='submit'] {
   background-image: linear-gradient(
     135deg,
     var(--site-primary),
@@ -4607,10 +4606,10 @@ textarea:disabled {
 .nav-item {
   gap: 10px;
   transition:
-    color .18s ease,
-    background .18s ease,
-    transform .18s ease,
-    border-color .18s ease;
+    color 0.18s ease,
+    background 0.18s ease,
+    transform 0.18s ease,
+    border-color 0.18s ease;
 }
 
 .nav-item.active {
@@ -4621,7 +4620,7 @@ textarea:disabled {
 .calendar-item,
 .schedule-item,
 .study-session {
-  transition: background-color .18s ease;
+  transition: background-color 0.18s ease;
 }
 
 .task:hover,
@@ -4637,7 +4636,7 @@ textarea:disabled {
 .goal-category,
 .study-badge,
 .diario-date {
-  letter-spacing: .01em;
+  letter-spacing: 0.01em;
 }
 
 .progress,
@@ -4663,15 +4662,17 @@ textarea:disabled {
   border: 1px solid var(--site-border);
   border-radius: var(--site-radius);
   background:
-    radial-gradient(circle at top right,
+    radial-gradient(
+      circle at top right,
       color-mix(in srgb, var(--site-primary) 12%, transparent),
-      transparent 42%),
+      transparent 42%
+    ),
     var(--site-card-bg);
   box-shadow: var(--site-shadow);
 }
 
 .dashboard-welcome h2 {
-  letter-spacing: -.04em;
+  letter-spacing: -0.04em;
   line-height: 1.15;
 }
 
@@ -4700,7 +4701,7 @@ textarea:disabled {
 
 .dashboard-stat strong,
 .dashboard-summary-card strong {
-  letter-spacing: -.035em;
+  letter-spacing: -0.035em;
   font-variant-numeric: tabular-nums;
 }
 
@@ -4741,16 +4742,22 @@ textarea:disabled {
   isolation: isolate;
   overflow: hidden;
   background:
-    radial-gradient(ellipse at 15% 15%,
-      rgba(109, 93, 252, .18), transparent 38%),
-    radial-gradient(ellipse at 85% 85%,
-      rgba(32, 115, 173, .13), transparent 35%),
+    radial-gradient(
+      ellipse at 15% 15%,
+      rgba(109, 93, 252, 0.18),
+      transparent 38%
+    ),
+    radial-gradient(
+      ellipse at 85% 85%,
+      rgba(32, 115, 173, 0.13),
+      transparent 35%
+    ),
     var(--site-background);
 }
 
 .auth-page::before,
 .auth-page::after {
-  content: "";
+  content: '';
   position: absolute;
   z-index: -1;
   width: 260px;
@@ -4769,7 +4776,7 @@ textarea:disabled {
 .auth-page::after {
   bottom: -130px;
   left: -80px;
-  background: rgba(32, 115, 173, .08);
+  background: rgba(32, 115, 173, 0.08);
 }
 
 .auth-card {
@@ -4781,14 +4788,14 @@ textarea:disabled {
   border-radius: 24px;
   background: var(--site-card-bg);
   color: var(--site-on-background);
-  box-shadow: 0 24px 70px rgba(25, 28, 50, .14);
+  box-shadow: 0 24px 70px rgba(25, 28, 50, 0.14);
   backdrop-filter: blur(18px);
-  animation: auth-card-enter .45s ease both;
+  animation: auth-card-enter 0.45s ease both;
 }
 
 .auth-card h1 {
   font-size: clamp(25px, 5vw, 31px);
-  letter-spacing: -.04em;
+  letter-spacing: -0.04em;
   line-height: 1.15;
 }
 
@@ -4814,7 +4821,10 @@ textarea:disabled {
   border-radius: 12px;
   background: var(--site-background);
   color: var(--site-on-background);
-  transition: border-color .2s ease, box-shadow .2s ease, background .2s ease;
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease,
+    background 0.2s ease;
 }
 
 .auth-card input:focus {
@@ -4828,19 +4838,24 @@ textarea:disabled {
   padding: 12px 16px;
   border-radius: 12px;
   font-weight: 750;
-  transition: transform .18s ease, box-shadow .18s ease, filter .18s ease;
+  transition:
+    transform 0.18s ease,
+    box-shadow 0.18s ease,
+    filter 0.18s ease;
 }
 
-.auth-card button[type="submit"] {
+.auth-card button[type='submit'] {
   margin-top: 4px;
   color: #fff;
-  box-shadow: 0 8px 20px color-mix(in srgb, var(--site-primary) 24%, transparent);
+  box-shadow: 0 8px 20px
+    color-mix(in srgb, var(--site-primary) 24%, transparent);
 }
 
-.auth-card button[type="submit"]:hover:not(:disabled) {
+.auth-card button[type='submit']:hover:not(:disabled) {
   transform: translateY(-1px);
   filter: brightness(1.04);
-  box-shadow: 0 12px 26px color-mix(in srgb, var(--site-primary) 30%, transparent);
+  box-shadow: 0 12px 26px
+    color-mix(in srgb, var(--site-primary) 30%, transparent);
 }
 
 .auth-switch {
@@ -4863,28 +4878,36 @@ textarea:disabled {
 }
 
 .auth-error {
-  border: 1px solid rgba(185, 28, 28, .18);
-  background: rgba(185, 28, 28, .07);
+  border: 1px solid rgba(185, 28, 28, 0.18);
+  background: rgba(185, 28, 28, 0.07);
   color: #b91c1c;
 }
 
 .auth-message {
-  border: 1px solid rgba(22, 101, 52, .18);
-  background: rgba(22, 101, 52, .07);
+  border: 1px solid rgba(22, 101, 52, 0.18);
+  background: rgba(22, 101, 52, 0.07);
   color: #166534;
 }
 
 body.dark .auth-page {
   background:
-    radial-gradient(ellipse at 15% 15%, rgba(139, 121, 255, .16), transparent 38%),
-    radial-gradient(ellipse at 85% 85%, rgba(32, 115, 173, .12), transparent 35%),
+    radial-gradient(
+      ellipse at 15% 15%,
+      rgba(139, 121, 255, 0.16),
+      transparent 38%
+    ),
+    radial-gradient(
+      ellipse at 85% 85%,
+      rgba(32, 115, 173, 0.12),
+      transparent 35%
+    ),
     var(--site-background);
 }
 
 body.dark .auth-card {
   border-color: var(--site-border);
   background: var(--site-card-bg);
-  box-shadow: 0 24px 70px rgba(0, 0, 0, .3);
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.3);
 }
 
 body.dark .auth-card input {
@@ -4894,18 +4917,18 @@ body.dark .auth-card input {
 
 body.dark .auth-error {
   color: #fca5a5;
-  background: rgba(185, 28, 28, .12);
+  background: rgba(185, 28, 28, 0.12);
 }
 
 body.dark .auth-message {
   color: #86efac;
-  background: rgba(22, 101, 52, .13);
+  background: rgba(22, 101, 52, 0.13);
 }
 
 @keyframes auth-card-enter {
   from {
     opacity: 0;
-    transform: translateY(10px) scale(.99);
+    transform: translateY(10px) scale(0.99);
   }
   to {
     opacity: 1;
@@ -4969,5 +4992,321 @@ body.dark .auth-message {
 @media (prefers-reduced-motion: reduce) {
   .auth-card {
     animation: none;
+  }
+}
+/* =========================================================
+    SIDEBAR FLEXÍVEL
+    ========================================================= */
+
+.sidebar-settings-button,
+.sidebar-logout-button {
+  width: 100%;
+  text-align: left;
+  margin-top: 6px;
+}
+
+.sidebar-settings-button {
+  color: var(--site-text-muted);
+}
+
+.sidebar-settings-button:hover {
+  color: var(--site-primary);
+}
+
+/* Overlay */
+
+.sidebar-settings-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  padding: 20px;
+
+  background: rgba(15, 12, 25, 0.45);
+  backdrop-filter: blur(5px);
+}
+
+/* Modal */
+
+.sidebar-settings-modal {
+  width: min(100%, 560px);
+  max-height: 90vh;
+
+  display: flex;
+  flex-direction: column;
+
+  background: var(--site-surface);
+  color: var(--site-text);
+
+  border: 1px solid var(--site-border);
+  border-radius: 24px;
+
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.25);
+
+  overflow: hidden;
+}
+
+/* Header */
+
+.sidebar-settings-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 20px;
+
+  padding: 24px;
+
+  border-bottom: 1px solid var(--site-border);
+}
+
+.sidebar-settings-eyebrow {
+  color: var(--site-primary);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+}
+
+.sidebar-settings-header h2 {
+  margin: 6px 0;
+
+  color: var(--site-text);
+
+  font-size: 1.45rem;
+}
+
+.sidebar-settings-header p {
+  margin: 0;
+
+  color: var(--site-text-muted);
+
+  font-size: 0.88rem;
+  line-height: 1.5;
+}
+
+.sidebar-settings-close {
+  width: 38px;
+  height: 38px;
+
+  flex-shrink: 0;
+
+  border: 0;
+  border-radius: 10px;
+
+  background: var(--site-surface-secondary);
+  color: var(--site-text-muted);
+
+  font-size: 1.5rem;
+
+  cursor: pointer;
+
+  transition: 0.2s;
+}
+
+.sidebar-settings-close:hover {
+  background: var(--site-border);
+  color: var(--site-text);
+}
+
+/* Conteúdo */
+
+.sidebar-settings-content {
+  padding: 20px 24px;
+
+  overflow-y: auto;
+}
+
+.sidebar-settings-group {
+  margin-bottom: 24px;
+}
+
+.sidebar-settings-group:last-child {
+  margin-bottom: 0;
+}
+
+.sidebar-settings-group-title {
+  display: block;
+
+  margin-bottom: 10px;
+
+  color: var(--site-text-muted);
+
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+}
+
+/* Opções */
+
+.sidebar-settings-items {
+  display: flex;
+  flex-direction: column;
+
+  gap: 6px;
+}
+
+.sidebar-option {
+  min-height: 58px;
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  gap: 16px;
+
+  padding: 10px 12px;
+
+  border: 1px solid transparent;
+  border-radius: 14px;
+
+  background: transparent;
+
+  cursor: pointer;
+
+  transition:
+    background 0.2s,
+    border-color 0.2s;
+}
+
+.sidebar-option:hover {
+  background: var(--site-surface-secondary);
+  border-color: var(--site-border);
+}
+
+.sidebar-option.checked {
+  background: rgba(120, 104, 230, 0.06);
+}
+
+.sidebar-option.disabled {
+  cursor: default;
+  opacity: 0.7;
+}
+
+.sidebar-option-left {
+  min-width: 0;
+
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.sidebar-option-label {
+  color: var(--site-text);
+
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.sidebar-option-left small {
+  color: var(--site-text-muted);
+
+  font-size: 0.72rem;
+}
+
+/* Checkbox original escondido */
+
+.sidebar-option input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* Switch */
+
+.sidebar-switch {
+  width: 42px;
+  height: 24px;
+
+  flex-shrink: 0;
+
+  display: flex;
+  align-items: center;
+
+  padding: 3px;
+
+  border-radius: 999px;
+
+  background: var(--site-border);
+
+  transition: background 0.2s;
+}
+
+.sidebar-switch span {
+  width: 18px;
+  height: 18px;
+
+  display: block;
+
+  border-radius: 50%;
+
+  background: #ffffff;
+
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+
+  transition: transform 0.2s;
+}
+
+/* Switch ativo */
+
+.sidebar-option.checked .sidebar-switch {
+  background: var(--site-primary);
+}
+
+.sidebar-option.checked .sidebar-switch span {
+  transform: translateX(18px);
+}
+
+/* Switch bloqueado */
+
+.sidebar-option.disabled .sidebar-switch {
+  opacity: 0.65;
+}
+
+/* Footer */
+
+.sidebar-settings-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  gap: 12px;
+
+  padding: 18px 24px;
+
+  border-top: 1px solid var(--site-border);
+
+  background: var(--site-surface-secondary);
+}
+
+/* =========================================================
+   RESPONSIVIDADE
+   ========================================================= */
+
+@media (max-width: 600px) {
+  .sidebar-settings-overlay {
+    align-items: flex-end;
+    padding: 0;
+  }
+
+  .sidebar-settings-modal {
+    width: 100%;
+    max-height: 92vh;
+
+    border-radius: 24px 24px 0 0;
+  }
+
+  .sidebar-settings-header {
+    padding: 20px;
+  }
+
+  .sidebar-settings-content {
+    padding: 18px 20px;
+  }
+
+  .sidebar-settings-footer {
+    padding: 16px 20px;
   }
 }
