@@ -43,3 +43,6 @@ CREATE TABLE IF NOT EXISTS connections (
 
 CREATE INDEX idx_users_name ON users(name);
 CREATE INDEX idx_users_username ON users(username);
+
+
+-- As tabelas de Estudos e Investimentos estão em phase7.sql.

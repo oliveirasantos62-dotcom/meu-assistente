@@ -1,4 +1,13 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
+import {
+  createInvestment,
+  deleteInvestment,
+  getInvestmentDashboard,
+  migrateLocalInvestments,
+  saveInvestmentSnapshot,
+  updateInvestment,
+} from '../services/api';
+import { storageService } from '../services/storage';
 
 const API_BASE = 'https://brapi.dev/api/quote';
 
@@ -35,8 +44,63 @@ export default function Investments({ data, save }) {
   const [loadingTicker, setLoadingTicker] = useState('');
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
+  const [remoteReady, setRemoteReady] = useState(false);
 
   const investments = data?.investments || [];
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadRemote() {
+      try {
+        const local = storageService.loadData(localStorage.getItem('meu-assistente-user') ? JSON.parse(localStorage.getItem('meu-assistente-user')).email : null) || {};
+        const remote = await getInvestmentDashboard();
+
+        if (!remote.investments?.length && Array.isArray(local.investments) && local.investments.length) {
+          await migrateLocalInvestments({
+            investments: local.investments,
+            portfolioHistory: local.portfolioHistory || [],
+            targetAllocation: local.targetAllocation,
+          });
+          const migrated = await getInvestmentDashboard();
+          if (!cancelled) {
+            save({ ...data, investments: migrated.investments || [], portfolioHistory: migrated.portfolioHistory || [], targetAllocation: migrated.targetAllocation || data.targetAllocation });
+          }
+        } else if (!cancelled) {
+          save({ ...data, investments: remote.investments || [], portfolioHistory: remote.portfolioHistory || [], targetAllocation: remote.targetAllocation || data.targetAllocation });
+        }
+        if (!cancelled) setRemoteReady(true);
+      } catch (err) {
+        console.error('Erro ao carregar investimentos da nuvem:', err);
+        if (!cancelled) {
+          setError(err.message || 'Não foi possível carregar seus investimentos.');
+          setRemoteReady(false);
+        }
+      }
+    }
+
+    loadRemote();
+    return () => { cancelled = true; };
+  }, []);
+
+  const allocation = investments.reduce((acc, item) => {
+    const type = item.type || 'Outros';
+    const value = getAssetValue(item);
+    acc[type] = (acc[type] || 0) + value;
+    return acc;
+  }, {});
+
+  const portfolioTotal = Object.values(allocation).reduce(
+    (sum, value) => sum + Number(value || 0),
+    0,
+  );
+
+  const targetAllocation = data?.targetAllocation || {
+    'Ações': 60,
+    'FIIs': 20,
+    'Renda Fixa': 20,
+    'Cripto': 0,
+  };
 
   /*
    * =========================================================
@@ -134,65 +198,27 @@ export default function Investments({ data, save }) {
     const q = Number(quantity);
     const bPrice = Number(buyPrice);
 
-    if (!symbol) {
-      setError('Informe o ticker do ativo.');
-      return;
-    }
-
-    if (!Number.isFinite(q) || q <= 0) {
-      setError('Informe uma quantidade válida.');
-      return;
-    }
-
-    if (!Number.isFinite(bPrice) || bPrice <= 0) {
-      setError('Informe um preço de compra válido.');
-      return;
-    }
+    if (!symbol) return setError('Informe o ticker do ativo.');
+    if (!Number.isFinite(q) || q <= 0) return setError('Informe uma quantidade válida.');
+    if (!Number.isFinite(bPrice) || bPrice <= 0) return setError('Informe um preço de compra válido.');
 
     setLoading(true);
-
-    const realPrice = await fetchRealPrice(symbol);
-
-    const currentPrice = realPrice ?? bPrice;
-
-    const newInvestment = {
-      id: Date.now(),
-      ticker: symbol,
-      type,
-      quantity: q,
-      buyPrice: bPrice,
-      currentPrice,
-      updatedAt: new Date().toISOString(),
-    };
-
-    const updatedInvestments = [...investments, newInvestment];
-
-    save({
-      ...data,
-
-      investments: updatedInvestments,
-
-      portfolioHistory: savePortfolioSnapshot(updatedInvestments),
-
-      /*
-       * XP somente por registrar um novo ativo.
-       */
-      xp: (data.xp || 0) + 20,
-
-      coins: (data.coins || 0) + 10,
-    });
-
-    setTicker('');
-    setQuantity('');
-    setBuyPrice('');
-
-    setLoading(false);
-
-    setMessage(
-      realPrice
-        ? `${symbol} adicionado. Cotação atualizada.`
-        : `${symbol} adicionado usando o preço de compra como referência.`,
-    );
+    try {
+      const realPrice = await fetchRealPrice(symbol);
+      const currentPrice = realPrice ?? bPrice;
+      const created = await createInvestment({ ticker: symbol, type, quantity: q, buyPrice: bPrice, currentPrice });
+      const updatedInvestments = [...investments, created];
+      const history = savePortfolioSnapshot(updatedInvestments);
+      const savedHistory = await saveInvestmentSnapshot(history[history.length - 1]);
+      save({ ...data, investments: updatedInvestments, portfolioHistory: savedHistory, xp: (data.xp || 0) + 20, coins: (data.coins || 0) + 10 });
+      setTicker(''); setQuantity(''); setBuyPrice('');
+      setMessage(realPrice ? `${symbol} adicionado. Cotação atualizada.` : `${symbol} adicionado usando o preço de compra como referência.`);
+    } catch (err) {
+      console.error(err);
+      setError(err.message || 'Erro ao salvar investimento.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   /*
@@ -202,38 +228,19 @@ export default function Investments({ data, save }) {
    */
 
   const refreshInvestment = async (investment) => {
-    setError('');
-    setMessage('');
-
-    setLoadingTicker(investment.ticker);
-
-    const realPrice = await fetchRealPrice(investment.ticker);
-
-    if (realPrice === null) {
-      setError(`Não foi possível atualizar ${investment.ticker}.`);
-      setLoadingTicker('');
-      return;
-    }
-
-    const updatedInvestments = investments.map((item) =>
-      item.id === investment.id
-        ? {
-            ...item,
-            currentPrice: realPrice,
-            updatedAt: new Date().toISOString(),
-          }
-        : item,
-    );
-
-    save({
-      ...data,
-      investments: updatedInvestments,
-      portfolioHistory: savePortfolioSnapshot(updatedInvestments),
-    });
-
-    setMessage(`${investment.ticker} atualizado com sucesso.`);
-
-    setLoadingTicker('');
+    setError(''); setMessage(''); setLoadingTicker(investment.ticker);
+    try {
+      const realPrice = await fetchRealPrice(investment.ticker);
+      if (realPrice === null) throw new Error(`Não foi possível atualizar ${investment.ticker}.`);
+      const updated = await updateInvestment(investment.id, { currentPrice: realPrice });
+      const updatedInvestments = investments.map(item => item.id === investment.id ? updated : item);
+      const history = savePortfolioSnapshot(updatedInvestments);
+      const savedHistory = await saveInvestmentSnapshot(history[history.length - 1]);
+      save({ ...data, investments: updatedInvestments, portfolioHistory: savedHistory });
+      setMessage(`${investment.ticker} atualizado com sucesso.`);
+    } catch (err) {
+      setError(err.message || 'Erro ao atualizar investimento.');
+    } finally { setLoadingTicker(''); }
   };
 
   /*
@@ -243,40 +250,22 @@ export default function Investments({ data, save }) {
    */
 
   const refreshAllPrices = async () => {
-    if (!investments.length) {
-      setError('Sua carteira está vazia.');
-      return;
-    }
-
-    setError('');
-    setMessage('');
-    setLoading(true);
-
-    const updatedInvestments = await Promise.all(
-      investments.map(async (investment) => {
+    if (!investments.length) return setError('Sua carteira está vazia.');
+    setError(''); setMessage(''); setLoading(true);
+    try {
+      const updatedInvestments = [];
+      for (const investment of investments) {
         const realPrice = await fetchRealPrice(investment.ticker);
-
-        if (realPrice === null) {
-          return investment;
-        }
-
-        return {
-          ...investment,
-          currentPrice: realPrice,
-          updatedAt: new Date().toISOString(),
-        };
-      }),
-    );
-
-    save({
-      ...data,
-      investments: updatedInvestments,
-      portfolioHistory: savePortfolioSnapshot(updatedInvestments),
-    });
-
-    setLoading(false);
-
-    setMessage('Carteira atualizada.');
+        if (realPrice === null) updatedInvestments.push(investment);
+        else updatedInvestments.push(await updateInvestment(investment.id, { currentPrice: realPrice }));
+      }
+      const history = savePortfolioSnapshot(updatedInvestments);
+      const savedHistory = await saveInvestmentSnapshot(history[history.length - 1]);
+      save({ ...data, investments: updatedInvestments, portfolioHistory: savedHistory });
+      setMessage('Carteira atualizada.');
+    } catch (err) {
+      setError(err.message || 'Erro ao atualizar carteira.');
+    } finally { setLoading(false); }
   };
 
   /*
@@ -285,24 +274,20 @@ export default function Investments({ data, save }) {
    * =========================================================
    */
 
-  const removeInvestment = (id) => {
+  const removeInvestment = async (id) => {
     const investment = investments.find((item) => item.id === id);
-
     if (!investment) return;
-
-    const confirmed = window.confirm(
-      `Excluir ${investment.ticker} da carteira?`,
-    );
-
-    if (!confirmed) return;
-
-    const updatedInvestments = investments.filter((item) => item.id !== id);
-
-    save({
-      ...data,
-      investments: updatedInvestments,
-      portfolioHistory: savePortfolioSnapshot(updatedInvestments),
-    });
+    if (!window.confirm(`Excluir ${investment.ticker} da carteira?`)) return;
+    try {
+      await deleteInvestment(id);
+      const updatedInvestments = investments.filter(item => item.id !== id);
+      const history = savePortfolioSnapshot(updatedInvestments);
+      const savedHistory = history.length ? await saveInvestmentSnapshot(history[history.length - 1]) : [];
+      save({ ...data, investments: updatedInvestments, portfolioHistory: savedHistory });
+      setMessage(`${investment.ticker} removido.`);
+    } catch (err) {
+      setError(err.message || 'Erro ao excluir investimento.');
+    }
   };
 
   /*
@@ -847,6 +832,57 @@ export default function Investments({ data, save }) {
         >
           A cotação atual será buscada automaticamente quando disponível.
         </small>
+      </div>
+
+      {/* =====================================================
+          ALOCAÇÃO DA CARTEIRA
+      ===================================================== */}
+
+      <div className='focus investment-focus' style={{ marginTop: 18 }}>
+        <div className='investment-section-title'>
+          <div>
+            <strong>🎯 Alocação da carteira</strong>
+            <small>Compare sua distribuição atual com a meta configurada.</small>
+          </div>
+          <strong>{formatMoney(portfolioTotal)}</strong>
+        </div>
+
+        {portfolioTotal > 0 ? (
+          <div style={{ display: 'grid', gap: 10, marginTop: 14 }}>
+            {['Ações', 'FIIs', 'Renda Fixa', 'Cripto'].map((typeName) => {
+              const value = Number(allocation[typeName] || 0);
+              const currentPct = (value / portfolioTotal) * 100;
+              const targetPct = Number(targetAllocation[typeName] || 0);
+              const difference = currentPct - targetPct;
+
+              return (
+                <div key={typeName}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', gap: 10, fontSize: 13 }}>
+                    <strong>{typeName}</strong>
+                    <span>
+                      {currentPct.toFixed(1)}% · meta {targetPct.toFixed(1)}%
+                    </span>
+                  </div>
+                  <div style={{ height: 8, background: 'var(--site-border)', borderRadius: 999, overflow: 'hidden', marginTop: 5 }}>
+                    <div
+                      style={{
+                        width: `${Math.min(100, currentPct)}%`,
+                        height: '100%',
+                        background: 'var(--site-primary)',
+                        borderRadius: 999,
+                      }}
+                    />
+                  </div>
+                  <small style={{ color: 'var(--site-text-muted)' }}>
+                    {difference > 0 ? '+' : ''}{difference.toFixed(1)} p.p. vs. meta
+                  </small>
+                </div>
+              );
+            })}
+          </div>
+        ) : (
+          <p className='subtitle'>Adicione ativos para visualizar a distribuição.</p>
+        )}
       </div>
 
       {/* =====================================================

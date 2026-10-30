@@ -110,3 +110,38 @@ export async function toggleStudyError(req, res) {
     return res.json({ error: row[0] });
   } catch (error) { console.error(error); return res.status(500).json({ message: 'Erro ao atualizar erro.' }); }
 }
+
+
+export async function migrateLocalStudyData(req, res) {
+  try {
+    const b = req.body || {};
+    const counts = await Promise.all([
+      query(`SELECT COUNT(*) AS count FROM study_sessions WHERE user_id = ?`, [req.user.id]),
+      query(`SELECT COUNT(*) AS count FROM reading_items WHERE user_id = ?`, [req.user.id]),
+      query(`SELECT COUNT(*) AS count FROM review_items WHERE user_id = ?`, [req.user.id]),
+      query(`SELECT COUNT(*) AS count FROM study_errors WHERE user_id = ?`, [req.user.id]),
+    ]);
+    const hasData = counts.some((r) => Number(r[0]?.count || 0) > 0);
+    if (hasData) return res.json({ migrated: false, reason: 'already_has_data' });
+
+    const sessions = Array.isArray(b.studySessions) ? b.studySessions : [];
+    for (const item of sessions) {
+      await query(`INSERT INTO study_sessions (id,user_id,study_date,discipline,subject,minutes,method,difficulty,exercises,correct,errors,learned,not_mastered,observations) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)`, [randomUUID(), req.user.id, String(item.date || today()).slice(0,10), item.discipline || '', item.subject || '', Number(item.minutes || 0), item.method || 'Exercícios', Number(item.difficulty || 3), Number(item.exercises || 0), Number(item.correct || 0), Number(item.errors || 0), item.learned || '', item.notMastered || '', item.observations || '']);
+    }
+
+    const knowledge = Array.isArray(b.knowledgeItems) ? b.knowledgeItems : [];
+    for (const item of knowledge) {
+      await query(`INSERT INTO review_items (id,user_id,title,discipline,content,example,tags,mastery,last_review,next_review,interval_days,review_count) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)`, [randomUUID(), req.user.id, item.title || 'Sem título', item.discipline || 'Geral', item.explanation || '', item.example || '', Array.isArray(item.tags) ? item.tags.join(', ') : (item.tags || ''), Number(item.mastery || 0), item.lastReview || null, item.nextReview || today(), Number(item.reviewInterval || 0), Number(item.reviewCount || 0)]);
+    }
+
+    const errors = Array.isArray(b.errors) ? b.errors : [];
+    for (const item of errors) {
+      await query(`INSERT INTO study_errors (id,user_id,question,my_answer,correct_answer,why_wrong,type,discipline,subject,resolved) VALUES (?,?,?,?,?,?,?,?,?,?)`, [randomUUID(), req.user.id, item.question || '', item.myAnswer || '', item.correctAnswer || '', item.whyWrong || '', item.type || 'Outro', item.discipline || '', item.subject || '', item.resolved ? 1 : 0]);
+    }
+
+    return res.json({ migrated: true, sessions: sessions.length, reviews: knowledge.length, errors: errors.length });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ message: 'Erro ao migrar estudos locais.' });
+  }
+}

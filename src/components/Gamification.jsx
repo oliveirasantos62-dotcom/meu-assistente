@@ -58,6 +58,53 @@ export default function Gamification({ data = {}, completedTasks = [], save }) {
 
       <section className="gami-panel">
         <div className="section-heading">
+          <div><span className="section-icon">⚔️</span><div><h2>Missões de hoje</h2><p>Objetivos simples para transformar progresso em hábito.</p></div></div>
+        </div>
+        <div className="mission-grid">
+          {[
+            {
+              icon: '✅',
+              title: 'Concluir 3 tarefas',
+              current: completedTasks.filter((task) => task.completedAt?.slice?.(0, 10) === new Date().toISOString().slice(0, 10)).length,
+              target: 3,
+              reward: '+60 XP',
+            },
+            {
+              icon: '🔥',
+              title: 'Manter sua sequência',
+              current: streak > 0 ? 1 : 0,
+              target: 1,
+              reward: '+30 XP',
+            },
+            {
+              icon: '📚',
+              title: 'Registrar um estudo',
+              current: Array.isArray(data.studySessions)
+                ? data.studySessions.filter((item) => String(item.date || '').slice(0, 10) === new Date().toISOString().slice(0, 10)).length
+                : 0,
+              target: 1,
+              reward: '+40 XP',
+            },
+          ].map((mission) => {
+            const progress = Math.min(100, (mission.current / mission.target) * 100);
+            const done = progress >= 100;
+
+            return (
+              <article className="mission-card" key={mission.title}>
+                <span className="mission-icon">{done ? '🏆' : mission.icon}</span>
+                <div>
+                  <strong>{mission.title}</strong>
+                  <small>{done ? 'Concluída' : `${mission.current}/${mission.target}`} · {mission.reward}</small>
+                  <div className="mission-track"><div style={{ width: `${progress}%` }} /></div>
+                </div>
+              </article>
+            );
+          })}
+        </div>
+      </section>
+
+      <section className="gami-panel">
+        <div className="section-heading">
           <div><span className="section-icon">🎖️</span><div><h2>Conquistas</h2><p>Marcos para reconhecer seu esforço e consistência.</p></div></div>
           <span className="achievement-count">{achievements.filter(([unlocked]) => unlocked).length}/{achievements.length} desbloqueadas</span>
         </div>
@@ -164,6 +211,12 @@ const styles = `
 .achievement-icon{font-size:1.7rem;flex-shrink:0}.achievement>div{flex:1;min-width:0}.achievement strong{font-size:.9rem}.achievement p{font-size:.8rem;color:var(--muted,#777d91);margin:4px 0 0}
 .achievement-status{font-size:.68rem;color:#9295a5;white-space:nowrap}.status-unlocked{color:#16845b;font-weight:800}
 .task-difficulty-list{display:grid;gap:0}.difficulty-row{display:flex;align-items:center;gap:12px;padding:13px 0;border-bottom:1px solid var(--border,#eeeef4)}.difficulty-row:last-child{border-bottom:0}.difficulty-task{flex:1;min-width:0;overflow-wrap:anywhere}.difficulty-row>strong{font-size:.82rem;white-space:nowrap}.difficulty-pill{font-size:.7rem;font-weight:800;padding:6px 9px;border-radius:999px;white-space:nowrap}.difficulty-easy{background:#e9f8ef;color:#218454}.difficulty-medium{background:#fff5d9;color:#987018}.difficulty-hard{background:#ffeadf;color:#b65726}.difficulty-epic{background:#f0e9ff;color:#744ac4}
+
+.mission-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.mission-card{display:flex;gap:11px;padding:14px;border:1px solid var(--border,#e9eaf2);border-radius:15px;background:var(--surface,#f8f8fc)}
+.mission-icon{font-size:1.5rem;flex-shrink:0}.mission-card strong,.mission-card small{display:block}.mission-card strong{font-size:.86rem}.mission-card small{font-size:.74rem;color:var(--muted,#777d91);margin-top:4px}
+.mission-track{height:7px;background:var(--border,#e9eaf2);border-radius:999px;overflow:hidden;margin-top:9px}.mission-track>div{height:100%;background:#7667e8;border-radius:999px}
+@media(max-width:850px){.mission-grid{grid-template-columns:1fr}}
 .empty-state{padding:16px;background:var(--surface,#f8f8fc);border-radius:12px;color:var(--muted,#777d91);margin:0}
 .milestone-panel{display:flex;align-items:center;gap:16px;background:linear-gradient(115deg,#f7f4ff,#fff9e9);border-color:#e9e0ff}.milestone-icon{font-size:2.2rem}.milestone-panel p{margin:0;color:#65677b}
 .shop-balance{font-weight:800;color:#9a6b05;background:#fff6d9;border-radius:12px;padding:10px 13px;white-space:nowrap}
@@ -181,32 +234,4 @@ const styles = `
 .shop-panel .shop-form{display:grid;grid-template-columns:2fr 1fr auto;gap:8px;margin-top:10px}
 @media(max-width:850px){.gami-stats{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:600px){.gamification-page{padding:14px}.gamification-header{align-items:flex-start;flex-direction:column}.level-badge{width:100%}.gami-panel{padding:16px}.achievement-grid{grid-template-columns:1fr}.achievement-status{display:none}.section-heading{align-items:flex-start}.section-heading>strong,.achievement-count{white-space:normal;text-align:right}.difficulty-row{gap:7px;flex-wrap:wrap}.difficulty-task{flex-basis:100%}.shop-panel .shop-form{grid-template-columns:1fr}.shop-panel .task{align-items:flex-start}.shop-panel .task>div{width:100%}}
-/* Contraste no tema escuro */
-body.dark .gamification-page{color:var(--site-on-background,#f0f2f5)}
-body.dark .gamification-header p,
-body.dark .section-heading p,
-body.dark .gami-stat span:last-child,
-body.dark .achievement p,
-body.dark .progress-labels{color:var(--site-text-muted,#aeb4c7)}
-body.dark .gami-stat,
-body.dark .gami-panel{background:var(--site-card-bg,#1a1d2b);border-color:var(--site-border,#34394f);color:var(--site-on-background,#f0f2f5)}
-body.dark .stat-icon,
-body.dark .section-icon{background:rgba(139,121,255,.17)}
-body.dark .achievement{border-color:var(--site-border,#34394f)}
-body.dark .achievement.unlocked{background:rgba(33,132,84,.15);border-color:rgba(82,196,139,.3)}
-body.dark .achievement.locked{background:#202437}
-body.dark .achievement-status{color:#aeb4c7}
-body.dark .status-unlocked{color:#83dfb4}
-body.dark .difficulty-easy{background:rgba(33,132,84,.2);color:#83dfb4}
-body.dark .difficulty-medium{background:rgba(152,112,24,.2);color:#f1d078}
-body.dark .difficulty-hard{background:rgba(182,87,38,.2);color:#ffb18a}
-body.dark .difficulty-epic{background:rgba(116,74,196,.22);color:#c7aaff}
-body.dark .empty-state{background:#202437;color:#c5cad9}
-body.dark .milestone-panel{background:linear-gradient(115deg,#25213a,#302b25);border-color:#49405f}
-body.dark .milestone-panel p{color:#c5cad9}
-body.dark .shop-balance{background:rgba(154,107,5,.2);color:#f3cf78}
-body.dark .shop-panel .focus{background:#202437;border-color:var(--site-border)}
-body.dark .shop-panel input{background:#141724;color:var(--site-on-background);border-color:#3a4058}
-body.dark .shop-panel .tag{background:rgba(139,121,255,.17);color:#c3b8ff}
-
 `;

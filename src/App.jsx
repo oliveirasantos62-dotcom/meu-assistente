@@ -102,7 +102,6 @@ export default function App() {
   // ESTADO DA INTERFACE
   // =========================================
   const [activeSection, setActiveSection] = useState('dashboard');
-  const [focusMode, setFocusMode] = useState(false);
 
   const [darkMode, setDarkMode] = useState(() => {
     try {
@@ -212,7 +211,7 @@ export default function App() {
   // RENDERIZAÇÃO
   // =========================================
   return (
-    <div id='app' className={`app-layout ${focusMode ? 'focus-mode' : ''}`}>
+    <div id='app' className='app-layout'>
       <Sidebar
         currentUser={currentUser}
         activeSection={activeSection}
@@ -260,9 +259,18 @@ export default function App() {
           </div>
 
           <div className='actions'>
-            <button type='button' className={`ghost focus-mode-toggle ${focusMode ? 'is-active' : ''}`}
-              onClick={() => setFocusMode(active => !active)} aria-pressed={focusMode}>
-              {focusMode ? '↩️ Sair do foco' : '🎯 Modo foco'}
+            <button
+              type='button'
+              className='ghost'
+              onClick={() =>
+                save({
+                  ...data,
+                  focus:
+                    'Modo foco: escolha uma tarefa e termine antes de trocar de contexto.',
+                })
+              }
+            >
+              🎯 Modo foco
             </button>
 
             <button
@@ -303,7 +311,7 @@ export default function App() {
         {activeSection === 'diario' && <Diario data={data} save={save} />}
 
         {/* ESTUDOS + LEITURA */}
-        {activeSection === 'estudos' && <Estudos appData={data} saveAppData={save} />}
+        {activeSection === 'estudos' && <Estudos />}
 
         {/* OBJETIVOS */}
         {activeSection === 'goals' && <Goals data={data} save={save} />}
@@ -382,6 +390,7 @@ export default function App() {
             assistantPriority={assistantPriority}
             assistantAdvice={assistantAdvice}
             overload={overload}
+            save={save}
           />
         )}
       </main>

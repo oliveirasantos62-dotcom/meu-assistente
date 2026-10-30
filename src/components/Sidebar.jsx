@@ -1,24 +1,22 @@
 import React, { useEffect, useState } from 'react';
 
-// Menu inicial enxuto. Os demais módulos continuam disponíveis em
-// "Personalizar menu" e podem ser ativados individualmente.
 const DEFAULT_SECTIONS = {
   dashboard: true,
   tasks: true,
   calendar: true,
   diario: true,
   estudos: true,
-  goals: false,
-  habits: false,
-  projects: false,
-  collections: false,
-  fase12: false,
-  gamification: false,
-  fase13: false,
-  investments: false,
-  connections: false,
-  foguinho: false,
-  groups: false,
+  goals: true,
+  habits: true,
+  projects: true,
+  collections: true,
+  fase12: true,
+  gamification: true,
+  fase13: true,
+  investments: true,
+  connections: true,
+  foguinho: true,
+  groups: true,
   assistant: true,
 };
 
@@ -104,38 +102,22 @@ function getStorageKey(currentUser) {
 function loadSidebarConfig(currentUser) {
   try {
     const saved = localStorage.getItem(getStorageKey(currentUser));
-    const fallbackOrder = SECTIONS.map((section) => section.id);
 
     if (!saved) {
-      return {
-        visible: { ...DEFAULT_SECTIONS },
-        order: fallbackOrder,
-      };
+      return DEFAULT_SECTIONS;
     }
 
     const parsed = JSON.parse(saved);
-    // Compatibilidade: versões antigas salvavam somente { id: boolean }.
-    const visible = parsed.visibleSections || parsed.visible || parsed;
-    const savedOrder = Array.isArray(parsed.order) ? parsed.order : [];
-    const knownIds = new Set(fallbackOrder);
-    const order = [
-      ...savedOrder.filter((id) => knownIds.has(id)),
-      ...fallbackOrder.filter((id) => !savedOrder.includes(id)),
-    ];
 
     return {
-      visible: {
-        ...DEFAULT_SECTIONS,
-        ...visible,
-        dashboard: true,
-      },
-      order,
+      ...DEFAULT_SECTIONS,
+      ...parsed,
+
+      // Painel Principal nunca pode ser removido
+      dashboard: true,
     };
   } catch {
-    return {
-      visible: { ...DEFAULT_SECTIONS },
-      order: SECTIONS.map((section) => section.id),
-    };
+    return DEFAULT_SECTIONS;
   }
 }
 
@@ -147,34 +129,23 @@ export default function Sidebar({
   setDarkMode,
   onLogout,
 }) {
-  const userStorageKey = getStorageKey(currentUser);
-  const [menuConfig, setMenuConfig] = useState(() => loadSidebarConfig(currentUser));
-  const { visible: visibleSections, order: sectionOrder } = menuConfig;
-  const [loadedStorageKey, setLoadedStorageKey] = useState(userStorageKey);
+  const [visibleSections, setVisibleSections] = useState(() => loadSidebarConfig(currentUser));
 
   const [customizing, setCustomizing] = useState(false);
-  const [mobileOpen, setMobileOpen] = useState(false);
 
   // Troca de conta: carrega a configuração daquele usuário.
   useEffect(() => {
-    setMenuConfig(loadSidebarConfig(currentUser));
-    setLoadedStorageKey(userStorageKey);
-  }, [userStorageKey]);
+    setVisibleSections(loadSidebarConfig(currentUser));
+  }, [currentUser?.id, currentUser?.email]);
 
-  // Evita gravar a configuração da conta anterior na chave da nova conta
-  // durante a renderização intermediária da troca de usuário.
+  // Salva a personalização por usuário.
   useEffect(() => {
-    if (loadedStorageKey !== userStorageKey) return;
-
     try {
-      localStorage.setItem(userStorageKey, JSON.stringify({
-        visibleSections: menuConfig.visible,
-        order: menuConfig.order,
-      }));
+      localStorage.setItem(getStorageKey(currentUser), JSON.stringify(visibleSections));
     } catch {
       // Continua funcionando mesmo se localStorage falhar.
     }
-  }, [menuConfig, userStorageKey, loadedStorageKey]);
+  }, [visibleSections]);
 
   const toggleSection = (id) => {
     // Dashboard sempre fica disponível
@@ -182,69 +153,21 @@ export default function Sidebar({
       return;
     }
 
-    setMenuConfig((current) => ({
+    setVisibleSections((current) => ({
       ...current,
-      visible: { ...current.visible, [id]: !current.visible[id] },
+      [id]: !current[id],
     }));
   };
 
   const restoreDefault = () => {
-    setMenuConfig({
-      visible: { ...DEFAULT_SECTIONS },
-      order: SECTIONS.map((section) => section.id),
+    setVisibleSections({
+      ...DEFAULT_SECTIONS,
     });
   };
-
-  const moveSection = (id, direction) => {
-    setMenuConfig((current) => {
-      const index = current.order.indexOf(id);
-      const nextIndex = index + direction;
-      if (index < 0 || nextIndex < 0 || nextIndex >= current.order.length) return current;
-      const order = [...current.order];
-      [order[index], order[nextIndex]] = [order[nextIndex], order[index]];
-      return { ...current, order };
-    });
-  };
-
-  const orderedSections = sectionOrder
-    .map((id) => SECTIONS.find((section) => section.id === id))
-    .filter(Boolean);
 
   return (
     <>
-      {!mobileOpen && (
-        <button
-          type='button'
-          className='mobile-sidebar-trigger'
-          onClick={() => setMobileOpen(true)}
-          aria-label='Abrir menu'
-          aria-expanded='false'
-        >
-          ☰
-        </button>
-      )}
-
-      {mobileOpen && (
-        <button
-          type='button'
-          className='sidebar-mobile-backdrop'
-          onClick={() => setMobileOpen(false)}
-          aria-label='Fechar menu'
-        />
-      )}
-
-      <aside className={`sidebar ${mobileOpen ? 'mobile-open' : ''}`}>
-        <div className='sidebar-mobile-header'>
-          <span>Menu</span>
-          <button
-            type='button'
-            className='sidebar-mobile-close'
-            onClick={() => setMobileOpen(false)}
-            aria-label='Fechar menu'
-          >
-            ×
-          </button>
-        </div>
+      <aside className='sidebar'>
         {/* IDENTIDADE */}
         <div className='sidebar-brand'>
           <div className='logo'>A</div>
@@ -257,7 +180,7 @@ export default function Sidebar({
 
         {/* MENU */}
         <nav className='sidebar-nav' aria-label='Navegação principal'>
-          {orderedSections.map((section) => {
+          {SECTIONS.map((section) => {
             if (!visibleSections[section.id]) {
               return null;
             }
@@ -269,10 +192,7 @@ export default function Sidebar({
                 key={section.id}
                 type='button'
                 className={`nav-item ${isActive ? 'active' : ''}`}
-                onClick={() => {
-                  setActiveSection(section.id);
-                  setMobileOpen(false);
-                }}
+                onClick={() => setActiveSection(section.id)}
                 aria-current={isActive ? 'page' : undefined}
               >
                 <span className='nav-item-label'>{section.label}</span>
@@ -350,50 +270,35 @@ export default function Sidebar({
 
             {/* OPÇÕES */}
             <div className='sidebar-settings-content'>
-              {orderedSections.map((section, index) => {
+              {SECTIONS.map((section) => {
                 const checked = visibleSections[section.id];
 
                 return (
-                  <div
+                  <label
                     key={section.id}
                     className={`sidebar-option ${checked ? 'checked' : ''} ${
                       section.fixed ? 'disabled' : ''
                     }`}
                   >
-                    <label className='sidebar-option-main'>
-                      <span className='sidebar-option-left'>
-                        <span className='sidebar-option-label'>{section.label}</span>
-                        {section.fixed && <small>Sempre ativo</small>}
+                    <span className='sidebar-option-left'>
+                      <span className='sidebar-option-label'>
+                        {section.label}
                       </span>
-                      <input
-                        type='checkbox'
-                        checked={checked}
-                        disabled={section.fixed}
-                        onChange={() => toggleSection(section.id)}
-                        aria-label={`Mostrar ${section.label} no menu`}
-                      />
-                      <span className='sidebar-switch'><span /></span>
-                    </label>
 
-                    <span className='sidebar-option-controls'>
-                      <button
-                        type='button'
-                        className='sidebar-order-button'
-                        aria-label={`Mover ${section.label} para cima`}
-                        title='Mover para cima'
-                        disabled={index === 0}
-                        onClick={() => moveSection(section.id, -1)}
-                      >↑</button>
-                      <button
-                        type='button'
-                        className='sidebar-order-button'
-                        aria-label={`Mover ${section.label} para baixo`}
-                        title='Mover para baixo'
-                        disabled={index === orderedSections.length - 1}
-                        onClick={() => moveSection(section.id, 1)}
-                      >↓</button>
+                      {section.fixed && <small>Sempre ativo</small>}
                     </span>
-                  </div>
+
+                    <input
+                      type='checkbox'
+                      checked={checked}
+                      disabled={section.fixed}
+                      onChange={() => toggleSection(section.id)}
+                    />
+
+                    <span className='sidebar-switch'>
+                      <span />
+                    </span>
+                  </label>
                 );
               })}
             </div>

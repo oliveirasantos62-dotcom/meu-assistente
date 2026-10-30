@@ -63,6 +63,56 @@ function normalizeAppData(rawData) {
       transactions: Array.isArray(source.finance?.transactions)
         ? source.finance.transactions
         : [],
+      financialGoals: Array.isArray(source.finance?.financialGoals)
+        ? source.finance.financialGoals
+        : [],
+      budgetsByCategory:
+        source.finance?.budgetsByCategory &&
+        typeof source.finance.budgetsByCategory === 'object'
+          ? source.finance.budgetsByCategory
+          : {},
+      accounts: Array.isArray(source.finance?.accounts)
+        ? source.finance.accounts
+        : [],
+    },
+
+    investments: Array.isArray(source.investments)
+      ? source.investments
+      : [],
+
+    portfolioHistory: Array.isArray(source.portfolioHistory)
+      ? source.portfolioHistory
+      : [],
+
+    targetAllocation:
+      source.targetAllocation &&
+      typeof source.targetAllocation === 'object'
+        ? source.targetAllocation
+        : { 'Ações': 60, 'FIIs': 20, 'Renda Fixa': 20, 'Cripto': 0 },
+
+    gamification: {
+      ...(emptyAppData.gamification || {}),
+      ...(source.gamification || {}),
+      missions: Array.isArray(source.gamification?.missions)
+        ? source.gamification.missions
+        : [],
+      achievements: Array.isArray(source.gamification?.achievements)
+        ? source.gamification.achievements
+        : [],
+      rewards: Array.isArray(source.gamification?.rewards)
+        ? source.gamification.rewards
+        : [],
+    },
+
+    assistant: {
+      ...(emptyAppData.assistant || {}),
+      ...(source.assistant || {}),
+      history: Array.isArray(source.assistant?.history)
+        ? source.assistant.history
+        : [],
+      notes: Array.isArray(source.assistant?.notes)
+        ? source.assistant.notes
+        : [],
     },
 
     settings:

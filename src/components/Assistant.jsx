@@ -6,6 +6,7 @@ export default function Assistant({
   assistantPriority = [],
   assistantAdvice = '',
   overload = false,
+  save,
 }) {
   const [question, setQuestion] = useState('');
   const [answer, setAnswer] = useState('');
@@ -20,6 +21,55 @@ export default function Assistant({
 
   const today = getTodayKey();
   const completedToday = Number(data.history?.[today]?.completed || 0);
+
+  const financialStats = useMemo(() => {
+    const transactions = Array.isArray(data.finance?.transactions)
+      ? data.finance.transactions
+      : [];
+
+    const month = today.slice(0, 7);
+    const monthTransactions = transactions.filter(
+      (item) => String(item.date || '').slice(0, 7) === month,
+    );
+
+    const income = monthTransactions
+      .filter((item) => item.type === 'income')
+      .reduce((sum, item) => sum + Number(item.amount || 0), 0);
+
+    const expenses = monthTransactions
+      .filter((item) => item.type === 'expense')
+      .reduce((sum, item) => sum + Number(item.amount || 0), 0);
+
+    return {
+      income,
+      expenses,
+      balance: income - expenses,
+    };
+  }, [data.finance, today]);
+
+  const investmentStats = useMemo(() => {
+    const investments = Array.isArray(data.investments) ? data.investments : [];
+
+    const invested = investments.reduce(
+      (sum, item) =>
+        sum + Number(item.quantity || 0) * Number(item.buyPrice || 0),
+      0,
+    );
+
+    const current = investments.reduce(
+      (sum, item) =>
+        sum +
+        Number(item.quantity || 0) *
+          Number(item.currentPrice || item.buyPrice || 0),
+      0,
+    );
+
+    return {
+      invested,
+      current,
+      profit: current - invested,
+    };
+  }, [data.investments]);
 
   const stats = useMemo(() => {
     const totalXP = tasks.reduce(
@@ -86,6 +136,16 @@ export default function Assistant({
       label: 'Como evoluir de nível?',
       question: 'Como posso ganhar XP e evoluir de nível?',
     },
+    {
+      icon: '💰',
+      label: 'Como estão minhas finanças?',
+      question: 'Como estão minhas finanças este mês?',
+    },
+    {
+      icon: '📈',
+      label: 'Como estão meus investimentos?',
+      question: 'Como estão meus investimentos?',
+    },
   ];
 
   function respond(title, text) {
@@ -146,7 +206,38 @@ export default function Assistant({
       q.includes('comecar') ||
       q.includes('organizar');
 
-    if (asksOverload) {
+    const asksFinance =
+      q.includes('finança') ||
+      q.includes('financa') ||
+      q.includes('gasto') ||
+      q.includes('dinheiro') ||
+      q.includes('orçamento') ||
+      q.includes('orcamento');
+
+    const asksInvestments =
+      q.includes('investimento') ||
+      q.includes('carteira') ||
+      q.includes('ação') ||
+      q.includes('acoes') ||
+      q.includes('fii');
+
+    if (asksFinance) {
+      title = '💰 Resumo financeiro';
+      response =
+        `Entradas no mês: ${formatMoney(financialStats.income)}\n` +
+        `Gastos no mês: ${formatMoney(financialStats.expenses)}\n` +
+        `Saldo do mês: ${formatMoney(financialStats.balance)}\n\n` +
+        (financialStats.balance >= 0
+          ? '✅ Seu fluxo está positivo neste período.'
+          : '⚠️ Seus gastos superaram suas entradas neste período.');
+    } else if (asksInvestments) {
+      title = '📈 Resumo dos investimentos';
+      response =
+        `Valor investido: ${formatMoney(investmentStats.invested)}\n` +
+        `Valor atual: ${formatMoney(investmentStats.current)}\n` +
+        `Resultado: ${formatMoney(investmentStats.profit)}\n\n` +
+        'Use o módulo Investimentos para atualizar cotações e acompanhar a alocação.';
+    } else if (asksOverload) {
       title = '⚖️ Análise da sua carga';
 
       response = overload
@@ -458,6 +549,24 @@ export default function Assistant({
         </aside>
       </div>
 
+      <section className='assistant-integrated-summary'>
+        <div>
+          <span>💰</span>
+          <strong>Finanças</strong>
+          <small>{formatMoney(financialStats.balance)} de saldo no mês</small>
+        </div>
+        <div>
+          <span>📈</span>
+          <strong>Investimentos</strong>
+          <small>{formatMoney(investmentStats.current)} em carteira</small>
+        </div>
+        <div>
+          <span>🔥</span>
+          <strong>Hoje</strong>
+          <small>{completedToday} tarefa(s) concluída(s)</small>
+        </div>
+      </section>
+
       <p className='assistant-disclaimer'>
         As sugestões são calculadas a partir dos dados disponíveis no
         aplicativo. Ajuste prioridades e pausas conforme sua realidade.
@@ -477,6 +586,14 @@ function Metric({ icon, value, label }) {
       </div>
     </article>
   );
+}
+
+
+function formatMoney(value) {
+  return Number(value || 0).toLocaleString('pt-BR', {
+    style: 'currency',
+    currency: 'BRL',
+  });
 }
 
 function getTodayKey() {
@@ -907,6 +1024,14 @@ const styles = `
   margin: 15px 2px 0;
 }
 
+
+.assistant-integrated-summary{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-top:16px}
+.assistant-integrated-summary>div{padding:14px;border:1px solid var(--site-border,#e4e5ee);border-radius:15px;background:var(--site-card-bg,#fff);display:grid;grid-template-columns:auto 1fr;column-gap:9px;align-items:center}
+.assistant-integrated-summary span{grid-row:span 2;font-size:1.35rem}
+.assistant-integrated-summary strong{font-size:.85rem}
+.assistant-integrated-summary small{color:var(--site-text-muted,#777d91);font-size:.74rem;margin-top:2px}
+body.dark .assistant-integrated-summary>div{background:var(--site-card-bg)}
+@media(max-width:700px){.assistant-integrated-summary{grid-template-columns:1fr}}
 @media (max-width: 900px) {
   .assistant-layout {
     grid-template-columns: 1fr;
@@ -974,163 +1099,6 @@ const styles = `
   .assistant-send {
     justify-content: center;
     padding: 12px;
-  }
-}
-
-/* Visual refinements for the assistant dashboard */
-.assistant-page {
-  max-width: 1320px;
-  padding: clamp(18px, 2.4vw, 32px);
-}
-.assistant-header {
-  padding: 8px 2px 18px;
-}
-.assistant-header h1 {
-  letter-spacing: -0.035em;
-  color: var(--site-text, #202436);
-}
-.assistant-avatar {
-  width: 68px;
-  height: 68px;
-  border: 1px solid rgba(118, 103, 232, .14);
-  box-shadow: 0 10px 28px rgba(35, 28, 90, .08);
-}
-.assistant-metric {
-  min-height: 96px;
-  box-shadow: 0 8px 24px rgba(25, 30, 55, .045);
-  transition: transform .18s ease, box-shadow .18s ease;
-}
-.assistant-metric:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 12px 28px rgba(25, 30, 55, .08);
-}
-.assistant-panel {
-  box-shadow: 0 10px 28px rgba(25, 30, 55, .045);
-}
-.quick-prompt {
-  min-height: 48px;
-  font-weight: 650;
-}
-.quick-prompt:focus-visible,
-.assistant-send:focus-visible,
-.assistant-analysis-button:focus-visible {
-  outline: 3px solid rgba(139, 127, 240, .55);
-  outline-offset: 2px;
-}
-.assistant-send {
-  min-height: 50px;
-  box-shadow: 0 8px 18px rgba(118, 103, 232, .22);
-}
-.assistant-analysis-button {
-  transition: transform .18s ease, border-color .18s ease;
-}
-.assistant-analysis-button:hover {
-  transform: translateY(-2px);
-  border-color: #9c91f3;
-}
-
-body.dark .assistant-page {
-  color: #e9ebf7;
-  --assistant-card: #191d2b;
-  --assistant-surface: #22283a;
-  --assistant-border: #343b52;
-  --assistant-muted: #aab2ca;
-}
-body.dark .assistant-header h1,
-body.dark .assistant-panel h2,
-body.dark .assistant-metric strong,
-body.dark .priority-item strong,
-body.dark .assistant-analysis-button strong {
-  color: #f2f3fb;
-}
-body.dark .assistant-header p,
-body.dark .assistant-metric small,
-body.dark .panel-heading p,
-body.dark .priority-item small,
-body.dark .assistant-analysis-button small,
-body.dark .assistant-disclaimer {
-  color: var(--assistant-muted);
-}
-body.dark .assistant-metric,
-body.dark .assistant-panel {
-  background: var(--assistant-card);
-  border-color: var(--assistant-border);
-  color: #e9ebf7;
-  box-shadow: 0 12px 30px rgba(0, 0, 0, .18);
-}
-body.dark .assistant-metric > span,
-body.dark .panel-icon,
-body.dark .priority-number {
-  background: rgba(139, 127, 240, .16);
-  color: #c1b8ff;
-}
-body.dark .quick-prompt,
-body.dark .assistant-analysis-button {
-  background: var(--assistant-surface);
-  border-color: var(--assistant-border);
-  color: #e9ebf7;
-}
-body.dark .quick-prompt:hover,
-body.dark .assistant-analysis-button:hover {
-  background: #2a3046;
-  border-color: #8174e8;
-}
-body.dark .assistant-input-row input {
-  background: #10131e;
-  border-color: #414963;
-  color: #f3f4fb;
-}
-body.dark .assistant-input-row input::placeholder {
-  color: #929bb5;
-}
-body.dark .assistant-empty,
-body.dark .assistant-advice {
-  background: #22283a;
-  color: #b8c0d8;
-}
-body.dark .assistant-answer {
-  background: linear-gradient(135deg, #24243b, #1d2d31);
-  border-color: #49436f;
-  color: #e9ebf7;
-}
-body.dark .answer-heading {
-  color: #c1b8ff;
-}
-body.dark .workload-balanced {
-  background: #172b27;
-  border-color: #285044;
-}
-body.dark .workload-balanced h2 {
-  color: #8fe0b8;
-}
-body.dark .workload-panel p {
-  color: #c1d5ce;
-}
-body.dark .workload-warning {
-  background: #33251f;
-  border-color: #684330;
-}
-body.dark .workload-warning h2 {
-  color: #ffc08e;
-}
-body.dark .workload-warning p {
-  color: #e5c7b4;
-}
-body.dark .assistant-status.ready {
-  background: #17352c;
-  color: #8fe0b8;
-}
-body.dark .assistant-status.warning {
-  background: #3a2a20;
-  color: #ffc08e;
-}
-
-@media (max-width: 600px) {
-  .assistant-page {
-    padding: 14px;
-  }
-  .assistant-metric {
-    min-height: 82px;
   }
 }
 `;

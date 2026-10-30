@@ -4,7 +4,7 @@ const STORAGE_PREFIX = 'app_data_';
 const BACKUP_PREFIX = 'app_backup_';
 const CURRENT_USER_KEY = 'currentUser';
 
-const STORAGE_VERSION = 2;
+const STORAGE_VERSION = 3;
 
 /*
 |--------------------------------------------------------------------------
@@ -31,6 +31,35 @@ export const emptyAppData = {
 
   finance: {
     transactions: [],
+    monthlyBudget: 0,
+    savingsGoal: 0,
+    creditLimit: 0,
+    currentBalance: 0,
+    salary: 0,
+    financialGoals: [],
+    budgetsByCategory: {},
+    accounts: [],
+  },
+
+  investments: [],
+  portfolioHistory: [],
+  targetAllocation: {
+    'Ações': 60,
+    'FIIs': 20,
+    'Renda Fixa': 20,
+    'Cripto': 0,
+  },
+
+  gamification: {
+    missions: [],
+    achievements: [],
+    rewards: [],
+    streak: 0,
+  },
+
+  assistant: {
+    history: [],
+    notes: [],
   },
 
   diaryEntries: [],
@@ -172,6 +201,55 @@ function normalizeData(data) {
   if (!Array.isArray(merged.finance.transactions)) {
     merged.finance.transactions = [];
   }
+
+  if (!Array.isArray(merged.finance.financialGoals)) {
+    merged.finance.financialGoals = [];
+  }
+
+  if (!isObject(merged.finance.budgetsByCategory)) {
+    merged.finance.budgetsByCategory = {};
+  }
+
+  if (!Array.isArray(merged.finance.accounts)) {
+    merged.finance.accounts = [];
+  }
+
+  if (!Array.isArray(merged.investments)) {
+    merged.investments = [];
+  }
+
+  if (!Array.isArray(merged.portfolioHistory)) {
+    merged.portfolioHistory = [];
+  }
+
+  if (!isObject(merged.targetAllocation)) {
+    merged.targetAllocation = {
+      'Ações': 60,
+      'FIIs': 20,
+      'Renda Fixa': 20,
+      'Cripto': 0,
+    };
+  }
+
+  if (!isObject(merged.gamification)) {
+    merged.gamification = {
+      missions: [],
+      achievements: [],
+      rewards: [],
+      streak: 0,
+    };
+  }
+
+  if (!Array.isArray(merged.gamification.missions)) merged.gamification.missions = [];
+  if (!Array.isArray(merged.gamification.achievements)) merged.gamification.achievements = [];
+  if (!Array.isArray(merged.gamification.rewards)) merged.gamification.rewards = [];
+
+  if (!isObject(merged.assistant)) {
+    merged.assistant = { history: [], notes: [] };
+  }
+
+  if (!Array.isArray(merged.assistant.history)) merged.assistant.history = [];
+  if (!Array.isArray(merged.assistant.notes)) merged.assistant.notes = [];
 
   if (!isObject(merged.settings)) {
     merged.settings = {};

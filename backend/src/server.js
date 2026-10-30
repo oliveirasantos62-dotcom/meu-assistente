@@ -8,6 +8,7 @@ import foguinhoRoutes from "./routes/foguinhoRoutes.js";
 import studyRoutes from "./routes/studyRoutes.js";
 import projectRoutes from "./routes/projectRoutes.js";
 import groupRoutes from "./routes/groupRoutes.js";
+import investmentRoutes from "./routes/investmentRoutes.js";
 
 dotenv.config();
 
@@ -72,6 +73,11 @@ app.use(
 app.use(
   "/api/groups",
   groupRoutes
+);
+
+app.use(
+  "/api/investments",
+  investmentRoutes
 );
 
 app.use(
