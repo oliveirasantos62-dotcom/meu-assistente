@@ -510,15 +510,6 @@ export default function Sidebar({
             <div className='sidebar-search-setting'>
               <div className='sidebar-search-setting-info'>
                 <div className='sidebar-search-setting-icon'>🔎</div>
-
-                <div>
-                  <strong>Pesquisa de páginas</strong>
-
-                  <p>
-                    Mostrar um campo para pesquisar rapidamente as páginas do
-                    menu.
-                  </p>
-                </div>
               </div>
 
               <label className='sidebar-switch-label'>
