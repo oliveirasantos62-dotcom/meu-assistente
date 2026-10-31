@@ -145,7 +145,6 @@ export default function SmartCalendar({ data, save, completeTask }) {
   const [name, setName] = useState('');
 
   const [time, setTime] = useState('');
-  const [endTime, setEndTime] = useState('');
 
   const [duration, setDuration] = useState('60');
 
@@ -441,7 +440,6 @@ export default function SmartCalendar({ data, save, completeTask }) {
   const resetForm = () => {
     setName('');
     setTime('');
-    setEndTime('');
     setDuration('60');
     setAmount('');
     setCategory('');
@@ -490,17 +488,9 @@ export default function SmartCalendar({ data, save, completeTask }) {
 
     setName(sourceEvent.name || '');
 
-    const startTime = sourceEvent.scheduledTime || '';
-    setTime(startTime);
-    const savedDuration = Number(sourceEvent.duration || 60);
-    if (startTime) {
-      const [hours, minutes] = startTime.split(':').map(Number);
-      const end = hours * 60 + minutes + savedDuration;
-      setEndTime(`${pad(Math.floor((end % 1440) / 60))}:${pad(end % 60)}`);
-    } else {
-      setEndTime('');
-    }
-    setDuration(String(savedDuration));
+    setTime(sourceEvent.scheduledTime || '');
+
+    setDuration(String(sourceEvent.duration || 60));
 
     setAmount(sourceEvent.amount || '');
 
@@ -542,17 +532,8 @@ export default function SmartCalendar({ data, save, completeTask }) {
       eventType === 'appointment' ||
       (eventType === 'task' && !editingSourceTask);
 
-    if (requiresTime && (!time || !endTime)) {
-      setMessage('Informe os horários de início e término.');
-      return;
-    }
-
-    const calculatedDuration = requiresTime
-      ? getMinutes(endTime) - getMinutes(time)
-      : 0;
-
-    if (requiresTime && calculatedDuration <= 0) {
-      setMessage('O horário de término precisa ser depois do início.');
+    if (requiresTime && !time) {
+      setMessage('Informe o horário do evento.');
       return;
     }
 
@@ -575,7 +556,7 @@ export default function SmartCalendar({ data, save, completeTask }) {
 
       scheduledTime: requiresTime ? time : '',
 
-      duration: requiresTime ? calculatedDuration : 0,
+      duration: requiresTime ? Number(duration || 60) : 0,
 
       type: eventType,
 
@@ -630,7 +611,7 @@ export default function SmartCalendar({ data, save, completeTask }) {
               priority: newEvent.priority || task.priority,
               description: notes.trim() || task.description || '',
               scheduledTime: time,
-              duration: calculatedDuration || Number(duration || 0),
+              duration: Number(duration || 0),
               updatedAt: new Date().toISOString(),
             }
           : task,
@@ -1440,7 +1421,6 @@ export default function SmartCalendar({ data, save, completeTask }) {
 
       {showModal && (
         <div
-          className='calendar-event-overlay'
           onClick={closeModal}
           style={{
             position: 'fixed',
@@ -1461,21 +1441,21 @@ export default function SmartCalendar({ data, save, completeTask }) {
           {/* CONTAINER DO MODAL */}
 
           <div
-            className='calendar-event-modal'
             onClick={(e) => e.stopPropagation()}
             style={{
               width: '100%',
               maxWidth: 620,
 
-              height: 'min(900px, calc(100dvh - 32px))',
-              maxHeight: 'calc(100dvh - 32px)',
+              height: 'min(90dvh, 900px)',
+              maxHeight: 'calc(100dvh - 24px)',
+              minHeight: 0,
 
               display: 'flex',
               flexDirection: 'column',
 
-              background: 'var(--site-card-bg, #1a1d2b)',
+              background: 'var(--site-card, #fff)',
 
-              color: 'var(--site-on-background, #f0f2f5)',
+              color: 'var(--site-text, #222)',
 
               borderRadius: 18,
 
@@ -1491,7 +1471,6 @@ export default function SmartCalendar({ data, save, completeTask }) {
                 ========================= */}
 
             <div
-              className='calendar-event-header'
               style={{
                 display: 'flex',
                 justifyContent: 'space-between',
@@ -1524,31 +1503,6 @@ export default function SmartCalendar({ data, save, completeTask }) {
                   Crie uma tarefa, compromisso ou movimentação financeira.
                 </p>
               </div>
-
-              <button
-                type='button'
-                onClick={closeModal}
-                style={{
-                  width: 38,
-                  height: 38,
-
-                  flexShrink: 0,
-
-                  borderRadius: '50%',
-
-                  border: '1px solid var(--site-border, #ddd)',
-
-                  background: 'var(--site-background, #f3f3f3)',
-
-                  color: 'inherit',
-
-                  cursor: 'pointer',
-
-                  fontSize: 17,
-                }}
-              >
-                ✕
-              </button>
             </div>
 
             {/* =========================
@@ -1557,7 +1511,6 @@ export default function SmartCalendar({ data, save, completeTask }) {
 
             <form
               onSubmit={handleSaveEvent}
-              className='calendar-event-form'
               style={{
                 display: 'flex',
                 flexDirection: 'column',
@@ -1574,7 +1527,6 @@ export default function SmartCalendar({ data, save, completeTask }) {
                   ========================= */}
 
               <div
-                className='calendar-event-scroll'
                 style={{
                   flex: 1,
 
@@ -1726,10 +1678,16 @@ export default function SmartCalendar({ data, save, completeTask }) {
                   />
                 </div>
 
-                {/* HORÁRIO DE INÍCIO E TÉRMINO */}
+                {/* HORÁRIO E DURAÇÃO */}
 
                 {(eventType === 'task' || eventType === 'appointment') && (
-                  <div className='calendar-time-fields'>
+                  <div
+                    style={{
+                      display: 'grid',
+                      gridTemplateColumns: '1fr 1fr',
+                      gap: 12,
+                    }}
+                  >
                     <div>
                       <label
                         style={{
@@ -1738,36 +1696,21 @@ export default function SmartCalendar({ data, save, completeTask }) {
                           marginBottom: 7,
                         }}
                       >
-                        Horário de início
+                        Horário
                       </label>
+
                       <input
                         type='time'
                         value={time}
-                        onChange={(e) => {
-                          const nextStart = e.target.value;
-                          setTime(nextStart);
-                          if (
-                            nextStart &&
-                            endTime &&
-                            getMinutes(endTime) <= getMinutes(nextStart)
-                          ) {
-                            const nextEnd =
-                              getMinutes(nextStart) + Number(duration || 60);
-                            setEndTime(
-                              `${pad(Math.floor((nextEnd % 1440) / 60))}:${pad(nextEnd % 60)}`,
-                            );
-                          } else if (nextStart && !endTime) {
-                            const nextEnd =
-                              getMinutes(nextStart) + Number(duration || 60);
-                            setEndTime(
-                              `${pad(Math.floor((nextEnd % 1440) / 60))}:${pad(nextEnd % 60)}`,
-                            );
-                          }
-                        }}
+                        onChange={(e) => setTime(e.target.value)}
                         required
-                        style={{ width: '100%', boxSizing: 'border-box' }}
+                        style={{
+                          width: '100%',
+                          boxSizing: 'border-box',
+                        }}
                       />
                     </div>
+
                     <div>
                       <label
                         style={{
@@ -1776,34 +1719,32 @@ export default function SmartCalendar({ data, save, completeTask }) {
                           marginBottom: 7,
                         }}
                       >
-                        Horário de término
+                        Duração
                       </label>
-                      <input
-                        type='time'
-                        value={endTime}
-                        onChange={(e) => {
-                          setEndTime(e.target.value);
-                          if (
-                            time &&
-                            e.target.value &&
-                            getMinutes(e.target.value) > getMinutes(time)
-                          ) {
-                            setDuration(
-                              String(
-                                getMinutes(e.target.value) - getMinutes(time),
-                              ),
-                            );
-                          }
+
+                      <select
+                        value={duration}
+                        onChange={(e) => setDuration(e.target.value)}
+                        style={{
+                          width: '100%',
+                          boxSizing: 'border-box',
                         }}
-                        required
-                        style={{ width: '100%', boxSizing: 'border-box' }}
-                      />
+                      >
+                        <option value='15'>15 minutos</option>
+
+                        <option value='30'>30 minutos</option>
+
+                        <option value='45'>45 minutos</option>
+
+                        <option value='60'>1 hora</option>
+
+                        <option value='90'>1h30</option>
+
+                        <option value='120'>2 horas</option>
+
+                        <option value='180'>3 horas</option>
+                      </select>
                     </div>
-                    <p className='calendar-time-hint'>
-                      {time && endTime && getMinutes(endTime) > getMinutes(time)
-                        ? `Duração: ${Math.floor((getMinutes(endTime) - getMinutes(time)) / 60)}h${pad((getMinutes(endTime) - getMinutes(time)) % 60)}min`
-                        : 'Defina o início e o término do evento.'}
-                    </p>
                   </div>
                 )}
 
@@ -2066,7 +2007,6 @@ export default function SmartCalendar({ data, save, completeTask }) {
                     {selectedDate && ` · ${selectedDate}`}
 
                     {time && ` · ${time}`}
-                    {endTime && `–${endTime}`}
 
                     {amount &&
                       Number(amount) > 0 &&
@@ -2080,11 +2020,14 @@ export default function SmartCalendar({ data, save, completeTask }) {
                   ========================= */}
 
               <div
-                className='calendar-event-footer'
                 style={{
                   display: 'flex',
 
                   justifyContent: 'flex-end',
+
+                  alignItems: 'center',
+
+                  flexWrap: 'wrap',
 
                   gap: 10,
 
@@ -2092,9 +2035,15 @@ export default function SmartCalendar({ data, save, completeTask }) {
 
                   borderTop: '1px solid var(--site-border, #ddd)',
 
-                  background: 'var(--site-card-bg, #1a1d2b)',
+                  background: 'var(--site-card, #fff)',
 
-                  flexShrink: 0,
+                  flex: '0 0 auto',
+
+                  minHeight: 72,
+
+                  position: 'relative',
+
+                  zIndex: 5,
 
                   boxSizing: 'border-box',
                 }}
@@ -2105,7 +2054,9 @@ export default function SmartCalendar({ data, save, completeTask }) {
                   onClick={closeModal}
                   style={{
                     minWidth: 110,
+                    minHeight: 44,
                     padding: '11px 16px',
+                    flex: '0 1 auto',
                   }}
                 >
                   Cancelar
@@ -2116,7 +2067,9 @@ export default function SmartCalendar({ data, save, completeTask }) {
                   className='primary'
                   style={{
                     minWidth: 160,
+                    minHeight: 44,
                     padding: '11px 16px',
+                    flex: '0 1 auto',
                     fontWeight: 700,
                   }}
                 >
