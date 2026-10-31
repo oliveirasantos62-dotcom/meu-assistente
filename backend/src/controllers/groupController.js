@@ -240,7 +240,10 @@ export async function updateGroup(req, res) {
 
 export async function deleteGroup(req, res) {
   try {
-    const me = await isMember(req.params.id, req.user.id, ['owner']);
+    const groupId = req.params.id;
+
+    // Somente o dono pode excluir o grupo.
+    const me = await isMember(groupId, req.user.id, ['owner']);
 
     if (!me) {
       return res.status(403).json({
@@ -248,24 +251,57 @@ export async function deleteGroup(req, res) {
       });
     }
 
+    // Excluir primeiro os registros das atividades.
+    await query(
+      `DELETE gl
+       FROM group_activity_logs gl
+       INNER JOIN group_activities ga
+         ON ga.id = gl.activity_id
+       WHERE ga.group_id = ?`,
+      [groupId],
+    );
+
+    // Excluir as atividades do grupo.
+    await query(
+      `DELETE FROM group_activities
+       WHERE group_id = ?`,
+      [groupId],
+    );
+
+    // Excluir os convites.
+    await query(
+      `DELETE FROM group_invitations
+       WHERE group_id = ?`,
+      [groupId],
+    );
+
+    // Excluir os membros.
+    await query(
+      `DELETE FROM group_members
+       WHERE group_id = ?`,
+      [groupId],
+    );
+
+    // Excluir o grupo.
     await query(
       `DELETE FROM \`groups\`
-       WHERE id = ?`,
-      [req.params.id],
+       WHERE id = ?
+         AND owner_id = ?`,
+      [groupId, req.user.id],
     );
 
     return res.json({
       ok: true,
+      message: 'Grupo excluído com sucesso.',
     });
   } catch (e) {
-    console.error(e);
+    console.error('Erro ao excluir grupo:', e);
 
     return res.status(500).json({
       message: 'Erro ao excluir grupo.',
     });
   }
 }
-
 /* =========================================================
    LISTAR MEMBROS
    ========================================================= */
