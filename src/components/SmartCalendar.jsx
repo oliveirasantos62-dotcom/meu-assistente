@@ -30,6 +30,12 @@ const EVENT_TYPES = {
     icon: '📈',
     color: '#d69e2e',
   },
+
+  habit: {
+    label: 'Hábito',
+    icon: '🔥',
+    color: '#f59e0b',
+  },
 };
 
 const pad = (value) => String(value).padStart(2, '0');
@@ -184,22 +190,89 @@ export default function SmartCalendar({ data, save, completeTask }) {
   const legacyTasks = useMemo(() => {
     return (Array.isArray(data.tasks) ? data.tasks : [])
       .filter((task) => task.deadline || task.date)
-      .map((task) => ({
-        ...task,
-        id: task.id,
-        name: task.name || task.title || task.text || 'Tarefa sem título',
-        date: task.deadline || task.date,
-        type: 'task',
-        sourceTask: true,
-        scheduledTime: task.scheduledTime || '',
-        duration: Number(task.duration || 0),
-      }));
+      .map((task) => {
+        const frequencyMap = {
+          'Diária': 'daily',
+          Semanal: 'weekly',
+          Mensal: 'monthly',
+        };
+
+        return {
+          ...task,
+          id: task.id,
+          name: task.name || task.title || task.text || 'Tarefa sem título',
+          date: task.deadline || task.date,
+          type: 'task',
+          sourceTask: true,
+          scheduledTime: task.scheduledTime || '',
+          duration: Number(task.duration || 0),
+          recurrence: task.recurrence || frequencyMap[task.frequency] || 'none',
+          recurrenceEnd: task.recurrenceEnd || '',
+        };
+      });
   }, [data.tasks]);
 
+  // Hábitos são eventos virtuais: não duplicamos dados no calendário.
+  // Cada ocorrência aponta de volta para o hábito original.
+  const habitEvents = useMemo(() => {
+    const habits = Array.isArray(data.habits) ? data.habits : [];
+    const rangeStart = new Date(yearForExpansion, monthForExpansion, 1);
+    const rangeEnd = new Date(yearForExpansion, monthForExpansion + 2, 0);
+    const result = [];
+
+    habits.forEach((habit) => {
+      const cursor = new Date(rangeStart);
+      while (cursor <= rangeEnd) {
+        const date = formatDate(cursor);
+        result.push({
+          id: `habit:${habit.id}:${date}`,
+          masterId: habit.id,
+          name: habit.name,
+          date,
+          type: 'habit',
+          sourceHabit: true,
+          scheduledTime: '',
+          duration: 0,
+          done: Boolean(habit.history?.[date]),
+          xp: Number(habit.xp || 30),
+        });
+        cursor.setDate(cursor.getDate() + 1);
+      }
+    });
+
+    return result;
+  }, [data.habits, yearForExpansion, monthForExpansion]);
+
+  // Transações financeiras também entram na agenda automaticamente.
+  // Assim Financeiro e Calendário usam a mesma fonte de dados.
+  const financeEvents = useMemo(() => {
+    const transactions = Array.isArray(data.finance?.transactions)
+      ? data.finance.transactions
+      : [];
+
+    return transactions
+      .filter((transaction) => transaction.date)
+      .map((transaction) => ({
+        id: `finance:${transaction.id}`,
+        masterId: transaction.id,
+        name: transaction.description || 'Transação',
+        date: transaction.date,
+        type: transaction.type === 'income' ? 'income' : 'expense',
+        amount: Number(transaction.amount || 0),
+        category: transaction.category || '',
+        sourceFinance: true,
+        scheduledTime: '',
+        duration: 0,
+      }));
+  }, [data.finance?.transactions]);
+
   const allEvents = useMemo(() => {
-    // Eventos criados diretamente na agenda continuam independentes.
-    // Tarefas são projetadas de data.tasks, sem duplicar em calendarEvents.
-    const baseEvents = [...events, ...legacyTasks];
+    // Fontes integradas:
+    // - calendarEvents: compromissos/eventos independentes
+    // - tasks: tarefas reais
+    // - habits: ocorrências virtuais
+    // - finance.transactions: movimentações financeiras
+    const baseEvents = [...events, ...legacyTasks, ...habitEvents, ...financeEvents];
 
     const rangeStart = new Date(yearForExpansion, monthForExpansion, 1);
     const rangeEnd = new Date(yearForExpansion, monthForExpansion + 2, 0);
@@ -245,7 +318,7 @@ export default function SmartCalendar({ data, save, completeTask }) {
 
       return occurrences.length ? occurrences : [event];
     });
-  }, [events, legacyTasks, currentDate]);
+  }, [events, legacyTasks, habitEvents, financeEvents, currentDate]);
 
   /*
    * -------------------------------------------------------
@@ -528,14 +601,7 @@ export default function SmartCalendar({ data, save, completeTask }) {
     }
 
     const editingSourceTask = Boolean(editingEvent?.sourceTask);
-    const requiresTime =
-      eventType === 'appointment' ||
-      (eventType === 'task' && !editingSourceTask);
-
-    if (requiresTime && !time) {
-      setMessage('Informe o horário do evento.');
-      return;
-    }
+    const requiresTime = Boolean(time);
 
     const isFinancial =
       eventType === 'income' ||
@@ -568,9 +634,9 @@ export default function SmartCalendar({ data, save, completeTask }) {
 
       xp: eventType === 'task' ? Number(xp || 0) : 0,
 
-      recurrence: requiresTime ? recurrence : 'none',
+      recurrence: recurrence || 'none',
 
-      recurrenceEnd: requiresTime && recurrence !== 'none' ? recurrenceEnd : '',
+      recurrenceEnd: recurrence !== 'none' ? recurrenceEnd : '',
 
       notes: notes.trim(),
 
@@ -610,13 +676,68 @@ export default function SmartCalendar({ data, save, completeTask }) {
               deadline: selectedDate,
               priority: newEvent.priority || task.priority,
               description: notes.trim() || task.description || '',
-              scheduledTime: time,
+              scheduledTime: time || '',
               duration: Number(duration || 0),
+              frequency:
+                recurrence === 'daily'
+                  ? 'Diária'
+                  : recurrence === 'weekly'
+                    ? 'Semanal'
+                    : recurrence === 'monthly'
+                      ? 'Mensal'
+                      : '1x',
+              recurrence,
+              recurrenceEnd: recurrenceEnd || '',
               updatedAt: new Date().toISOString(),
             }
           : task,
       );
       save({ ...data, tasks: updatedTasks });
+    } else if (eventType === 'task') {
+      // Criar tarefa no calendário também cria uma tarefa real.
+      // Isso garante sincronização nos dois sentidos.
+      const newTask = {
+        id: editingEvent?.id || globalThis.crypto?.randomUUID?.() || Date.now(),
+        name: newEvent.name,
+        description: notes.trim(),
+        priority: priority === 'high' ? 'Alta' : priority === 'low' ? 'Baixa' : 'Média',
+        deadline: selectedDate,
+        frequency:
+          recurrence === 'daily'
+            ? 'Diária'
+            : recurrence === 'weekly'
+              ? 'Semanal'
+              : recurrence === 'monthly'
+                ? 'Mensal'
+                : '1x',
+        xp: Number(xp || 40),
+        projectId: editingEvent?.projectId || null,
+        areaId: editingEvent?.areaId || null,
+        scheduledTime: time || '',
+        duration: Number(duration || 0),
+        recurrence,
+        recurrenceEnd: recurrenceEnd || '',
+        done: Boolean(editingEvent?.done),
+        createdAt: editingEvent?.createdAt || new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      };
+
+      const updatedTasks = editingEvent
+        ? (data.tasks || []).map((task) =>
+            String(task.id) === String(editingEvent.id) ? { ...task, ...newTask } : task,
+          )
+        : [...(data.tasks || []), newTask];
+
+      // Remove eventual evento-tarefa legado para evitar duplicação.
+      const updatedEvents = (data.calendarEvents || []).filter(
+        (event) => !(event.type === 'task' && String(event.id) === String(editingEvent?.id)),
+      );
+
+      save({
+        ...data,
+        tasks: updatedTasks,
+        calendarEvents: updatedEvents,
+      });
     } else {
       const updatedEvents = editingEvent
         ? events.map((event) =>
@@ -644,6 +765,16 @@ export default function SmartCalendar({ data, save, completeTask }) {
    */
 
   const deleteEvent = (event) => {
+    if (event.sourceHabit || event.sourceFinance) {
+      setMessage(
+        event.sourceHabit
+          ? 'Hábitos são gerenciados na página Hábitos.'
+          : 'Transações são gerenciadas no Financeiro.',
+      );
+      setTimeout(() => setMessage(''), 2200);
+      return;
+    }
+
     if (!window.confirm('Excluir este evento?')) {
       return;
     }
@@ -671,11 +802,82 @@ export default function SmartCalendar({ data, save, completeTask }) {
 
   /*
    * -------------------------------------------------------
+   * CONCLUIR HÁBITO PELO CALENDÁRIO
+   * -------------------------------------------------------
+   */
+  const toggleHabitFromCalendar = (event) => {
+    const habitId = event.masterId;
+    const date = event.date;
+    const habits = Array.isArray(data.habits) ? data.habits : [];
+    const target = habits.find((habit) => String(habit.id) === String(habitId));
+
+    if (!target || !date) return;
+
+    const history = { ...(target.history || {}) };
+    const wasDone = Boolean(history[date]);
+    history[date] = !wasDone;
+
+    // Recalcula as sequências a partir do histórico, sem depender de cliques
+    // em uma página específica.
+    const doneDates = Object.keys(history).filter((key) => history[key]).sort();
+    let best = 0;
+    let current = 0;
+    let previous = null;
+
+    doneDates.forEach((dateKey) => {
+      const currentDate = new Date(`${dateKey}T00:00:00`);
+      if (previous) {
+        const diff = (currentDate - previous) / 86400000;
+        current = diff === 1 ? current + 1 : 1;
+      } else {
+        current = 1;
+      }
+      best = Math.max(best, current);
+      previous = currentDate;
+    });
+
+    let streak = 0;
+    const cursor = new Date();
+    const todayKey = formatDate(cursor);
+    const firstKey = history[todayKey] ? todayKey : formatDate(new Date(cursor.getFullYear(), cursor.getMonth(), cursor.getDate() - 1));
+
+    let check = new Date(`${firstKey}T00:00:00`);
+    while (history[formatDate(check)]) {
+      streak += 1;
+      check.setDate(check.getDate() - 1);
+    }
+
+    save({
+      ...data,
+      xp: Math.max(0, Number(data.xp || 0) + (wasDone ? -Number(target.xp || 30) : Number(target.xp || 30))),
+      habits: habits.map((habit) =>
+        String(habit.id) === String(habitId)
+          ? {
+              ...habit,
+              history,
+              streak,
+              bestStreak: Math.max(Number(habit.bestStreak || 0), best),
+            }
+          : habit,
+      ),
+    });
+
+    setMessage(!wasDone ? '🔥 Hábito concluído!' : 'Hábito desmarcado.');
+    setTimeout(() => setMessage(''), 1800);
+  };
+
+  /*
+   * -------------------------------------------------------
    * CONCLUIR TAREFA
    * -------------------------------------------------------
    */
 
   const toggleDone = (event) => {
+    if (event.sourceHabit) {
+      toggleHabitFromCalendar(event);
+      return;
+    }
+
     const targetId = event.masterId || event.id;
 
     if (event.sourceTask) {
@@ -1344,7 +1546,7 @@ export default function SmartCalendar({ data, save, completeTask }) {
                         flexWrap: 'wrap',
                       }}
                     >
-                      {event.type === 'task' && (
+                      {(event.type === 'task' || event.sourceHabit) && (
                         <button
                           className='ghost'
                           onClick={() => toggleDone(event)}
@@ -1354,21 +1556,25 @@ export default function SmartCalendar({ data, save, completeTask }) {
                         </button>
                       )}
 
-                      <button
-                        className='ghost'
-                        onClick={() => openEditEvent(event)}
-                        title='Editar'
-                      >
-                        ✏️
-                      </button>
+                      {!event.sourceHabit && !event.sourceFinance && (
+                        <>
+                          <button
+                            className='ghost'
+                            onClick={() => openEditEvent(event)}
+                            title='Editar'
+                          >
+                            ✏️
+                          </button>
 
-                      <button
-                        className='ghost'
-                        onClick={() => deleteEvent(event)}
-                        title='Excluir'
-                      >
-                        🗑️
-                      </button>
+                          <button
+                            className='ghost'
+                            onClick={() => deleteEvent(event)}
+                            title='Excluir'
+                          >
+                            🗑️
+                          </button>
+                        </>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -1703,12 +1909,14 @@ export default function SmartCalendar({ data, save, completeTask }) {
                         type='time'
                         value={time}
                         onChange={(e) => setTime(e.target.value)}
-                        required
                         style={{
                           width: '100%',
                           boxSizing: 'border-box',
                         }}
                       />
+                      <small style={{ display: 'block', marginTop: 5, color: 'var(--site-text-muted, #777)' }}>
+                        Opcional — deixe vazio para um evento de dia inteiro.
+                      </small>
                     </div>
 
                     <div>

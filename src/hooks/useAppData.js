@@ -17,27 +17,76 @@ import {
 function normalizeAppData(rawData) {
   const source = rawData && typeof rawData === 'object' ? rawData : {};
 
+  // Migração automática: versões antigas permitiam criar "tarefas"
+  // diretamente no calendário. Agora tarefas pertencem a data.tasks,
+  // para que Calendário e Tarefas sempre usem a mesma entidade.
+  const sourceTasks = Array.isArray(source.tasks) ? source.tasks : [];
+  const sourceCalendarEvents = Array.isArray(source.calendarEvents)
+    ? source.calendarEvents
+    : [];
+
+  const existingTaskIds = new Set(sourceTasks.map((task) => String(task.id)));
+  const migratedCalendarTasks = sourceCalendarEvents
+    .filter((event) => event?.type === 'task' && !event?.sourceTask)
+    .filter((event) => !existingTaskIds.has(String(event.id)))
+    .map((event) => ({
+      id: event.id,
+      name: event.name || 'Tarefa sem título',
+      description: event.notes || event.description || '',
+      priority:
+        event.priority === 'high'
+          ? 'Alta'
+          : event.priority === 'low'
+            ? 'Baixa'
+            : 'Média',
+      deadline: event.date || '',
+      frequency:
+        event.recurrence === 'daily'
+          ? 'Diária'
+          : event.recurrence === 'weekly'
+            ? 'Semanal'
+            : event.recurrence === 'monthly'
+              ? 'Mensal'
+              : '1x',
+      xp: Number(event.xp || 40),
+      projectId: event.projectId || null,
+      areaId: event.areaId || null,
+      scheduledTime: event.scheduledTime || '',
+      duration: Number(event.duration || 0),
+      recurrence: event.recurrence || 'none',
+      recurrenceEnd: event.recurrenceEnd || '',
+      done: Boolean(event.done),
+      createdAt: event.createdAt || new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    }));
+
+  const migratedTaskIds = new Set(migratedCalendarTasks.map((task) => String(task.id)));
+
   return {
     ...emptyAppData,
     ...source,
 
     habits: Array.isArray(source.habits) ? source.habits : [],
-    tasks: Array.isArray(source.tasks)
-      ? source.tasks.map((task) => ({
+    tasks: [...sourceTasks, ...migratedCalendarTasks].map((task) => ({
           ...task,
           observations: Array.isArray(task.observations)
             ? task.observations
             : [],
         }))
-      : [],
+      ,
     goals: Array.isArray(source.goals) ? source.goals : [],
     projects: Array.isArray(source.projects) ? source.projects : [],
     areas: Array.isArray(source.areas) ? source.areas : [],
     processes: Array.isArray(source.processes) ? source.processes : [],
 
-    calendarEvents: Array.isArray(source.calendarEvents)
-      ? source.calendarEvents
-      : [],
+    calendarEvents: sourceCalendarEvents.filter(
+      (event) =>
+        !(
+          event?.type === 'task' &&
+          !event?.sourceTask &&
+          migratedTaskIds.has(String(event.id))
+        ),
+    ),
 
     history:
       source.history &&
