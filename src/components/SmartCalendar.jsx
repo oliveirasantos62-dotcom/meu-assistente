@@ -108,7 +108,7 @@ const eventHasConflict = (event, events) => {
   });
 };
 
-export default function SmartCalendar({ data, save }) {
+export default function SmartCalendar({ data, save, completeTask }) {
   const today = new Date();
 
   const todayString = formatDate(today);
@@ -179,19 +179,27 @@ export default function SmartCalendar({ data, save }) {
    * no calendário.
    */
 
+  // As tarefas da página Tarefas são a fonte principal.
+  // deadline é convertido em date apenas para a exibição no calendário.
   const legacyTasks = useMemo(() => {
-    return (data.tasks || []).map((task) => ({
-      ...task,
-      type: task.tag === 'Compromisso' ? 'appointment' : 'task',
-    }));
+    return (Array.isArray(data.tasks) ? data.tasks : [])
+      .filter((task) => task.deadline || task.date)
+      .map((task) => ({
+        ...task,
+        id: task.id,
+        name: task.name || task.title || task.text || 'Tarefa sem título',
+        date: task.deadline || task.date,
+        type: 'task',
+        sourceTask: true,
+        scheduledTime: task.scheduledTime || '',
+        duration: Number(task.duration || 0),
+      }));
   }, [data.tasks]);
 
   const allEvents = useMemo(() => {
-    const calendarIds = new Set(events.map((event) => event.id));
-    const baseEvents = [
-      ...events,
-      ...legacyTasks.filter((task) => !calendarIds.has(task.id)),
-    ];
+    // Eventos criados diretamente na agenda continuam independentes.
+    // Tarefas são projetadas de data.tasks, sem duplicar em calendarEvents.
+    const baseEvents = [...events, ...legacyTasks];
 
     const rangeStart = new Date(yearForExpansion, monthForExpansion, 1);
     const rangeEnd = new Date(yearForExpansion, monthForExpansion + 2, 0);
@@ -449,7 +457,9 @@ export default function SmartCalendar({ data, save }) {
   const openEditEvent = (event) => {
     const sourceEvent = event.masterId
       ? events.find((item) => item.id === event.masterId) || event
-      : event;
+      : event.sourceTask
+        ? { ...event, sourceTask: true }
+        : event;
 
     setEditingEvent(sourceEvent);
 
@@ -494,7 +504,8 @@ export default function SmartCalendar({ data, save }) {
       return;
     }
 
-    const requiresTime = eventType === 'task' || eventType === 'appointment';
+    const editingSourceTask = Boolean(editingEvent?.sourceTask);
+    const requiresTime = eventType === 'appointment' || (eventType === 'task' && !editingSourceTask);
 
     if (requiresTime && !time) {
       setMessage('Informe o horário do evento.');
@@ -565,24 +576,29 @@ export default function SmartCalendar({ data, save }) {
      * CRIAR / EDITAR
      */
 
-    let updatedEvents;
-
-    if (editingEvent) {
-      updatedEvents = events.map((event) =>
-        event.id === editingEvent.id ? newEvent : event,
+    if (editingSourceTask) {
+      const updatedTasks = (data.tasks || []).map((task) =>
+        String(task.id) === String(editingEvent.id)
+          ? {
+              ...task,
+              name: newEvent.name,
+              deadline: selectedDate,
+              priority: newEvent.priority || task.priority,
+              description: notes.trim() || task.description || '',
+              scheduledTime: time,
+              duration: Number(duration || 0),
+              updatedAt: new Date().toISOString(),
+            }
+          : task,
       );
+      save({ ...data, tasks: updatedTasks });
     } else {
-      updatedEvents = [...events, newEvent];
+      const updatedEvents = editingEvent
+        ? events.map((event) => event.id === editingEvent.id ? newEvent : event)
+        : [...events, newEvent];
+      save({ ...data, calendarEvents: updatedEvents });
     }
 
-    /*
-     * SALVAR
-     */
-
-    save({
-      ...data,
-      calendarEvents: updatedEvents,
-    });
 
     const wasEditing = Boolean(editingEvent);
 
@@ -608,11 +624,17 @@ export default function SmartCalendar({ data, save }) {
 
     const targetId = event.masterId || event.id;
 
-    save({
-      ...data,
-
-      calendarEvents: events.filter((item) => item.id !== targetId),
-    });
+    if (event.sourceTask) {
+      save({
+        ...data,
+        tasks: (data.tasks || []).filter((task) => String(task.id) !== String(targetId)),
+      });
+    } else {
+      save({
+        ...data,
+        calendarEvents: events.filter((item) => item.id !== targetId),
+      });
+    }
 
     setMessage('🗑️ Evento excluído.');
 
@@ -628,19 +650,27 @@ export default function SmartCalendar({ data, save }) {
   const toggleDone = (event) => {
     const targetId = event.masterId || event.id;
 
-    const updatedEvents = events.map((item) =>
-      item.id === targetId
-        ? {
-            ...item,
-            done: !item.done,
-          }
-        : item,
-    );
+    if (event.sourceTask) {
+      if (typeof completeTask === 'function') {
+        completeTask(targetId);
+      } else {
+        save({
+          ...data,
+          tasks: (data.tasks || []).map((task) =>
+            String(task.id) === String(targetId)
+              ? { ...task, done: !task.done, completedAt: !task.done ? new Date().toISOString() : null }
+              : task,
+          ),
+        });
+      }
+      return;
+    }
 
     save({
       ...data,
-
-      calendarEvents: updatedEvents,
+      calendarEvents: events.map((item) =>
+        item.id === targetId ? { ...item, done: !item.done } : item,
+      ),
     });
   };
 

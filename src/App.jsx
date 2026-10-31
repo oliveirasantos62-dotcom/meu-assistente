@@ -376,7 +376,11 @@ export default function App() {
             CALENDÁRIO
         ========================================= */}
         {activeSection === 'calendar' && (
-          <SmartCalendar data={data} save={save} />
+          <SmartCalendar
+            data={data}
+            save={save}
+            completeTask={completeTask}
+          />
         )}
 
         {/* =========================================
