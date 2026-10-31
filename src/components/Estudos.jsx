@@ -78,6 +78,21 @@ function dateLabel(value) {
   );
 }
 
+function percentage(correct, total) {
+  const questions = Number(total || 0);
+  const hits = Number(correct || 0);
+
+  if (!questions) return 0;
+
+  return Math.round((hits / questions) * 100);
+}
+
+function accuracyClass(value) {
+  if (value >= 80) return 'study-accuracy-good';
+  if (value >= 60) return 'study-accuracy-medium';
+  return 'study-accuracy-low';
+}
+
 export default function Estudos() {
   const [tab, setTab] = useState('overview');
 
@@ -96,6 +111,8 @@ export default function Estudos() {
   const [reading, setReading] = useState(initialReading);
   const [review, setReview] = useState(initialReview);
   const [studyError, setStudyError] = useState(initialError);
+
+  const [expandedDisciplines, setExpandedDisciplines] = useState({});
 
   async function load() {
     setLoading(true);
@@ -178,8 +195,115 @@ export default function Estudos() {
       0,
     );
 
-    return questions ? Math.round((correct / questions) * 100) : 0;
+    return percentage(correct, questions);
   }, [data.sessions]);
+
+  /*
+   * ============================================================
+   * DESEMPENHO POR DISCIPLINA
+   * ============================================================
+   *
+   * Estrutura:
+   *
+   * disciplina
+   *   ├── questões
+   *   ├── acertos
+   *   ├── sessões
+   *   ├── minutos
+   *   ├── percentual
+   *   └── conteúdos
+   *          ├── questões
+   *          ├── acertos
+   *          ├── sessões
+   *          ├── minutos
+   *          └── percentual
+   */
+
+  const performanceByDiscipline = useMemo(() => {
+    const disciplines = {};
+
+    data.sessions.forEach((sessionItem) => {
+      const discipline =
+        String(sessionItem.discipline || 'Sem disciplina').trim() ||
+        'Sem disciplina';
+
+      const subject =
+        String(sessionItem.subject || 'Sem conteúdo').trim() || 'Sem conteúdo';
+
+      if (!disciplines[discipline]) {
+        disciplines[discipline] = {
+          name: discipline,
+          questions: 0,
+          correct: 0,
+          sessions: 0,
+          minutes: 0,
+          contents: {},
+        };
+      }
+
+      const disciplineData = disciplines[discipline];
+
+      const questions = Number(sessionItem.exercises || 0);
+      const correct = Number(sessionItem.correct || 0);
+      const minutes = Number(sessionItem.minutes || 0);
+
+      disciplineData.questions += questions;
+      disciplineData.correct += correct;
+      disciplineData.sessions += 1;
+      disciplineData.minutes += minutes;
+
+      if (!disciplineData.contents[subject]) {
+        disciplineData.contents[subject] = {
+          name: subject,
+          questions: 0,
+          correct: 0,
+          sessions: 0,
+          minutes: 0,
+        };
+      }
+
+      const contentData = disciplineData.contents[subject];
+
+      contentData.questions += questions;
+      contentData.correct += correct;
+      contentData.sessions += 1;
+      contentData.minutes += minutes;
+    });
+
+    return Object.values(disciplines)
+      .map((discipline) => ({
+        ...discipline,
+        accuracy: percentage(discipline.correct, discipline.questions),
+        contents: Object.values(discipline.contents)
+          .map((content) => ({
+            ...content,
+            accuracy: percentage(content.correct, content.questions),
+          }))
+          .sort((a, b) => {
+            if (a.accuracy !== b.accuracy) {
+              return a.accuracy - b.accuracy;
+            }
+
+            return b.questions - a.questions;
+          }),
+      }))
+      .sort((a, b) => {
+        if (a.accuracy !== b.accuracy) {
+          return b.accuracy - a.accuracy;
+        }
+
+        return b.questions - a.questions;
+      });
+  }, [data.sessions]);
+
+  const performanceMax = 100;
+
+  function toggleDiscipline(disciplineName) {
+    setExpandedDisciplines((current) => ({
+      ...current,
+      [disciplineName]: !current[disciplineName],
+    }));
+  }
 
   const dueReviews = data.reviews.filter(
     (r) => String(r.next_review).slice(0, 10) <= today,
@@ -199,7 +323,15 @@ export default function Estudos() {
     e.preventDefault();
 
     try {
-      const created = await createStudySession(session);
+      const payload = {
+        ...session,
+        minutes: Number(session.minutes || 0),
+        difficulty: Number(session.difficulty || 3),
+        exercises: Number(session.exercises || 0),
+        correct: Number(session.correct || 0),
+      };
+
+      const created = await createStudySession(payload);
 
       setData((current) => ({
         ...current,
@@ -326,7 +458,6 @@ export default function Estudos() {
     return (
       <section className='card' style={{ margin: 24 }}>
         <h2>📚 Estudos</h2>
-
         <p>Carregando seus estudos...</p>
       </section>
     );
@@ -438,6 +569,176 @@ export default function Estudos() {
             </div>
           </div>
 
+          {/* =================================================
+              NOVO: DESEMPENHO POR DISCIPLINA
+          ================================================== */}
+
+          <div className='card study-performance-card'>
+            <div className='study-section-heading'>
+              <div>
+                <span className='eyebrow'>DESEMPENHO</span>
+
+                <h3>📊 Desempenho por disciplina</h3>
+
+                <p>
+                  Veja seu percentual de acertos e aprofunde até o nível de cada
+                  conteúdo.
+                </p>
+              </div>
+
+              <span className='study-performance-total'>
+                {performanceByDiscipline.length} disciplina(s)
+              </span>
+            </div>
+
+            {performanceByDiscipline.length === 0 ? (
+              <div className='study-empty-performance'>
+                <div className='study-empty-icon'>📊</div>
+
+                <strong>Ainda não há dados suficientes.</strong>
+
+                <p>
+                  Registre suas primeiras sessões de estudo com disciplina,
+                  conteúdo, questões e acertos.
+                </p>
+
+                <button
+                  type='button'
+                  className='study-action-button'
+                  onClick={() => setTab('sessions')}
+                >
+                  Registrar sessão
+                </button>
+              </div>
+            ) : (
+              <div className='study-performance-list'>
+                {performanceByDiscipline.map((discipline) => {
+                  const isExpanded = Boolean(
+                    expandedDisciplines[discipline.name],
+                  );
+
+                  return (
+                    <div className='study-discipline' key={discipline.name}>
+                      <button
+                        type='button'
+                        className='study-discipline-header'
+                        onClick={() => toggleDiscipline(discipline.name)}
+                      >
+                        <div className='study-discipline-main'>
+                          <span
+                            className={`study-expand-icon ${
+                              isExpanded ? 'expanded' : ''
+                            }`}
+                          >
+                            ›
+                          </span>
+
+                          <div>
+                            <strong>{discipline.name}</strong>
+
+                            <small>
+                              {discipline.sessions} sessão
+                              {discipline.sessions !== 1 ? 'ões' : ''} ·{' '}
+                              {discipline.questions} questões ·{' '}
+                              {discipline.minutes}min
+                            </small>
+                          </div>
+                        </div>
+
+                        <div className='study-discipline-score'>
+                          <strong>{discipline.accuracy}%</strong>
+
+                          <small>
+                            {discipline.correct}/{discipline.questions} acertos
+                          </small>
+                        </div>
+                      </button>
+
+                      <div className='study-progress-track'>
+                        <div
+                          className={`study-progress-fill ${accuracyClass(
+                            discipline.accuracy,
+                          )}`}
+                          style={{
+                            width: `${Math.min(
+                              performanceMax,
+                              discipline.accuracy,
+                            )}%`,
+                          }}
+                        />
+                      </div>
+
+                      {isExpanded && (
+                        <div className='study-content-breakdown'>
+                          <div className='study-content-title'>
+                            <span>📚 Conteúdos</span>
+
+                            <small>
+                              {discipline.contents.length} conteúdo(s)
+                            </small>
+                          </div>
+
+                          {discipline.contents.map((content) => (
+                            <div
+                              className='study-content-row'
+                              key={`${discipline.name}-${content.name}`}
+                            >
+                              <div className='study-content-info'>
+                                <strong>{content.name}</strong>
+
+                                <small>
+                                  {content.sessions} sessão
+                                  {content.sessions !== 1 ? 'ões' : ''} ·{' '}
+                                  {content.minutes}min
+                                </small>
+                              </div>
+
+                              <div className='study-content-bar-area'>
+                                <div className='study-progress-track'>
+                                  <div
+                                    className={`study-progress-fill ${accuracyClass(
+                                      content.accuracy,
+                                    )}`}
+                                    style={{
+                                      width: `${Math.min(
+                                        performanceMax,
+                                        content.accuracy,
+                                      )}%`,
+                                    }}
+                                  />
+                                </div>
+
+                                <span
+                                  className={`study-content-percentage ${accuracyClass(
+                                    content.accuracy,
+                                  )}`}
+                                >
+                                  {content.accuracy}%
+                                </span>
+                              </div>
+
+                              <div className='study-content-stats'>
+                                <span>
+                                  🎯 {content.correct}/{content.questions}
+                                </span>
+
+                                <span>📝 {content.questions} questões</span>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+
+          {/* =================================================
+              PRÓXIMAS AÇÕES
+          ================================================== */}
+
           <div className='card'>
             <h3>🗓️ Próximas ações</h3>
 
@@ -461,6 +762,10 @@ export default function Estudos() {
             </ul>
           </div>
 
+          {/* =================================================
+              ÚLTIMAS SESSÕES
+          ================================================== */}
+
           <div className='card'>
             <h3>📈 Últimas sessões</h3>
 
@@ -483,12 +788,7 @@ export default function Estudos() {
                     </small>
                   </div>
 
-                  <strong>
-                    {s.exercises
-                      ? Math.round((s.correct / s.exercises) * 100)
-                      : 0}
-                    %
-                  </strong>
+                  <strong>{percentage(s.correct, s.exercises)}%</strong>
                 </div>
               ))
             )}
@@ -562,12 +862,19 @@ export default function Estudos() {
                 }
               >
                 <option>Exercícios</option>
+
                 <option>Teoria</option>
+
                 <option>Videoaula</option>
+
                 <option>Leitura</option>
+
                 <option>Resumo</option>
+
                 <option>Flashcards</option>
+
                 <option>Projeto</option>
+
                 <option>Simulado</option>
               </select>
             </label>
