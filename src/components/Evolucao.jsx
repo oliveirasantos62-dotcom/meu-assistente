@@ -5,16 +5,6 @@ const uid = (prefix = 'id') =>
 
 const today = () => new Date().toISOString().slice(0, 10);
 
-function formatValue(value, unit) {
-  const number = Number(value);
-
-  if (!Number.isFinite(number)) return '-';
-
-  const text = Number.isInteger(number) ? String(number) : number.toFixed(2);
-
-  return unit ? `${text} ${unit}` : text;
-}
-
 function formatDate(date) {
   if (!date) return '-';
 
@@ -25,67 +15,125 @@ function formatDate(date) {
     : parsed.toLocaleDateString('pt-BR');
 }
 
-function normalizeEvolution(item) {
+function formatNumber(value) {
+  const number = Number(value);
+
+  if (!Number.isFinite(number)) return '-';
+
+  return Number.isInteger(number)
+    ? String(number)
+    : number.toFixed(2).replace(/\.00$/, '');
+}
+
+function formatValue(value, unit = '') {
+  if (value === '' || value == null) return '-';
+
+  const text = formatNumber(value);
+
+  return unit ? `${text} ${unit}` : text;
+}
+
+/*
+|--------------------------------------------------------------------------
+| NORMALIZAÇÃO
+|--------------------------------------------------------------------------
+|
+| Estrutura:
+|
+| evolutions
+|   └── áreas
+|        └── itens
+|             └── campos
+|             └── registros
+|
+| Exemplo:
+|
+| Academia
+|   └── Supino reto
+|        ├── Peso
+|        ├── Séries
+|        └── Repetições
+|
+*/
+
+function normalizeField(field) {
   return {
-    id: item.id || uid('evo'),
+    id: field.id || uid('field'),
+    name: field.name || 'Valor',
+    unit: field.unit || '',
+    type: field.type || 'number',
+    goal: field.goal === '' || field.goal == null ? '' : Number(field.goal),
+    better: field.better === 'lower' ? 'lower' : 'higher',
+  };
+}
 
-    name: item.name || 'Nova evolução',
-
-    icon: item.icon || '📈',
-
+function normalizeItem(item) {
+  return {
+    id: item.id || uid('item'),
+    name: item.name || 'Novo item',
+    icon: item.icon || '📊',
     color: item.color || '#6366f1',
-
     description: item.description || '',
-
-    metrics: Array.isArray(item.metrics)
-      ? item.metrics.map((metric) => ({
-          id: metric.id || uid('metric'),
-
-          name: metric.name || 'Métrica',
-
-          unit: metric.unit || '',
-
-          type: metric.type || 'number',
-
-          goal:
-            metric.goal === '' || metric.goal == null
-              ? ''
-              : Number(metric.goal),
-
-          better: metric.better === 'lower' ? 'lower' : 'higher',
-        }))
-      : [],
-
+    fields: Array.isArray(item.fields) ? item.fields.map(normalizeField) : [],
     records: Array.isArray(item.records)
       ? item.records.map((record) => ({
           id: record.id || uid('record'),
-
           date: record.date || today(),
-
           values:
             record.values && typeof record.values === 'object'
               ? record.values
               : {},
-
           note: record.note || '',
         }))
       : [],
   };
 }
 
-function LineChart({ points, color, better = 'higher', unit = '' }) {
+function normalizeArea(area) {
+  return {
+    id: area.id || uid('area'),
+    name: area.name || 'Nova área',
+    icon: area.icon || '📈',
+    color: area.color || '#6366f1',
+    description: area.description || '',
+    items: Array.isArray(area.items) ? area.items.map(normalizeItem) : [],
+  };
+}
+
+/*
+|--------------------------------------------------------------------------
+| GRÁFICO
+|--------------------------------------------------------------------------
+*/
+
+function LineChart({ points, color, unit = '', better = 'higher' }) {
   if (!points.length) {
     return (
-      <div className='evolution-empty-chart'>
-        Registre pelo menos dois valores para visualizar a evolução.
+      <div className='evolution-empty-chart'>Nenhum registro para exibir.</div>
+    );
+  }
+
+  if (points.length === 1) {
+    return (
+      <div className='evolution-chart-single'>
+        <div
+          className='evolution-chart-single-dot'
+          style={{ background: color }}
+        />
+
+        <strong>{formatValue(points[0].value, unit)}</strong>
+
+        <span>{formatDate(points[0].date)}</span>
+
+        <small>Registre mais valores para visualizar a evolução.</small>
       </div>
     );
   }
 
   const width = 700;
-  const height = 250;
-  const padX = 42;
-  const padY = 28;
+  const height = 270;
+  const padX = 45;
+  const padY = 30;
 
   const values = points.map((point) => Number(point.value));
 
@@ -96,10 +144,7 @@ function LineChart({ points, color, better = 'higher', unit = '' }) {
   const coords = points.map((point, index) => ({
     ...point,
 
-    x:
-      points.length === 1
-        ? width / 2
-        : padX + (index / (points.length - 1)) * (width - padX * 2),
+    x: padX + (index / (points.length - 1)) * (width - padX * 2),
 
     y:
       height -
@@ -152,7 +197,7 @@ function LineChart({ points, color, better = 'higher', unit = '' }) {
 
             <text
               x={point.x}
-              y={point.y - 12}
+              y={point.y - 13}
               textAnchor='middle'
               className='chart-value'
             >
@@ -182,36 +227,91 @@ function LineChart({ points, color, better = 'higher', unit = '' }) {
   );
 }
 
+/*
+|--------------------------------------------------------------------------
+| COMPONENTE PRINCIPAL
+|--------------------------------------------------------------------------
+*/
+
 export default function Evolucao({ data, save }) {
-  const saved = Array.isArray(data?.evolutions) ? data.evolutions : [];
+  const savedAreas = Array.isArray(data?.evolutions) ? data.evolutions : [];
 
-  const evolutions = useMemo(() => saved.map(normalizeEvolution), [saved]);
+  const areas = useMemo(() => savedAreas.map(normalizeArea), [savedAreas]);
 
-  const [selectedId, setSelectedId] = useState(evolutions[0]?.id || '');
+  /*
+  |--------------------------------------------------------------------------
+  | NAVEGAÇÃO
+  |--------------------------------------------------------------------------
+  */
 
-  const [showEvolutionForm, setShowEvolutionForm] = useState(false);
+  const [selectedAreaId, setSelectedAreaId] = useState('');
+  const [selectedItemId, setSelectedItemId] = useState('');
 
-  const [showMetricForm, setShowMetricForm] = useState(false);
+  /*
+  |--------------------------------------------------------------------------
+  | MODAIS
+  |--------------------------------------------------------------------------
+  */
 
+  const [showAreaForm, setShowAreaForm] = useState(false);
+  const [showItemForm, setShowItemForm] = useState(false);
+  const [showFieldForm, setShowFieldForm] = useState(false);
   const [showRecordForm, setShowRecordForm] = useState(false);
 
-  const [editingEvolution, setEditingEvolution] = useState(null);
+  /*
+  |--------------------------------------------------------------------------
+  | EDIÇÃO
+  |--------------------------------------------------------------------------
+  */
 
-  const [editingMetric, setEditingMetric] = useState(null);
+  const [editingArea, setEditingArea] = useState(null);
+  const [editingItem, setEditingItem] = useState(null);
+  const [editingField, setEditingField] = useState(null);
 
-  const [evolutionForm, setEvolutionForm] = useState({
+  /*
+  |--------------------------------------------------------------------------
+  | FORMULÁRIO DA ÁREA
+  |--------------------------------------------------------------------------
+  */
+
+  const [areaForm, setAreaForm] = useState({
     name: '',
     icon: '📈',
     color: '#6366f1',
     description: '',
   });
 
-  const [metricForm, setMetricForm] = useState({
+  /*
+  |--------------------------------------------------------------------------
+  | FORMULÁRIO DO ITEM
+  |--------------------------------------------------------------------------
+  */
+
+  const [itemForm, setItemForm] = useState({
+    name: '',
+    icon: '📊',
+    color: '#6366f1',
+    description: '',
+  });
+
+  /*
+  |--------------------------------------------------------------------------
+  | FORMULÁRIO DO CAMPO
+  |--------------------------------------------------------------------------
+  */
+
+  const [fieldForm, setFieldForm] = useState({
     name: '',
     unit: '',
     goal: '',
     better: 'higher',
   });
+
+  /*
+  |--------------------------------------------------------------------------
+  | FORMULÁRIO DO REGISTRO
+  |--------------------------------------------------------------------------
+  */
 
   const [recordForm, setRecordForm] = useState({
     date: today(),
@@ -219,241 +319,430 @@ export default function Evolucao({ data, save }) {
     note: '',
   });
 
-  const [activeMetricId, setActiveMetricId] = useState('');
+  /*
+  |--------------------------------------------------------------------------
+  | SELECIONADOS
+  |--------------------------------------------------------------------------
+  */
 
-  const selected =
-    evolutions.find((item) => item.id === selectedId) || evolutions[0] || null;
+  const selectedArea = areas.find((area) => area.id === selectedAreaId) || null;
 
-  const persist = (next) => {
+  const selectedItem =
+    selectedArea?.items.find((item) => item.id === selectedItemId) || null;
+
+  /*
+  |--------------------------------------------------------------------------
+  | SALVAR
+  |--------------------------------------------------------------------------
+  */
+
+  function persist(nextAreas) {
     save({
       ...data,
-      evolutions: next,
+      evolutions: nextAreas,
     });
-  };
+  }
 
-  const selectEvolution = (id) => {
-    setSelectedId(id);
-    setShowRecordForm(false);
-    setShowMetricForm(false);
-  };
+  /*
+  |--------------------------------------------------------------------------
+  | ABRIR ÁREA
+  |--------------------------------------------------------------------------
+  */
 
-  // =========================================
-  // NOVA EVOLUÇÃO
-  // =========================================
-  const openNewEvolution = () => {
-    setEditingEvolution(null);
+  function openArea(area) {
+    setSelectedAreaId(area.id);
+    setSelectedItemId('');
+  }
 
-    setEvolutionForm({
+  function backToAreas() {
+    setSelectedAreaId('');
+    setSelectedItemId('');
+  }
+
+  /*
+  |--------------------------------------------------------------------------
+  | ABRIR ITEM
+  |--------------------------------------------------------------------------
+  */
+
+  function openItem(item) {
+    setSelectedItemId(item.id);
+  }
+
+  function backToItems() {
+    setSelectedItemId('');
+  }
+
+  /*
+  |--------------------------------------------------------------------------
+  | NOVA ÁREA
+  |--------------------------------------------------------------------------
+  */
+
+  function openNewArea() {
+    setEditingArea(null);
+
+    setAreaForm({
       name: '',
       icon: '📈',
       color: '#6366f1',
       description: '',
     });
 
-    setShowEvolutionForm(true);
-  };
+    setShowAreaForm(true);
+  }
 
-  // =========================================
-  // EDITAR EVOLUÇÃO
-  // =========================================
-  const openEditEvolution = () => {
-    if (!selected) return;
+  function openEditArea() {
+    if (!selectedArea) return;
 
-    setEditingEvolution(selected);
+    setEditingArea(selectedArea);
 
-    setEvolutionForm({
-      name: selected.name,
-      icon: selected.icon,
-      color: selected.color,
-      description: selected.description,
+    setAreaForm({
+      name: selectedArea.name,
+      icon: selectedArea.icon,
+      color: selectedArea.color,
+      description: selectedArea.description,
     });
 
-    setShowEvolutionForm(true);
-  };
+    setShowAreaForm(true);
+  }
 
-  // =========================================
-  // SALVAR EVOLUÇÃO
-  // =========================================
-  const saveEvolution = (event) => {
+  function saveArea(event) {
     event.preventDefault();
 
-    if (!evolutionForm.name.trim()) return;
+    if (!areaForm.name.trim()) return;
 
-    let next;
+    let nextAreas;
 
-    if (editingEvolution) {
-      next = evolutions.map((item) =>
-        item.id === editingEvolution.id
+    if (editingArea) {
+      nextAreas = areas.map((area) =>
+        area.id === editingArea.id
           ? {
-              ...item,
-              ...evolutionForm,
-              name: evolutionForm.name.trim(),
+              ...area,
+              ...areaForm,
+              name: areaForm.name.trim(),
             }
-          : item,
+          : area,
       );
 
-      setSelectedId(editingEvolution.id);
+      setSelectedAreaId(editingArea.id);
     } else {
-      const item = normalizeEvolution({
-        ...evolutionForm,
+      const newArea = normalizeArea({
+        id: uid('area'),
+        ...areaForm,
+        name: areaForm.name.trim(),
+        items: [],
+      });
 
-        name: evolutionForm.name.trim(),
+      nextAreas = [...areas, newArea];
 
-        metrics: [],
+      setSelectedAreaId(newArea.id);
+      setSelectedItemId('');
+    }
 
+    persist(nextAreas);
+    setShowAreaForm(false);
+  }
+
+  /*
+  |--------------------------------------------------------------------------
+  | EXCLUIR ÁREA
+  |--------------------------------------------------------------------------
+  */
+
+  function deleteArea() {
+    if (!selectedArea) return;
+
+    const confirmed = window.confirm(
+      `Excluir a área "${selectedArea.name}" e todos os itens e registros dela?`,
+    );
+
+    if (!confirmed) return;
+
+    const nextAreas = areas.filter((area) => area.id !== selectedArea.id);
+
+    persist(nextAreas);
+
+    setSelectedAreaId('');
+    setSelectedItemId('');
+  }
+
+  /*
+  |--------------------------------------------------------------------------
+  | NOVO ITEM
+  |--------------------------------------------------------------------------
+  */
+
+  function openNewItem() {
+    if (!selectedArea) return;
+
+    setEditingItem(null);
+
+    setItemForm({
+      name: '',
+      icon: '📊',
+      color: selectedArea.color || '#6366f1',
+      description: '',
+    });
+
+    setShowItemForm(true);
+  }
+
+  function openEditItem() {
+    if (!selectedItem) return;
+
+    setEditingItem(selectedItem);
+
+    setItemForm({
+      name: selectedItem.name,
+      icon: selectedItem.icon,
+      color: selectedItem.color,
+      description: selectedItem.description,
+    });
+
+    setShowItemForm(true);
+  }
+
+  function saveItem(event) {
+    event.preventDefault();
+
+    if (!selectedArea || !itemForm.name.trim()) {
+      return;
+    }
+
+    let nextAreas;
+    let itemId;
+
+    if (editingItem) {
+      itemId = editingItem.id;
+
+      nextAreas = areas.map((area) => {
+        if (area.id !== selectedArea.id) {
+          return area;
+        }
+
+        return {
+          ...area,
+
+          items: area.items.map((item) =>
+            item.id === editingItem.id
+              ? {
+                  ...item,
+                  ...itemForm,
+                  name: itemForm.name.trim(),
+                }
+              : item,
+          ),
+        };
+      });
+    } else {
+      const newItem = normalizeItem({
+        id: uid('item'),
+        ...itemForm,
+        name: itemForm.name.trim(),
+        fields: [],
         records: [],
       });
 
-      next = [...evolutions, item];
+      itemId = newItem.id;
 
-      setSelectedId(item.id);
+      nextAreas = areas.map((area) =>
+        area.id === selectedArea.id
+          ? {
+              ...area,
+              items: [...area.items, newItem],
+            }
+          : area,
+      );
     }
 
-    persist(next);
+    persist(nextAreas);
 
-    setShowEvolutionForm(false);
-  };
+    setSelectedItemId(itemId);
+    setShowItemForm(false);
+  }
 
-  // =========================================
-  // EXCLUIR EVOLUÇÃO
-  // =========================================
-  const deleteEvolution = () => {
-    if (!selected) return;
+  /*
+  |--------------------------------------------------------------------------
+  | EXCLUIR ITEM
+  |--------------------------------------------------------------------------
+  */
 
-    if (
-      !window.confirm(
-        `Excluir a evolução "${selected.name}" e todos os seus registros?`,
-      )
-    ) {
-      return;
-    }
+  function deleteItem() {
+    if (!selectedArea || !selectedItem) return;
 
-    const next = evolutions.filter((item) => item.id !== selected.id);
+    const confirmed = window.confirm(
+      `Excluir "${selectedItem.name}" e todos os seus registros?`,
+    );
 
-    persist(next);
+    if (!confirmed) return;
 
-    setSelectedId(next[0]?.id || '');
-  };
+    const nextAreas = areas.map((area) =>
+      area.id === selectedArea.id
+        ? {
+            ...area,
+            items: area.items.filter((item) => item.id !== selectedItem.id),
+          }
+        : area,
+    );
 
-  // =========================================
-  // FORMULÁRIO DE MÉTRICA
-  // =========================================
-  const openMetricForm = (metric = null) => {
-    setEditingMetric(metric);
+    persist(nextAreas);
 
-    setMetricForm({
-      name: metric?.name || '',
-      unit: metric?.unit || '',
-      goal: metric?.goal ?? '',
-      better: metric?.better || 'higher',
+    setSelectedItemId('');
+  }
+
+  /*
+  |--------------------------------------------------------------------------
+  | CAMPOS DO ITEM
+  |--------------------------------------------------------------------------
+  |
+  | Exemplo Supino:
+  |
+  | Peso       kg
+  | Séries     séries
+  | Repetições reps
+  |
+  */
+
+  function openNewField() {
+    setEditingField(null);
+
+    setFieldForm({
+      name: '',
+      unit: '',
+      goal: '',
+      better: 'higher',
     });
 
-    setShowMetricForm(true);
-  };
+    setShowFieldForm(true);
+  }
 
-  // =========================================
-  // SALVAR MÉTRICA
-  // =========================================
-  const saveMetric = (event) => {
+  function openEditField(field) {
+    setEditingField(field);
+
+    setFieldForm({
+      name: field.name,
+      unit: field.unit,
+      goal: field.goal,
+      better: field.better,
+    });
+
+    setShowFieldForm(true);
+  }
+
+  function saveField(event) {
     event.preventDefault();
 
-    if (!selected || !metricForm.name.trim()) {
-      return;
-    }
+    if (!selectedArea || !selectedItem) return;
+    if (!fieldForm.name.trim()) return;
 
-    const metric = {
-      id: editingMetric?.id || uid('metric'),
+    const field = normalizeField({
+      id: editingField?.id || uid('field'),
+      name: fieldForm.name.trim(),
+      unit: fieldForm.unit.trim(),
+      goal: fieldForm.goal === '' ? '' : Number(fieldForm.goal),
+      better: fieldForm.better,
+    });
 
-      name: metricForm.name.trim(),
-
-      unit: metricForm.unit.trim(),
-
-      type: 'number',
-
-      goal: metricForm.goal === '' ? '' : Number(metricForm.goal),
-
-      better: metricForm.better,
-    };
-
-    const next = evolutions.map((item) => {
-      if (item.id !== selected.id) {
-        return item;
+    const nextAreas = areas.map((area) => {
+      if (area.id !== selectedArea.id) {
+        return area;
       }
 
-      const metrics = editingMetric
-        ? item.metrics.map((current) =>
-            current.id === editingMetric.id ? metric : current,
-          )
-        : [...item.metrics, metric];
-
       return {
-        ...item,
-        metrics,
+        ...area,
+
+        items: area.items.map((item) => {
+          if (item.id !== selectedItem.id) {
+            return item;
+          }
+
+          const fields = editingField
+            ? item.fields.map((current) =>
+                current.id === editingField.id ? field : current,
+              )
+            : [...item.fields, field];
+
+          return {
+            ...item,
+            fields,
+          };
+        }),
       };
     });
 
-    persist(next);
+    persist(nextAreas);
+    setShowFieldForm(false);
+  }
 
-    setActiveMetricId(metric.id);
+  /*
+  |--------------------------------------------------------------------------
+  | EXCLUIR CAMPO
+  |--------------------------------------------------------------------------
+  */
 
-    setShowMetricForm(false);
-  };
+  function deleteField(fieldId) {
+    if (!selectedArea || !selectedItem) return;
 
-  // =========================================
-  // EXCLUIR MÉTRICA
-  // =========================================
-  const deleteMetric = (metricId) => {
-    if (!selected) return;
+    const field = selectedItem.fields.find((item) => item.id === fieldId);
 
-    const metric = selected.metrics.find((item) => item.id === metricId);
+    if (!field) return;
 
-    if (
-      !metric ||
-      !window.confirm(
-        `Excluir a métrica "${metric.name}"? Os valores registrados nela também serão removidos.`,
-      )
-    ) {
-      return;
-    }
+    const confirmed = window.confirm(
+      `Excluir "${field.name}"? Os valores registrados nesse campo também serão removidos.`,
+    );
 
-    const next = evolutions.map((item) =>
-      item.id !== selected.id
-        ? item
-        : {
+    if (!confirmed) return;
+
+    const nextAreas = areas.map((area) => {
+      if (area.id !== selectedArea.id) {
+        return area;
+      }
+
+      return {
+        ...area,
+
+        items: area.items.map((item) => {
+          if (item.id !== selectedItem.id) {
+            return item;
+          }
+
+          return {
             ...item,
 
-            metrics: item.metrics.filter(
-              (itemMetric) => itemMetric.id !== metricId,
-            ),
+            fields: item.fields.filter((current) => current.id !== fieldId),
 
             records: item.records.map((record) => {
               const values = {
                 ...record.values,
               };
 
-              delete values[metricId];
+              delete values[fieldId];
 
               return {
                 ...record,
                 values,
               };
             }),
-          },
-    );
+          };
+        }),
+      };
+    });
 
-    persist(next);
+    persist(nextAreas);
+  }
 
-    if (activeMetricId === metricId) {
-      setActiveMetricId('');
-    }
-  };
+  /*
+  |--------------------------------------------------------------------------
+  | REGISTRO
+  |--------------------------------------------------------------------------
+  */
 
-  // =========================================
-  // NOVO REGISTRO
-  // =========================================
-  const openRecordForm = () => {
-    if (!selected?.metrics.length) {
-      setShowMetricForm(true);
+  function openRecordForm() {
+    if (!selectedItem) return;
+
+    if (!selectedItem.fields.length) {
+      setShowFieldForm(true);
       return;
     }
 
@@ -464,23 +753,22 @@ export default function Evolucao({ data, save }) {
     });
 
     setShowRecordForm(true);
-  };
+  }
 
-  // =========================================
-  // SALVAR REGISTRO
-  // =========================================
-  const saveRecord = (event) => {
+  function saveRecord(event) {
     event.preventDefault();
 
-    if (!selected) return;
+    if (!selectedArea || !selectedItem) {
+      return;
+    }
 
     const values = {};
 
-    selected.metrics.forEach((metric) => {
-      const value = recordForm.values[metric.id];
+    selectedItem.fields.forEach((field) => {
+      const value = recordForm.values[field.id];
 
       if (value !== '' && value != null && Number.isFinite(Number(value))) {
-        values[metric.id] = Number(value);
+        values[field.id] = Number(value);
       }
     });
 
@@ -490,497 +778,843 @@ export default function Evolucao({ data, save }) {
 
     const record = {
       id: uid('record'),
-
       date: recordForm.date || today(),
-
       values,
-
       note: recordForm.note.trim(),
     };
 
-    const next = evolutions.map((item) =>
-      item.id === selected.id
-        ? {
-            ...item,
+    const nextAreas = areas.map((area) => {
+      if (area.id !== selectedArea.id) {
+        return area;
+      }
 
-            records: [...item.records, record].sort((a, b) =>
-              a.date.localeCompare(b.date),
-            ),
-          }
-        : item,
-    );
+      return {
+        ...area,
 
-    persist(next);
+        items: area.items.map((item) =>
+          item.id === selectedItem.id
+            ? {
+                ...item,
+
+                records: [...item.records, record].sort((a, b) =>
+                  a.date.localeCompare(b.date),
+                ),
+              }
+            : item,
+        ),
+      };
+    });
+
+    persist(nextAreas);
 
     setShowRecordForm(false);
-  };
+  }
 
-  // =========================================
-  // EXCLUIR REGISTRO
-  // =========================================
-  const deleteRecord = (recordId) => {
-    if (!selected) return;
+  /*
+  |--------------------------------------------------------------------------
+  | EXCLUIR REGISTRO
+  |--------------------------------------------------------------------------
+  */
 
-    const next = evolutions.map((item) =>
-      item.id === selected.id
+  function deleteRecord(recordId) {
+    if (!selectedArea || !selectedItem) {
+      return;
+    }
+
+    const nextAreas = areas.map((area) =>
+      area.id === selectedArea.id
         ? {
-            ...item,
+            ...area,
 
-            records: item.records.filter((record) => record.id !== recordId),
+            items: area.items.map((item) =>
+              item.id === selectedItem.id
+                ? {
+                    ...item,
+
+                    records: item.records.filter(
+                      (record) => record.id !== recordId,
+                    ),
+                  }
+                : item,
+            ),
           }
-        : item,
+        : area,
     );
 
-    persist(next);
-  };
+    persist(nextAreas);
+  }
 
-  // =========================================
-  // ÚLTIMO VALOR DE CADA MÉTRICA
-  // =========================================
-  const latestByMetric = useMemo(() => {
+  /*
+  |--------------------------------------------------------------------------
+  | ÚLTIMO VALOR
+  |--------------------------------------------------------------------------
+  */
+
+  const latestByField = useMemo(() => {
     const result = {};
 
-    if (!selected) return result;
+    if (!selectedItem) {
+      return result;
+    }
 
-    selected.metrics.forEach((metric) => {
-      const records = selected.records
-        .filter((record) => record.values[metric.id] != null)
+    selectedItem.fields.forEach((field) => {
+      const records = [...selectedItem.records]
+        .filter((record) => record.values[field.id] != null)
         .sort((a, b) => b.date.localeCompare(a.date));
 
-      result[metric.id] = records[0]?.values?.[metric.id] ?? null;
+      result[field.id] = records[0]?.values?.[field.id] ?? null;
     });
 
     return result;
-  }, [selected]);
+  }, [selectedItem]);
 
-  // =========================================
-  // PONTOS DO GRÁFICO
-  // =========================================
-  const metricPoints = (metric) =>
-    selected?.records
-      .filter((record) => record.values[metric.id] != null)
+  /*
+  |--------------------------------------------------------------------------
+  | MELHOR VALOR
+  |--------------------------------------------------------------------------
+  */
+
+  function getBestValue(field) {
+    if (!selectedItem) return null;
+
+    const values = selectedItem.records
+      .map((record) => record.values[field.id])
+      .filter((value) => Number.isFinite(Number(value)))
+      .map(Number);
+
+    if (!values.length) {
+      return null;
+    }
+
+    return field.better === 'lower' ? Math.min(...values) : Math.max(...values);
+  }
+
+  /*
+  |--------------------------------------------------------------------------
+  | PONTOS DO GRÁFICO
+  |--------------------------------------------------------------------------
+  */
+
+  function getFieldPoints(field) {
+    if (!selectedItem) return [];
+
+    return [...selectedItem.records]
+      .filter((record) => record.values[field.id] != null)
       .sort((a, b) => a.date.localeCompare(b.date))
       .map((record) => ({
         id: record.id,
         date: record.date,
-        value: record.values[metric.id],
-      })) || [];
+        value: record.values[field.id],
+      }));
+  }
 
-  // =========================================
-  // PROGRESSO DA META
-  // =========================================
-  const progress = (metric) => {
-    const current = Number(latestByMetric[metric.id]);
+  /*
+  |--------------------------------------------------------------------------
+  | PROGRESSO DA META
+  |--------------------------------------------------------------------------
+  */
 
-    const goal = Number(metric.goal);
+  function getProgress(field) {
+    const current = Number(latestByField[field.id]);
+
+    const goal = Number(field.goal);
 
     if (!Number.isFinite(current) || !Number.isFinite(goal) || goal <= 0) {
       return null;
     }
 
-    const percent =
-      metric.better === 'lower'
+    const percentage =
+      field.better === 'lower'
         ? (goal / Math.max(current, 0.0001)) * 100
         : (current / goal) * 100;
 
-    return Math.max(0, Math.min(100, percent));
-  };
+    return Math.max(0, Math.min(100, percentage));
+  }
+
+  /*
+  |--------------------------------------------------------------------------
+  | ESTATÍSTICAS DA ÁREA
+  |--------------------------------------------------------------------------
+  */
+
+  const areaStats = selectedArea
+    ? {
+        items: selectedArea.items.length,
+
+        records: selectedArea.items.reduce(
+          (total, item) => total + item.records.length,
+          0,
+        ),
+
+        fields: selectedArea.items.reduce(
+          (total, item) => total + item.fields.length,
+          0,
+        ),
+      }
+    : null;
+
+  /*
+  |--------------------------------------------------------------------------
+  | RENDER
+  |--------------------------------------------------------------------------
+  */
 
   return (
     <section className='page evolution-page'>
-      {/* =========================================
+      {/* =========================================================
           CABEÇALHO
-      ========================================= */}
+      ========================================================= */}
+
       <div className='evolution-header'>
         <div>
           <span className='section-kicker'>PROGRESSO PESSOAL</span>
 
           <h2>📈 Evolução & Progresso</h2>
 
-          <p>
-            Registre seu progresso em treinos, habilidades, esportes ou qualquer
-            objetivo mensurável.
-          </p>
+          <p>Crie áreas para acompanhar sua evolução em qualquer atividade.</p>
         </div>
 
-        <button type='button' className='primary' onClick={openNewEvolution}>
-          ＋ Nova evolução
-        </button>
+        {!selectedArea && (
+          <button type='button' className='primary' onClick={openNewArea}>
+            ＋ Nova área
+          </button>
+        )}
+
+        {selectedArea && !selectedItem && (
+          <button type='button' className='primary' onClick={openNewItem}>
+            ＋ Adicionar item
+          </button>
+        )}
+
+        {selectedItem && (
+          <button type='button' className='primary' onClick={openRecordForm}>
+            ＋ Registrar progresso
+          </button>
+        )}
       </div>
 
-      {/* =========================================
-          ESTADO VAZIO
-      ========================================= */}
-      {evolutions.length === 0 ? (
-        <div className='evolution-empty-state'>
-          <div className='evolution-empty-icon'>📈</div>
+      {/* =========================================================
+          NÍVEL 1 — ÁREAS
+      ========================================================= */}
 
-          <h3>Comece a acompanhar sua evolução</h3>
-
-          <p>
-            Crie uma evolução para acompanhar qualquer coisa que seja importante
-            para você.
-          </p>
-
-          <button type='button' className='primary' onClick={openNewEvolution}>
-            ＋ Criar minha primeira evolução
-          </button>
-        </div>
-      ) : (
+      {!selectedArea && (
         <>
-          {/* =========================================
-              LAYOUT PRINCIPAL
-          ========================================= */}
-          <div className='evolution-layout'>
-            {/* =========================================
-                LISTA DE EVOLUÇÕES
-            ========================================= */}
-            <aside className='evolution-list'>
-              <div className='evolution-list-title'>Minhas evoluções</div>
+          {areas.length === 0 ? (
+            <div className='evolution-empty-state'>
+              <div className='evolution-empty-icon'>📈</div>
 
-              {evolutions.map((item) => (
-                <button
-                  key={item.id}
-                  type='button'
-                  className={`evolution-list-item ${
-                    selected?.id === item.id ? 'active' : ''
-                  }`}
-                  onClick={() => selectEvolution(item.id)}
-                >
-                  <span
-                    className='evolution-list-icon'
-                    style={{
-                      background: `${item.color}22`,
-                      borderColor: `${item.color}55`,
-                    }}
-                  >
-                    {item.icon}
-                  </span>
+              <h3>Sua evolução começa aqui</h3>
 
-                  <span>
-                    <strong>{item.name}</strong>
+              <p>Crie uma área para começar a acompanhar seu progresso.</p>
 
-                    <small>
-                      {item.metrics.length} métricas · {item.records.length}{' '}
-                      registros
-                    </small>
-                  </span>
-                </button>
-              ))}
-            </aside>
+              <button type='button' className='primary' onClick={openNewArea}>
+                ＋ Criar primeira área
+              </button>
 
-            {/* =========================================
-                EVOLUÇÃO SELECIONADA
-            ========================================= */}
-            {selected && (
-              <div className='evolution-main'>
-                {/* =========================================
-                    VISÃO GERAL
-                ========================================= */}
-                <div
-                  className='evolution-overview-card'
-                  style={{
-                    '--evolution-color': selected.color,
-                  }}
-                >
-                  <div className='evolution-overview-icon'>{selected.icon}</div>
+              <div className='evolution-empty-examples'>
+                <span>🏋️ Academia</span>
+                <span>🤸 Calistenia</span>
+                <span>🏃 Corrida</span>
+                <span>🧩 Cubo mágico</span>
+                <span>♟️ Xadrez</span>
+                <span>💻 Programação</span>
+              </div>
+            </div>
+          ) : (
+            <div className='evolution-area-section'>
+              <div className='evolution-section-heading'>
+                <div>
+                  <h3>Minhas áreas</h3>
 
-                  <div className='evolution-overview-content'>
-                    <div className='evolution-title-row'>
-                      <div>
-                        <h3>{selected.name}</h3>
-
-                        <p>
-                          {selected.description ||
-                            'Acompanhe seus números e veja sua evolução ao longo do tempo.'}
-                        </p>
-                      </div>
-
-                      <div className='evolution-actions'>
-                        <button
-                          type='button'
-                          className='ghost'
-                          onClick={openEditEvolution}
-                        >
-                          ✏️ Editar
-                        </button>
-
-                        <button
-                          type='button'
-                          className='ghost danger'
-                          onClick={deleteEvolution}
-                        >
-                          🗑️
-                        </button>
-                      </div>
-                    </div>
-
-                    <div className='evolution-stats'>
-                      <div>
-                        <span>Registros</span>
-
-                        <strong>{selected.records.length}</strong>
-                      </div>
-
-                      <div>
-                        <span>Métricas</span>
-
-                        <strong>{selected.metrics.length}</strong>
-                      </div>
-
-                      <div>
-                        <span>Último registro</span>
-
-                        <strong>
-                          {selected.records.length
-                            ? formatDate(
-                                [...selected.records].sort((a, b) =>
-                                  b.date.localeCompare(a.date),
-                                )[0].date,
-                              )
-                            : '-'}
-                        </strong>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* =========================================
-                    BARRA DE MÉTRICAS
-                ========================================= */}
-                <div className='evolution-toolbar'>
-                  <div>
-                    <h3>📊 Métricas</h3>
-
-                    <span>Escolha o que você quer medir.</span>
-                  </div>
-
-                  <div className='evolution-actions'>
-                    <button
-                      type='button'
-                      className='ghost'
-                      onClick={() => openMetricForm()}
-                    >
-                      ＋ Métrica
-                    </button>
-
-                    <button
-                      type='button'
-                      className='primary'
-                      onClick={openRecordForm}
-                    >
-                      ＋ Registrar progresso
-                    </button>
-                  </div>
-                </div>
-
-                {/* =========================================
-                    SEM MÉTRICAS
-                ========================================= */}
-                {!selected.metrics.length ? (
-                  <div className='evolution-empty-inline'>
-                    <strong>Você ainda não criou nenhuma métrica.</strong>
-
-                    <span>
-                      Adicione peso, repetições, tempo, distância, rating ou
-                      qualquer valor numérico.
-                    </span>
-
-                    <button
-                      type='button'
-                      className='primary'
-                      onClick={() => openMetricForm()}
-                    >
-                      Criar primeira métrica
-                    </button>
-                  </div>
-                ) : (
-                  <div className='evolution-metric-grid'>
-                    {selected.metrics.map((metric) => {
-                      const points = metricPoints(metric);
-
-                      const current = latestByMetric[metric.id];
-
-                      const percent = progress(metric);
-
-                      return (
-                        <article
-                          className={`evolution-metric-card ${
-                            activeMetricId === metric.id ? 'selected' : ''
-                          }`}
-                          key={metric.id}
-                          onClick={() => setActiveMetricId(metric.id)}
-                        >
-                          <div className='evolution-metric-head'>
-                            <div>
-                              <span>{metric.name}</span>
-
-                              <strong>
-                                {current == null
-                                  ? '-'
-                                  : formatValue(current, metric.unit)}
-                              </strong>
-                            </div>
-
-                            <div className='evolution-card-actions'>
-                              <button
-                                type='button'
-                                onClick={(event) => {
-                                  event.stopPropagation();
-
-                                  openMetricForm(metric);
-                                }}
-                              >
-                                ✏️
-                              </button>
-
-                              <button
-                                type='button'
-                                onClick={(event) => {
-                                  event.stopPropagation();
-
-                                  deleteMetric(metric.id);
-                                }}
-                              >
-                                ×
-                              </button>
-                            </div>
-                          </div>
-
-                          {percent != null && (
-                            <div className='evolution-progress'>
-                              <div>
-                                <span>
-                                  Meta: {formatValue(metric.goal, metric.unit)}
-                                </span>
-
-                                <strong>{Math.round(percent)}%</strong>
-                              </div>
-
-                              <div className='evolution-progress-track'>
-                                <span
-                                  style={{
-                                    width: `${percent}%`,
-                                    background: selected.color,
-                                  }}
-                                />
-                              </div>
-                            </div>
-                          )}
-
-                          <LineChart
-                            points={points}
-                            color={selected.color}
-                            better={metric.better}
-                            unit={metric.unit}
-                          />
-                        </article>
-                      );
-                    })}
-                  </div>
-                )}
-
-                {/* =========================================
-                    HISTÓRICO
-                ========================================= */}
-                <div className='evolution-records-section'>
-                  <div className='evolution-toolbar'>
-                    <div>
-                      <h3>📝 Histórico</h3>
-
-                      <span>Todos os registros desta evolução.</span>
-                    </div>
-                  </div>
-
-                  {selected.records.length === 0 ? (
-                    <div className='evolution-empty-inline'>
-                      Nenhum registro ainda. Clique em{' '}
-                      <strong>Registrar progresso</strong> para começar.
-                    </div>
-                  ) : (
-                    <div className='evolution-records'>
-                      {[...selected.records]
-                        .sort((a, b) => b.date.localeCompare(a.date))
-                        .map((record) => (
-                          <div className='evolution-record' key={record.id}>
-                            <div className='evolution-record-date'>
-                              <strong>{formatDate(record.date)}</strong>
-
-                              <small>{record.note || 'Sem observação'}</small>
-                            </div>
-
-                            <div className='evolution-record-values'>
-                              {selected.metrics.map(
-                                (metric) =>
-                                  record.values[metric.id] != null && (
-                                    <span key={metric.id}>
-                                      <small>{metric.name}</small>
-
-                                      <strong>
-                                        {formatValue(
-                                          record.values[metric.id],
-                                          metric.unit,
-                                        )}
-                                      </strong>
-                                    </span>
-                                  ),
-                              )}
-                            </div>
-
-                            <button
-                              type='button'
-                              className='ghost danger'
-                              onClick={() => deleteRecord(record.id)}
-                            >
-                              Excluir
-                            </button>
-                          </div>
-                        ))}
-                    </div>
-                  )}
+                  <span>Escolha uma área para visualizar seus itens.</span>
                 </div>
               </div>
-            )}
-          </div>
+
+              <div className='evolution-area-grid'>
+                {areas.map((area) => {
+                  const records = area.items.reduce(
+                    (total, item) => total + item.records.length,
+                    0,
+                  );
+
+                  return (
+                    <button
+                      key={area.id}
+                      type='button'
+                      className='evolution-area-card'
+                      onClick={() => openArea(area)}
+                      style={{
+                        '--area-color': area.color,
+                      }}
+                    >
+                      <div className='evolution-area-icon'>{area.icon}</div>
+
+                      <div className='evolution-area-content'>
+                        <strong>{area.name}</strong>
+
+                        <span>
+                          {area.description ||
+                            'Acompanhe sua evolução nesta área.'}
+                        </span>
+
+                        <small>
+                          {area.items.length}{' '}
+                          {area.items.length === 1 ? 'item' : 'itens'} ·{' '}
+                          {records} {records === 1 ? 'registro' : 'registros'}
+                        </small>
+                      </div>
+
+                      <div className='evolution-area-arrow'>→</div>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
         </>
       )}
 
-      {/* =========================================
-          MODAL — NOVA/EDITAR EVOLUÇÃO
-      ========================================= */}
-      {showEvolutionForm && (
-        <div
-          className='evolution-modal-overlay'
-          onMouseDown={(event) =>
-            event.target === event.currentTarget && setShowEvolutionForm(false)
-          }
-        >
-          <form className='evolution-modal' onSubmit={saveEvolution}>
-            <div className='evolution-modal-header'>
-              <div>
-                <span>CONFIGURAÇÃO</span>
+      {/* =========================================================
+          NÍVEL 2 — ÁREA
+      ========================================================= */}
 
-                <h3>
-                  {editingEvolution ? 'Editar evolução' : 'Nova evolução'}
-                </h3>
+      {selectedArea && !selectedItem && (
+        <div className='evolution-area-view'>
+          <button
+            type='button'
+            className='ghost evolution-back-button'
+            onClick={backToAreas}
+          >
+            ← Voltar para áreas
+          </button>
+
+          <div
+            className='evolution-area-banner'
+            style={{
+              '--area-color': selectedArea.color,
+            }}
+          >
+            <div className='evolution-area-banner-icon'>
+              {selectedArea.icon}
+            </div>
+
+            <div className='evolution-area-banner-content'>
+              <div className='evolution-title-row'>
+                <div>
+                  <span className='section-kicker'>ÁREA DE EVOLUÇÃO</span>
+
+                  <h2>{selectedArea.name}</h2>
+
+                  <p>
+                    {selectedArea.description ||
+                      'Acompanhe seu desempenho e evolução.'}
+                  </p>
+                </div>
+
+                <div className='evolution-actions'>
+                  <button
+                    type='button'
+                    className='ghost'
+                    onClick={openEditArea}
+                  >
+                    ✏️ Editar
+                  </button>
+
+                  <button
+                    type='button'
+                    className='ghost danger'
+                    onClick={deleteArea}
+                  >
+                    🗑️
+                  </button>
+                </div>
               </div>
 
-              <button type='button' onClick={() => setShowEvolutionForm(false)}>
+              <div className='evolution-stats'>
+                <div>
+                  <span>Itens</span>
+                  <strong>{areaStats.items}</strong>
+                </div>
+
+                <div>
+                  <span>Campos</span>
+                  <strong>{areaStats.fields}</strong>
+                </div>
+
+                <div>
+                  <span>Registros</span>
+                  <strong>{areaStats.records}</strong>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className='evolution-toolbar'>
+            <div>
+              <h3>📊 O que você acompanha?</h3>
+
+              <span>
+                Crie itens como Supino, Agachamento, Barra fixa, 5 km, Rating
+                etc.
+              </span>
+            </div>
+
+            <button type='button' className='primary' onClick={openNewItem}>
+              ＋ Novo item
+            </button>
+          </div>
+
+          {selectedArea.items.length === 0 ? (
+            <div className='evolution-empty-inline'>
+              <div className='evolution-empty-icon'>📊</div>
+
+              <strong>Nenhum item nesta área</strong>
+
+              <span>Adicione o primeiro item que você deseja acompanhar.</span>
+
+              <button type='button' className='primary' onClick={openNewItem}>
+                ＋ Criar primeiro item
+              </button>
+            </div>
+          ) : (
+            <div className='evolution-item-grid'>
+              {selectedArea.items.map((item) => {
+                const latestField = item.fields[0];
+
+                const latest = latestField
+                  ? [...item.records]
+                      .sort((a, b) => b.date.localeCompare(a.date))
+                      .find((record) => record.values[latestField.id] != null)
+                  : null;
+
+                return (
+                  <button
+                    key={item.id}
+                    type='button'
+                    className='evolution-item-card'
+                    onClick={() => openItem(item)}
+                    style={{
+                      '--item-color': item.color,
+                    }}
+                  >
+                    <div className='evolution-item-icon'>{item.icon}</div>
+
+                    <div className='evolution-item-content'>
+                      <strong>{item.name}</strong>
+
+                      <span>
+                        {item.description ||
+                          `${item.fields.length} campos · ${item.records.length} registros`}
+                      </span>
+
+                      {latest && latestField && (
+                        <small>
+                          Último:{' '}
+                          <b>
+                            {formatValue(
+                              latest.values[latestField.id],
+                              latestField.unit,
+                            )}
+                          </b>
+                        </small>
+                      )}
+                    </div>
+
+                    <div className='evolution-item-arrow'>→</div>
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* =========================================================
+          NÍVEL 3 — ITEM
+      ========================================================= */}
+
+      {selectedItem && selectedArea && (
+        <div className='evolution-item-view'>
+          <div className='evolution-breadcrumbs'>
+            <button type='button' onClick={backToAreas}>
+              Evolução
+            </button>
+
+            <span>›</span>
+
+            <button type='button' onClick={backToItems}>
+              {selectedArea.name}
+            </button>
+
+            <span>›</span>
+
+            <strong>{selectedItem.name}</strong>
+          </div>
+
+          <div
+            className='evolution-item-banner'
+            style={{
+              '--item-color': selectedItem.color,
+            }}
+          >
+            <div className='evolution-item-banner-icon'>
+              {selectedItem.icon}
+            </div>
+
+            <div className='evolution-item-banner-content'>
+              <div className='evolution-title-row'>
+                <div>
+                  <span className='section-kicker'>
+                    {selectedArea.name.toUpperCase()}
+                  </span>
+
+                  <h2>{selectedItem.name}</h2>
+
+                  <p>
+                    {selectedItem.description ||
+                      'Acompanhe sua evolução ao longo do tempo.'}
+                  </p>
+                </div>
+
+                <div className='evolution-actions'>
+                  <button
+                    type='button'
+                    className='ghost'
+                    onClick={openEditItem}
+                  >
+                    ✏️ Editar
+                  </button>
+
+                  <button
+                    type='button'
+                    className='ghost danger'
+                    onClick={deleteItem}
+                  >
+                    🗑️
+                  </button>
+                </div>
+              </div>
+
+              <div className='evolution-stats'>
+                <div>
+                  <span>Campos</span>
+
+                  <strong>{selectedItem.fields.length}</strong>
+                </div>
+
+                <div>
+                  <span>Registros</span>
+
+                  <strong>{selectedItem.records.length}</strong>
+                </div>
+
+                <div>
+                  <span>Último registro</span>
+
+                  <strong>
+                    {selectedItem.records.length
+                      ? formatDate(
+                          [...selectedItem.records].sort((a, b) =>
+                            b.date.localeCompare(a.date),
+                          )[0].date,
+                        )
+                      : '-'}
+                  </strong>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* =====================================================
+              CAMPOS
+          ===================================================== */}
+
+          <div className='evolution-toolbar'>
+            <div>
+              <h3>📊 Dados que você acompanha</h3>
+
+              <span>Defina quais valores serão registrados neste item.</span>
+            </div>
+
+            <button type='button' className='ghost' onClick={openNewField}>
+              ＋ Campo
+            </button>
+          </div>
+
+          {selectedItem.fields.length === 0 ? (
+            <div className='evolution-empty-inline'>
+              <div className='evolution-empty-icon'>📝</div>
+
+              <strong>Configure os dados deste item</strong>
+
+              <span>
+                Por exemplo, em Supino você pode adicionar Peso, Séries e
+                Repetições.
+              </span>
+
+              <button type='button' className='primary' onClick={openNewField}>
+                ＋ Criar primeiro campo
+              </button>
+            </div>
+          ) : (
+            <>
+              <div className='evolution-fields-list'>
+                {selectedItem.fields.map((field) => {
+                  const current = latestByField[field.id];
+
+                  const best = getBestValue(field);
+
+                  const progress = getProgress(field);
+
+                  return (
+                    <div className='evolution-field-summary' key={field.id}>
+                      <div className='evolution-field-summary-main'>
+                        <span className='evolution-field-icon'>📊</span>
+
+                        <div>
+                          <strong>{field.name}</strong>
+
+                          <small>{field.unit || 'valor numérico'}</small>
+                        </div>
+                      </div>
+
+                      <div className='evolution-field-values'>
+                        <div>
+                          <small>Atual</small>
+
+                          <strong>{formatValue(current, field.unit)}</strong>
+                        </div>
+
+                        <div>
+                          <small>Melhor</small>
+
+                          <strong>{formatValue(best, field.unit)}</strong>
+                        </div>
+
+                        {progress != null && (
+                          <div>
+                            <small>Meta</small>
+
+                            <strong>{Math.round(progress)}%</strong>
+                          </div>
+                        )}
+                      </div>
+
+                      <div className='evolution-card-actions'>
+                        <button
+                          type='button'
+                          onClick={() => openEditField(field)}
+                        >
+                          ✏️
+                        </button>
+
+                        <button
+                          type='button'
+                          onClick={() => deleteField(field.id)}
+                        >
+                          ×
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* =================================================
+                  GRÁFICOS
+              ================================================= */}
+
+              <div className='evolution-charts-section'>
+                <div className='evolution-toolbar'>
+                  <div>
+                    <h3>📈 Evolução</h3>
+
+                    <span>
+                      Veja como seus números mudaram ao longo do tempo.
+                    </span>
+                  </div>
+                </div>
+
+                <div className='evolution-chart-grid'>
+                  {selectedItem.fields.map((field) => {
+                    const points = getFieldPoints(field);
+
+                    const current = latestByField[field.id];
+
+                    const best = getBestValue(field);
+
+                    const progress = getProgress(field);
+
+                    return (
+                      <article className='evolution-chart-card' key={field.id}>
+                        <div className='evolution-chart-card-header'>
+                          <div>
+                            <span>{field.name}</span>
+
+                            <strong>{formatValue(current, field.unit)}</strong>
+                          </div>
+
+                          {progress != null && (
+                            <div className='evolution-mini-goal'>
+                              <small>Meta</small>
+
+                              <strong>{Math.round(progress)}%</strong>
+                            </div>
+                          )}
+                        </div>
+
+                        <LineChart
+                          points={points}
+                          color={selectedItem.color}
+                          unit={field.unit}
+                          better={field.better}
+                        />
+
+                        <div className='evolution-chart-footer'>
+                          <span>
+                            Melhor:{' '}
+                            <strong>{formatValue(best, field.unit)}</strong>
+                          </span>
+
+                          <span>
+                            {points.length}{' '}
+                            {points.length === 1 ? 'registro' : 'registros'}
+                          </span>
+                        </div>
+                      </article>
+                    );
+                  })}
+                </div>
+              </div>
+            </>
+          )}
+
+          {/* =====================================================
+              HISTÓRICO
+          ===================================================== */}
+
+          <div className='evolution-records-section'>
+            <div className='evolution-toolbar'>
+              <div>
+                <h3>📝 Histórico</h3>
+
+                <span>Todos os registros deste item.</span>
+              </div>
+
+              {selectedItem.fields.length > 0 && (
+                <button
+                  type='button'
+                  className='primary'
+                  onClick={openRecordForm}
+                >
+                  ＋ Registrar progresso
+                </button>
+              )}
+            </div>
+
+            {selectedItem.records.length === 0 ? (
+              <div className='evolution-empty-inline'>
+                <div className='evolution-empty-icon'>📝</div>
+
+                <strong>Nenhum registro ainda</strong>
+
+                <span>
+                  Registre seu primeiro resultado para começar a construir seu
+                  histórico.
+                </span>
+
+                {selectedItem.fields.length > 0 && (
+                  <button
+                    type='button'
+                    className='primary'
+                    onClick={openRecordForm}
+                  >
+                    ＋ Primeiro registro
+                  </button>
+                )}
+              </div>
+            ) : (
+              <div className='evolution-records'>
+                {[...selectedItem.records]
+                  .sort((a, b) => b.date.localeCompare(a.date))
+                  .map((record) => (
+                    <div className='evolution-record' key={record.id}>
+                      <div className='evolution-record-date'>
+                        <strong>{formatDate(record.date)}</strong>
+
+                        <small>{record.note || 'Sem observação'}</small>
+                      </div>
+
+                      <div className='evolution-record-values'>
+                        {selectedItem.fields.map(
+                          (field) =>
+                            record.values[field.id] != null && (
+                              <span key={field.id}>
+                                <small>{field.name}</small>
+
+                                <strong>
+                                  {formatValue(
+                                    record.values[field.id],
+                                    field.unit,
+                                  )}
+                                </strong>
+                              </span>
+                            ),
+                        )}
+                      </div>
+
+                      <button
+                        type='button'
+                        className='ghost danger'
+                        onClick={() => deleteRecord(record.id)}
+                      >
+                        Excluir
+                      </button>
+                    </div>
+                  ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* =========================================================
+          MODAL — NOVA ÁREA
+      ========================================================= */}
+
+      {showAreaForm && (
+        <div
+          className='evolution-modal-overlay'
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget) {
+              setShowAreaForm(false);
+            }
+          }}
+        >
+          <form className='evolution-modal' onSubmit={saveArea}>
+            <div className='evolution-modal-header'>
+              <div>
+                <span>ÁREA DE EVOLUÇÃO</span>
+
+                <h3>{editingArea ? 'Editar área' : 'Nova área'}</h3>
+              </div>
+
+              <button type='button' onClick={() => setShowAreaForm(false)}>
                 ×
               </button>
             </div>
 
             <label>
-              Nome
+              Nome da área
               <input
-                value={evolutionForm.name}
+                value={areaForm.name}
                 onChange={(event) =>
-                  setEvolutionForm({
-                    ...evolutionForm,
+                  setAreaForm({
+                    ...areaForm,
                     name: event.target.value,
                   })
                 }
-                placeholder='Ex.: Calistenia'
+                placeholder='Ex.: Academia'
                 autoFocus
               />
             </label>
@@ -989,13 +1623,14 @@ export default function Evolucao({ data, save }) {
               <label>
                 Ícone
                 <input
-                  value={evolutionForm.icon}
+                  value={areaForm.icon}
                   onChange={(event) =>
-                    setEvolutionForm({
-                      ...evolutionForm,
+                    setAreaForm({
+                      ...areaForm,
                       icon: event.target.value,
                     })
                   }
+                  placeholder='🏋️'
                 />
               </label>
 
@@ -1003,10 +1638,10 @@ export default function Evolucao({ data, save }) {
                 Cor
                 <input
                   type='color'
-                  value={evolutionForm.color}
+                  value={areaForm.color}
                   onChange={(event) =>
-                    setEvolutionForm({
-                      ...evolutionForm,
+                    setAreaForm({
+                      ...areaForm,
                       color: event.target.value,
                     })
                   }
@@ -1017,14 +1652,14 @@ export default function Evolucao({ data, save }) {
             <label>
               Descrição
               <textarea
-                value={evolutionForm.description}
+                value={areaForm.description}
                 onChange={(event) =>
-                  setEvolutionForm({
-                    ...evolutionForm,
+                  setAreaForm({
+                    ...areaForm,
                     description: event.target.value,
                   })
                 }
-                placeholder='O que você quer acompanhar?'
+                placeholder='Ex.: Acompanhar meu progresso na musculação.'
                 rows='3'
               />
             </label>
@@ -1033,38 +1668,41 @@ export default function Evolucao({ data, save }) {
               <button
                 type='button'
                 className='ghost'
-                onClick={() => setShowEvolutionForm(false)}
+                onClick={() => setShowAreaForm(false)}
               >
                 Cancelar
               </button>
 
               <button type='submit' className='primary'>
-                Salvar
+                Salvar área
               </button>
             </div>
           </form>
         </div>
       )}
 
-      {/* =========================================
-          MODAL — MÉTRICA
-      ========================================= */}
-      {showMetricForm && (
+      {/* =========================================================
+          MODAL — NOVO ITEM
+      ========================================================= */}
+
+      {showItemForm && selectedArea && (
         <div
           className='evolution-modal-overlay'
-          onMouseDown={(event) =>
-            event.target === event.currentTarget && setShowMetricForm(false)
-          }
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget) {
+              setShowItemForm(false);
+            }
+          }}
         >
-          <form className='evolution-modal' onSubmit={saveMetric}>
+          <form className='evolution-modal' onSubmit={saveItem}>
             <div className='evolution-modal-header'>
               <div>
-                <span>MÉTRICA</span>
+                <span>{selectedArea.name.toUpperCase()}</span>
 
-                <h3>{editingMetric ? 'Editar métrica' : 'Nova métrica'}</h3>
+                <h3>{editingItem ? 'Editar item' : 'Novo item'}</h3>
               </div>
 
-              <button type='button' onClick={() => setShowMetricForm(false)}>
+              <button type='button' onClick={() => setShowItemForm(false)}>
                 ×
               </button>
             </div>
@@ -1072,14 +1710,121 @@ export default function Evolucao({ data, save }) {
             <label>
               Nome
               <input
-                value={metricForm.name}
+                value={itemForm.name}
                 onChange={(event) =>
-                  setMetricForm({
-                    ...metricForm,
+                  setItemForm({
+                    ...itemForm,
                     name: event.target.value,
                   })
                 }
-                placeholder='Ex.: Barra fixa'
+                placeholder='Ex.: Supino reto'
+                autoFocus
+              />
+            </label>
+
+            <div className='evolution-form-row'>
+              <label>
+                Ícone
+                <input
+                  value={itemForm.icon}
+                  onChange={(event) =>
+                    setItemForm({
+                      ...itemForm,
+                      icon: event.target.value,
+                    })
+                  }
+                  placeholder='🏋️'
+                />
+              </label>
+
+              <label>
+                Cor
+                <input
+                  type='color'
+                  value={itemForm.color}
+                  onChange={(event) =>
+                    setItemForm({
+                      ...itemForm,
+                      color: event.target.value,
+                    })
+                  }
+                />
+              </label>
+            </div>
+
+            <label>
+              Descrição
+              <textarea
+                value={itemForm.description}
+                onChange={(event) =>
+                  setItemForm({
+                    ...itemForm,
+                    description: event.target.value,
+                  })
+                }
+                placeholder='Ex.: Acompanhar minha carga no supino.'
+                rows='3'
+              />
+            </label>
+
+            <div className='evolution-modal-footer'>
+              <button
+                type='button'
+                className='ghost'
+                onClick={() => setShowItemForm(false)}
+              >
+                Cancelar
+              </button>
+
+              <button type='submit' className='primary'>
+                Salvar item
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
+
+      {/* =========================================================
+          MODAL — NOVO CAMPO
+      ========================================================= */}
+
+      {showFieldForm && selectedItem && (
+        <div
+          className='evolution-modal-overlay'
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget) {
+              setShowFieldForm(false);
+            }
+          }}
+        >
+          <form className='evolution-modal' onSubmit={saveField}>
+            <div className='evolution-modal-header'>
+              <div>
+                <span>DADO DO ITEM</span>
+
+                <h3>{editingField ? 'Editar campo' : 'Novo campo'}</h3>
+              </div>
+
+              <button type='button' onClick={() => setShowFieldForm(false)}>
+                ×
+              </button>
+            </div>
+
+            <p className='evolution-modal-help'>
+              Defina um valor que você deseja registrar neste item.
+            </p>
+
+            <label>
+              Nome do campo
+              <input
+                value={fieldForm.name}
+                onChange={(event) =>
+                  setFieldForm({
+                    ...fieldForm,
+                    name: event.target.value,
+                  })
+                }
+                placeholder='Ex.: Peso'
                 autoFocus
               />
             </label>
@@ -1088,10 +1833,10 @@ export default function Evolucao({ data, save }) {
               <label>
                 Unidade
                 <input
-                  value={metricForm.unit}
+                  value={fieldForm.unit}
                   onChange={(event) =>
-                    setMetricForm({
-                      ...metricForm,
+                    setFieldForm({
+                      ...fieldForm,
                       unit: event.target.value,
                     })
                   }
@@ -1104,10 +1849,10 @@ export default function Evolucao({ data, save }) {
                 <input
                   type='number'
                   step='any'
-                  value={metricForm.goal}
+                  value={fieldForm.goal}
                   onChange={(event) =>
-                    setMetricForm({
-                      ...metricForm,
+                    setFieldForm({
+                      ...fieldForm,
                       goal: event.target.value,
                     })
                   }
@@ -1117,23 +1862,19 @@ export default function Evolucao({ data, save }) {
             </div>
 
             <label>
-              O que representa melhora?
+              Como saber se melhorou?
               <select
-                value={metricForm.better}
+                value={fieldForm.better}
                 onChange={(event) =>
-                  setMetricForm({
-                    ...metricForm,
+                  setFieldForm({
+                    ...fieldForm,
                     better: event.target.value,
                   })
                 }
               >
-                <option value='higher'>
-                  Quanto maior, melhor (peso, reps, distância)
-                </option>
+                <option value='higher'>Quanto maior, melhor</option>
 
-                <option value='lower'>
-                  Quanto menor, melhor (tempo, erros)
-                </option>
+                <option value='lower'>Quanto menor, melhor</option>
               </select>
             </label>
 
@@ -1141,28 +1882,31 @@ export default function Evolucao({ data, save }) {
               <button
                 type='button'
                 className='ghost'
-                onClick={() => setShowMetricForm(false)}
+                onClick={() => setShowFieldForm(false)}
               >
                 Cancelar
               </button>
 
               <button type='submit' className='primary'>
-                Salvar métrica
+                Salvar campo
               </button>
             </div>
           </form>
         </div>
       )}
 
-      {/* =========================================
+      {/* =========================================================
           MODAL — REGISTRAR PROGRESSO
-      ========================================= */}
-      {showRecordForm && selected && (
+      ========================================================= */}
+
+      {showRecordForm && selectedItem && (
         <div
           className='evolution-modal-overlay'
-          onMouseDown={(event) =>
-            event.target === event.currentTarget && setShowRecordForm(false)
-          }
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget) {
+              setShowRecordForm(false);
+            }
+          }}
         >
           <form
             className='evolution-modal evolution-record-modal'
@@ -1170,7 +1914,7 @@ export default function Evolucao({ data, save }) {
           >
             <div className='evolution-modal-header'>
               <div>
-                <span>REGISTRO</span>
+                <span>{selectedItem.name.toUpperCase()}</span>
 
                 <h3>Registrar progresso</h3>
               </div>
@@ -1195,16 +1939,18 @@ export default function Evolucao({ data, save }) {
             </label>
 
             <div className='evolution-record-inputs'>
-              {selected.metrics.map((metric) => (
-                <label key={metric.id}>
-                  {metric.name}
+              {selectedItem.fields.map((field) => (
+                <label key={field.id}>
+                  <span>
+                    {field.name}
 
-                  {metric.unit && <small>{metric.unit}</small>}
+                    {field.unit && <small>{field.unit}</small>}
+                  </span>
 
                   <input
                     type='number'
                     step='any'
-                    value={recordForm.values[metric.id] ?? ''}
+                    value={recordForm.values[field.id] ?? ''}
                     onChange={(event) =>
                       setRecordForm({
                         ...recordForm,
@@ -1212,7 +1958,7 @@ export default function Evolucao({ data, save }) {
                         values: {
                           ...recordForm.values,
 
-                          [metric.id]: event.target.value,
+                          [field.id]: event.target.value,
                         },
                       })
                     }
