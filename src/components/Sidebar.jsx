@@ -52,7 +52,6 @@ const DEFAULT_VISIBLE = {
   foguinho: false,
   assistant: false,
 
-  // NOVO
   profile: true,
 };
 
@@ -68,6 +67,10 @@ function createDefaultConfig() {
   return {
     visibleSections: { ...DEFAULT_VISIBLE },
     order: [...DEFAULT_ORDER],
+
+    // NOVO:
+    // Define se o campo de pesquisa aparece no menu.
+    showSearch: true,
   };
 }
 
@@ -113,7 +116,13 @@ function loadSidebarConfig(currentUser) {
 
     return {
       visibleSections,
+
       order,
+
+      // Compatibilidade com configurações antigas:
+      // se ainda não existir, pesquisa fica ativada.
+      showSearch:
+        typeof parsed.showSearch === 'boolean' ? parsed.showSearch : true,
     };
   } catch {
     return createDefaultConfig();
@@ -149,6 +158,10 @@ export default function Sidebar({
 
   const visibleSections = config.visibleSections;
 
+  // Define se a pesquisa está ativada.
+  const showSearch =
+    typeof config.showSearch === 'boolean' ? config.showSearch : true;
+
   // Carrega a configuração correspondente à conta atual.
   useEffect(() => {
     setConfigState({
@@ -158,6 +171,7 @@ export default function Sidebar({
 
     setDraggedId(null);
     setDragOverId(null);
+    setSearchTerm('');
   }, [storageKey]);
 
   // Salva automaticamente as configurações.
@@ -202,8 +216,26 @@ export default function Sidebar({
     }));
   }
 
-  // Restaura páginas e ordem padrão.
+  // Ativa ou desativa a pesquisa de páginas.
+  function toggleSearch() {
+    updateConfig((current) => {
+      const nextShowSearch = !current.showSearch;
+
+      // Se desativou a pesquisa, limpa o texto atual.
+      if (!nextShowSearch) {
+        setSearchTerm('');
+      }
+
+      return {
+        ...current,
+        showSearch: nextShowSearch,
+      };
+    });
+  }
+
+  // Restaura páginas, ordem e pesquisa padrão.
   function restoreDefault() {
+    setSearchTerm('');
     updateConfig(createDefaultConfig());
   }
 
@@ -278,11 +310,14 @@ export default function Sidebar({
     (section) => visibleSections[section.id],
   );
 
-  const filteredSections = menuSections.filter((section) =>
-    section.label
-      .toLocaleLowerCase('pt-BR')
-      .includes(searchTerm.trim().toLocaleLowerCase('pt-BR')),
-  );
+  // Aplica a pesquisa somente quando ela está ativada.
+  const filteredSections = showSearch
+    ? menuSections.filter((section) =>
+        section.label
+          .toLocaleLowerCase('pt-BR')
+          .includes(searchTerm.trim().toLocaleLowerCase('pt-BR')),
+      )
+    : menuSections;
 
   useEffect(() => {
     function handleEscape(event) {
@@ -293,6 +328,7 @@ export default function Sidebar({
     }
 
     window.addEventListener('keydown', handleEscape);
+
     return () => window.removeEventListener('keydown', handleEscape);
   }, []);
 
@@ -302,6 +338,7 @@ export default function Sidebar({
 
   return (
     <>
+      {/* BOTÃO MOBILE */}
       <button
         type='button'
         className='mobile-sidebar-trigger'
@@ -313,6 +350,7 @@ export default function Sidebar({
         <span aria-hidden='true'>☰</span>
       </button>
 
+      {/* FUNDO DO MENU MOBILE */}
       {mobileOpen && (
         <button
           type='button'
@@ -338,26 +376,32 @@ export default function Sidebar({
 
         {/* MENU PRINCIPAL */}
         <nav className='sidebar-nav' aria-label='Navegação principal'>
-          <div className='sidebar-search'>
-            <span aria-hidden='true'>⌕</span>
-            <input
-              type='search'
-              value={searchTerm}
-              onChange={(event) => setSearchTerm(event.target.value)}
-              placeholder='Buscar página...'
-              aria-label='Buscar página no menu'
-            />
-            {searchTerm && (
-              <button
-                type='button'
-                onClick={() => setSearchTerm('')}
-                aria-label='Limpar busca'
-              >
-                ×
-              </button>
-            )}
-          </div>
+          {/* PESQUISA OPCIONAL */}
+          {showSearch && (
+            <div className='sidebar-search'>
+              <span aria-hidden='true'>⌕</span>
 
+              <input
+                type='search'
+                value={searchTerm}
+                onChange={(event) => setSearchTerm(event.target.value)}
+                placeholder='Buscar página...'
+                aria-label='Buscar página no menu'
+              />
+
+              {searchTerm && (
+                <button
+                  type='button'
+                  onClick={() => setSearchTerm('')}
+                  aria-label='Limpar busca'
+                >
+                  ×
+                </button>
+              )}
+            </div>
+          )}
+
+          {/* PÁGINAS */}
           {filteredSections.map((section) => {
             const isActive = activeSection === section.id;
 
@@ -377,6 +421,7 @@ export default function Sidebar({
           {menuSections.length === 0 && (
             <p className='sidebar-empty'>Nenhuma página ativada.</p>
           )}
+
           {menuSections.length > 0 && filteredSections.length === 0 && (
             <p className='sidebar-empty'>Nenhuma página encontrada.</p>
           )}
@@ -459,6 +504,35 @@ export default function Sidebar({
               <span>↕ Solte entre duas páginas para escolher a posição.</span>
 
               <span>✓ Ative somente os recursos que deseja visualizar.</span>
+            </div>
+
+            {/* CONFIGURAÇÃO DA PESQUISA */}
+            <div className='sidebar-search-setting'>
+              <div className='sidebar-search-setting-info'>
+                <div className='sidebar-search-setting-icon'>🔎</div>
+
+                <div>
+                  <strong>Pesquisa de páginas</strong>
+
+                  <p>
+                    Mostrar um campo para pesquisar rapidamente as páginas do
+                    menu.
+                  </p>
+                </div>
+              </div>
+
+              <label className='sidebar-switch-label'>
+                <input
+                  type='checkbox'
+                  checked={showSearch}
+                  onChange={toggleSearch}
+                  aria-label='Mostrar pesquisa de páginas'
+                />
+
+                <span className='sidebar-switch'>
+                  <span />
+                </span>
+              </label>
             </div>
 
             {/* LISTA DE PÁGINAS */}
