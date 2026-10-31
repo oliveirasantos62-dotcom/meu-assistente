@@ -867,3 +867,614 @@
     animation-duration: 0.01ms !important;
   }
 }
+
+/* =========================================================
+   ESTUDOS — CORREÇÃO COMPLETA DO MODO ESCURO
+   Cole este bloco no FINAL do arquivo Estudos.css
+   ========================================================= */
+
+/* Detecta os seletores de tema escuro mais comuns */
+:is(
+    html.dark,
+    body.dark,
+    html.dark-mode,
+    body.dark-mode,
+    html[data-theme='dark'],
+    body[data-theme='dark'],
+    .dark,
+    .dark-mode,
+    [data-theme='dark']
+  )
+  .diary-page {
+  --study-primary: #9b8cff;
+  --study-primary-dark: #7966ed;
+  --study-primary-light: #29234d;
+
+  --study-text: #f1efff;
+  --study-muted: #aaa8c4;
+  --study-border: #34334f;
+
+  --study-surface: #19192b;
+  --study-background: #10101b;
+
+  --study-success: #43c99a;
+  --study-warning: #f0b653;
+  --study-danger: #ff7c89;
+
+  color: var(--study-text);
+  background: transparent;
+}
+
+/* Fundo geral e cartões */
+:is(
+    html.dark,
+    body.dark,
+    html.dark-mode,
+    body.dark-mode,
+    html[data-theme='dark'],
+    body[data-theme='dark'],
+    .dark,
+    .dark-mode,
+    [data-theme='dark']
+  )
+  .diary-page
+  .card,
+:is(
+    html.dark,
+    body.dark,
+    html.dark-mode,
+    body.dark-mode,
+    html[data-theme='dark'],
+    body[data-theme='dark'],
+    .dark,
+    .dark-mode,
+    [data-theme='dark']
+  )
+  .diary-page
+  .diary-stat,
+:is(
+    html.dark,
+    body.dark,
+    html.dark-mode,
+    body.dark-mode,
+    html[data-theme='dark'],
+    body[data-theme='dark'],
+    .dark,
+    .dark-mode,
+    [data-theme='dark']
+  )
+  .diary-page
+  .study-navigation {
+  color: var(--study-text);
+  background: #19192b;
+  border-color: var(--study-border);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+}
+
+/* Subcartões e estados vazios */
+:is(
+    html.dark,
+    body.dark,
+    html.dark-mode,
+    body.dark-mode,
+    html[data-theme='dark'],
+    body[data-theme='dark'],
+    .dark,
+    .dark-mode,
+    [data-theme='dark']
+  )
+  .diary-page
+  .study-discipline,
+:is(
+    html.dark,
+    body.dark,
+    html.dark-mode,
+    body.dark-mode,
+    html[data-theme='dark'],
+    body[data-theme='dark'],
+    .dark,
+    .dark-mode,
+    [data-theme='dark']
+  )
+  .diary-page
+  .foguinho-card,
+:is(
+    html.dark,
+    body.dark,
+    html.dark-mode,
+    body.dark-mode,
+    html[data-theme='dark'],
+    body[data-theme='dark'],
+    .dark,
+    .dark-mode,
+    [data-theme='dark']
+  )
+  .diary-page
+  .study-empty-performance {
+  color: var(--study-text);
+  background: #1d1c31;
+  border-color: var(--study-border);
+}
+
+/* Títulos e textos */
+:is(
+    html.dark,
+    body.dark,
+    html.dark-mode,
+    body.dark-mode,
+    html[data-theme='dark'],
+    body[data-theme='dark'],
+    .dark,
+    .dark-mode,
+    [data-theme='dark']
+  )
+  .diary-page
+  .card
+  h3,
+:is(
+    html.dark,
+    body.dark,
+    html.dark-mode,
+    body.dark-mode,
+    html[data-theme='dark'],
+    body[data-theme='dark'],
+    .dark,
+    .dark-mode,
+    [data-theme='dark']
+  )
+  .diary-page
+  strong,
+:is(
+    html.dark,
+    body.dark,
+    html.dark-mode,
+    body.dark-mode,
+    html[data-theme='dark'],
+    body[data-theme='dark'],
+    .dark,
+    .dark-mode,
+    [data-theme='dark']
+  )
+  .diary-page
+  label {
+  color: var(--study-text);
+}
+
+:is(
+    html.dark,
+    body.dark,
+    html.dark-mode,
+    body.dark-mode,
+    html[data-theme='dark'],
+    body[data-theme='dark'],
+    .dark,
+    .dark-mode,
+    [data-theme='dark']
+  )
+  .diary-page
+  p,
+:is(
+    html.dark,
+    body.dark,
+    html.dark-mode,
+    body.dark-mode,
+    html[data-theme='dark'],
+    body[data-theme='dark'],
+    .dark,
+    .dark-mode,
+    [data-theme='dark']
+  )
+  .diary-page
+  small,
+:is(
+    html.dark,
+    body.dark,
+    html.dark-mode,
+    body.dark-mode,
+    html[data-theme='dark'],
+    body[data-theme='dark'],
+    .dark,
+    .dark-mode,
+    [data-theme='dark']
+  )
+  .diary-page
+  li {
+  color: var(--study-muted);
+}
+
+/* Navegação */
+:is(
+    html.dark,
+    body.dark,
+    html.dark-mode,
+    body.dark-mode,
+    html[data-theme='dark'],
+    body[data-theme='dark'],
+    .dark,
+    .dark-mode,
+    [data-theme='dark']
+  )
+  .diary-page
+  .study-tab {
+  color: var(--study-muted);
+}
+
+:is(
+    html.dark,
+    body.dark,
+    html.dark-mode,
+    body.dark-mode,
+    html[data-theme='dark'],
+    body[data-theme='dark'],
+    .dark,
+    .dark-mode,
+    [data-theme='dark']
+  )
+  .diary-page
+  .study-tab:hover {
+  color: #ffffff;
+  background: #29234d;
+}
+
+:is(
+    html.dark,
+    body.dark,
+    html.dark-mode,
+    body.dark-mode,
+    html[data-theme='dark'],
+    body[data-theme='dark'],
+    .dark,
+    .dark-mode,
+    [data-theme='dark']
+  )
+  .diary-page
+  .study-tab.active {
+  color: #ffffff;
+  background: #7966ed;
+}
+
+/* Campos de formulário */
+:is(
+    html.dark,
+    body.dark,
+    html.dark-mode,
+    body.dark-mode,
+    html[data-theme='dark'],
+    body[data-theme='dark'],
+    .dark,
+    .dark-mode,
+    [data-theme='dark']
+  )
+  .diary-page
+  input,
+:is(
+    html.dark,
+    body.dark,
+    html.dark-mode,
+    body.dark-mode,
+    html[data-theme='dark'],
+    body[data-theme='dark'],
+    .dark,
+    .dark-mode,
+    [data-theme='dark']
+  )
+  .diary-page
+  select,
+:is(
+    html.dark,
+    body.dark,
+    html.dark-mode,
+    body.dark-mode,
+    html[data-theme='dark'],
+    body[data-theme='dark'],
+    .dark,
+    .dark-mode,
+    [data-theme='dark']
+  )
+  .diary-page
+  textarea {
+  color: #f1efff;
+  background: #171727;
+  border: 1px solid #34334f;
+  color-scheme: dark;
+}
+
+:is(
+    html.dark,
+    body.dark,
+    html.dark-mode,
+    body.dark-mode,
+    html[data-theme='dark'],
+    body[data-theme='dark'],
+    .dark,
+    .dark-mode,
+    [data-theme='dark']
+  )
+  .diary-page
+  input::placeholder,
+:is(
+    html.dark,
+    body.dark,
+    html.dark-mode,
+    body.dark-mode,
+    html[data-theme='dark'],
+    body[data-theme='dark'],
+    .dark,
+    .dark-mode,
+    [data-theme='dark']
+  )
+  .diary-page
+  textarea::placeholder {
+  color: #85839f;
+}
+
+/* Ícones e destaques */
+:is(
+    html.dark,
+    body.dark,
+    html.dark-mode,
+    body.dark-mode,
+    html[data-theme='dark'],
+    body[data-theme='dark'],
+    .dark,
+    .dark-mode,
+    [data-theme='dark']
+  )
+  .diary-page
+  .study-performance-total,
+:is(
+    html.dark,
+    body.dark,
+    html.dark-mode,
+    body.dark-mode,
+    html[data-theme='dark'],
+    body[data-theme='dark'],
+    .dark,
+    .dark-mode,
+    [data-theme='dark']
+  )
+  .diary-page
+  .study-expand-icon,
+:is(
+    html.dark,
+    body.dark,
+    html.dark-mode,
+    body.dark-mode,
+    html[data-theme='dark'],
+    body[data-theme='dark'],
+    .dark,
+    .dark-mode,
+    [data-theme='dark']
+  )
+  .diary-page
+  .diary-stat
+  > span,
+:is(
+    html.dark,
+    body.dark,
+    html.dark-mode,
+    body.dark-mode,
+    html[data-theme='dark'],
+    body[data-theme='dark'],
+    .dark,
+    .dark-mode,
+    [data-theme='dark']
+  )
+  .diary-page
+  .study-empty-icon {
+  color: #c5bbff;
+  background: #29234d;
+}
+
+/* Barras de progresso */
+:is(
+    html.dark,
+    body.dark,
+    html.dark-mode,
+    body.dark-mode,
+    html[data-theme='dark'],
+    body[data-theme='dark'],
+    .dark,
+    .dark-mode,
+    [data-theme='dark']
+  )
+  .diary-page
+  .study-progress-track {
+  background: #35334b;
+}
+
+/* Divisórias */
+:is(
+    html.dark,
+    body.dark,
+    html.dark-mode,
+    body.dark-mode,
+    html[data-theme='dark'],
+    body[data-theme='dark'],
+    .dark,
+    .dark-mode,
+    [data-theme='dark']
+  )
+  .diary-page
+  .study-content-row,
+:is(
+    html.dark,
+    body.dark,
+    html.dark-mode,
+    body.dark-mode,
+    html[data-theme='dark'],
+    body[data-theme='dark'],
+    .dark,
+    .dark-mode,
+    [data-theme='dark']
+  )
+  .diary-page
+  .foguinho-row {
+  border-color: #34334f;
+}
+
+/* Botões secundários */
+:is(
+    html.dark,
+    body.dark,
+    html.dark-mode,
+    body.dark-mode,
+    html[data-theme='dark'],
+    body[data-theme='dark'],
+    .dark,
+    .dark-mode,
+    [data-theme='dark']
+  )
+  .diary-page
+  .study-action-button.secondary {
+  color: #f1efff;
+  background: #292741;
+  border-color: #45415f;
+}
+
+:is(
+    html.dark,
+    body.dark,
+    html.dark-mode,
+    body.dark-mode,
+    html[data-theme='dark'],
+    body[data-theme='dark'],
+    .dark,
+    .dark-mode,
+    [data-theme='dark']
+  )
+  .diary-page
+  .study-action-button.secondary:hover {
+  color: #ffffff;
+  background: #39315f;
+  border-color: #7966ed;
+}
+
+/* Mensagens de sucesso e erro */
+:is(
+    html.dark,
+    body.dark,
+    html.dark-mode,
+    body.dark-mode,
+    html[data-theme='dark'],
+    body[data-theme='dark'],
+    .dark,
+    .dark-mode,
+    [data-theme='dark']
+  )
+  .diary-page
+  .success-message {
+  color: #75e0b8;
+  background: #142d29;
+  border-color: #285747;
+}
+
+:is(
+    html.dark,
+    body.dark,
+    html.dark-mode,
+    body.dark-mode,
+    html[data-theme='dark'],
+    body[data-theme='dark'],
+    .dark,
+    .dark-mode,
+    [data-theme='dark']
+  )
+  .diary-page
+  .auth-error {
+  color: #ff9ca5;
+  background: #321d27;
+  border-color: #63313d;
+}
+
+/* Links e textos de destaque */
+:is(
+    html.dark,
+    body.dark,
+    html.dark-mode,
+    body.dark-mode,
+    html[data-theme='dark'],
+    body[data-theme='dark'],
+    .dark,
+    .dark-mode,
+    [data-theme='dark']
+  )
+  .diary-page
+  a {
+  color: #aa9cff;
+}
+
+/* Ajuste para tabelas e elementos internos */
+:is(
+    html.dark,
+    body.dark,
+    html.dark-mode,
+    body.dark-mode,
+    html[data-theme='dark'],
+    body[data-theme='dark'],
+    .dark,
+    .dark-mode,
+    [data-theme='dark']
+  )
+  .diary-page
+  table,
+:is(
+    html.dark,
+    body.dark,
+    html.dark-mode,
+    body.dark-mode,
+    html[data-theme='dark'],
+    body[data-theme='dark'],
+    .dark,
+    .dark-mode,
+    [data-theme='dark']
+  )
+  .diary-page
+  tr,
+:is(
+    html.dark,
+    body.dark,
+    html.dark-mode,
+    body.dark-mode,
+    html[data-theme='dark'],
+    body[data-theme='dark'],
+    .dark,
+    .dark-mode,
+    [data-theme='dark']
+  )
+  .diary-page
+  td,
+:is(
+    html.dark,
+    body.dark,
+    html.dark-mode,
+    body.dark-mode,
+    html[data-theme='dark'],
+    body[data-theme='dark'],
+    .dark,
+    .dark-mode,
+    [data-theme='dark']
+  )
+  .diary-page
+  th {
+  color: var(--study-text);
+  border-color: var(--study-border);
+}
+
+/* Mantém o cabeçalho roxo original */
+:is(
+    html.dark,
+    body.dark,
+    html.dark-mode,
+    body.dark-mode,
+    html[data-theme='dark'],
+    body[data-theme='dark'],
+    .dark,
+    .dark-mode,
+    [data-theme='dark']
+  )
+  .diary-page
+  .diary-hero {
+  color: #ffffff;
+  background: linear-gradient(125deg, #35256f, #5140a3 65%, #705bd0);
+}
