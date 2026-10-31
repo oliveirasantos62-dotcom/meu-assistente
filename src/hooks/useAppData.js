@@ -23,6 +23,7 @@ function normalizeAppData(rawData) {
 
     habits: Array.isArray(source.habits) ? source.habits : [],
     tasks: Array.isArray(source.tasks) ? source.tasks : [],
+    processes: Array.isArray(source.processes) ? source.processes : [],
 
     calendarEvents: Array.isArray(source.calendarEvents)
       ? source.calendarEvents

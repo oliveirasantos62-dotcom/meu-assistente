@@ -39,6 +39,7 @@ import Gamification from './components/Gamification';
 import Connections from './components/Connections';
 import Foguinho from './components/Foguinho';
 import Grupos from './components/Grupos';
+import Processos from './components/Processos';
 
 export default function App() {
   // =========================================
@@ -403,6 +404,13 @@ export default function App() {
         ========================================= */}
         {activeSection === 'tasks' && (
           <Tasks data={data} save={save} completeTask={completeTask} />
+        )}
+
+        {/* =========================================
+            PROCESSOS — EDITOR VISUAL
+        ========================================= */}
+        {activeSection === 'processos' && (
+          <Processos data={data} save={save} />
         )}
 
         {/* =========================================

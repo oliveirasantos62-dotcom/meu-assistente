@@ -18,6 +18,12 @@ Aplicação de produtividade e organização pessoal construída com **React + V
 
 > A disponibilidade de cada integração depende das variáveis de ambiente, do banco e dos serviços externos configurados.
 
+## Módulo Processos
+
+A página **Processos** é integrada à navegação principal e permite criar mapas mentais e fluxogramas em uma área visual. Ela inclui elementos de etapa, início/fim, decisão e texto; conexões entre elementos; edição de cores e dimensões; modelos iniciais; desfazer/refazer; zoom e exportação em SVG.
+
+Os processos são armazenados no campo `processes` dos dados da aplicação, usando o mecanismo de persistência já utilizado por `useAppData` e `storageService`. Essa implementação não cria tabelas, não executa migrações e não altera registros de serviços externos. Se a sincronização em nuvem for habilitada futuramente para os dados gerais da aplicação, o campo `processes` poderá acompanhar o mesmo fluxo, sem exigir uma tabela nova.
+
 ## Tecnologias
 
 **Frontend:** React 18, Vite 6, JavaScript, CSS e Vitest.  

@@ -3,6 +3,7 @@ import React, { useEffect, useState } from 'react';
 const SECTIONS = [
   { id: 'dashboard', label: '🏠 Painel Principal', fixed: true },
   { id: 'tasks', label: '✅ Tarefas' },
+  { id: 'processos', label: '🧩 Processos' },
   { id: 'calendar', label: '📅 Calendário & Agenda' },
   { id: 'diario', label: '📔 Diário' },
   { id: 'estudos', label: '📚 Estudos' },
@@ -32,6 +33,7 @@ const STORAGE_PREFIX = 'meu-assistente-sidebar-config-';
 const DEFAULT_VISIBLE = {
   dashboard: true,
   tasks: true,
+  processos: true,
   calendar: true,
   diario: true,
   estudos: true,

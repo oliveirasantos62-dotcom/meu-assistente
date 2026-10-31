@@ -17,6 +17,7 @@ export const emptyAppData = {
 
   habits: [],
   tasks: [],
+  processes: [],
   areas: [],
   calendarEvents: [],
 
@@ -138,6 +139,10 @@ function normalizeData(data) {
 
   if (!Array.isArray(merged.tasks)) {
     merged.tasks = [];
+  }
+
+  if (!Array.isArray(merged.processes)) {
+    merged.processes = [];
   }
 
   // NOVO: áreas personalizadas
