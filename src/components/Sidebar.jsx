@@ -326,18 +326,6 @@ export default function Sidebar({
         id='app-sidebar'
         className={`sidebar ${mobileOpen ? 'mobile-open' : ''}`}
       >
-        <div className='sidebar-mobile-header'>
-          <span>MENU</span>
-          <button
-            type='button'
-            className='sidebar-mobile-close'
-            onClick={() => setMobileOpen(false)}
-            aria-label='Fechar menu'
-          >
-            ×
-          </button>
-        </div>
-
         {/* IDENTIDADE */}
         <div className='sidebar-brand'>
           <div className='logo'>A</div>
@@ -350,14 +338,6 @@ export default function Sidebar({
 
         {/* MENU PRINCIPAL */}
         <nav className='sidebar-nav' aria-label='Navegação principal'>
-          <div className='sidebar-nav-heading'>
-            <span>ESPAÇO DE TRABALHO</span>
-            <small>
-              {menuSections.length}{' '}
-              {menuSections.length === 1 ? 'página' : 'páginas'}
-            </small>
-          </div>
-
           <div className='sidebar-search'>
             <span aria-hidden='true'>⌕</span>
             <input
