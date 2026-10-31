@@ -1,208 +1,183 @@
-# 🧠 Meu Assistente Pessoal
+# Meu Assistente Pessoal
 
-Aplicação web desenvolvida para centralizar a organização pessoal, o gerenciamento de tarefas e o acompanhamento de objetivos em um único lugar.
+Aplicação de produtividade e organização pessoal construída com **React + Vite**, com API complementar em **Node.js/Express** e banco **MySQL**. O projeto também mantém integração com serviços do Supabase conforme a configuração do frontend.
 
-O projeto utiliza React e Vite no frontend, com integração ao Supabase para autenticação e armazenamento de dados na nuvem.
+## Funcionalidades
 
-## ✨ Funcionalidades
+- Painel principal e acompanhamento de produtividade.
+- Tarefas, calendário, diário, estudos, objetivos e hábitos.
+- Projetos colaborativos, grupos e conexões entre usuários.
+- Coleções, conquistas, gamificação e Foguinho.
+- Finanças pessoais e investimentos.
+- Assistente e recursos de ciência de dados.
+- Personalização da navegação: ativar/desativar e reordenar páginas.
+- Tema claro/escuro com preferência salva no navegador.
+- Modo foco com temporizador.
+- Persistência local e sincronização/serviços de nuvem conforme configuração.
+- API de autenticação e recursos sociais com JWT e MySQL.
 
-- 🔐 Autenticação de usuários com Supabase.
-- ☁️ Integração com armazenamento em nuvem.
-- ✅ Organização e gerenciamento de tarefas.
-- 📋 Centralização de informações pessoais.
-- 📱 Interface web acessível pelo navegador.
-- 🚀 Preparação para publicação na Vercel.
+> A disponibilidade de cada integração depende das variáveis de ambiente, do banco e dos serviços externos configurados.
 
-> Observação: as funcionalidades disponíveis dependem da implementação atual do projeto e da configuração do Supabase.
+## Tecnologias
 
-## 🛠️ Tecnologias utilizadas
+**Frontend:** React 18, Vite 6, JavaScript, CSS e Vitest.  
+**Backend:** Node.js, Express 5, MySQL2, JWT, bcryptjs, CORS e dotenv.  
+**Serviços:** Supabase (quando configurado).  
+**Ferramentas:** Git, GitHub e Vercel (frontend).
 
-- **React** — construção da interface.
-- **Vite** — ambiente de desenvolvimento e compilação.
-- **JavaScript** — lógica da aplicação.
-- **Supabase** — autenticação e serviços de banco de dados.
-- **Vitest** — testes automatizados.
-- **Git e GitHub** — controle de versão e hospedagem do código.
-- **Vercel** — publicação da aplicação.
-
-## 📁 Estrutura do projeto
+## Estrutura
 
 ```text
 meu-assistente/
-├── public/
+├── backend/
+│   ├── docs/                   # Roteiro e notas de migração
 ├── src/
-│   ├── components/
-│   │   └── Auth.jsx
-│   ├── hooks/
-│   │   ├── useAppData.js
-│   │   └── useAppData.test.jsx
-│   ├── services/
-│   │   ├── storage.js
-│   │   ├── cloudStorage.js
-│   │   └── supabase.js
+│   │   ├── controllers/     # Regras das rotas
+│   │   ├── db/               # Conexão e scripts SQL
+│   │   ├── middleware/       # Autenticação
+│   │   ├── routes/           # Endpoints da API
+│   │   └── server.js
+│   ├── .env.example
+│   └── package.json
+├── docs/                   # Roteiro e notas de migração
+├── src/
+│   ├── components/           # Telas e componentes React
+│   ├── hooks/                # Hooks e testes
+│   ├── services/             # API, armazenamento e Supabase
+│   ├── utils/                # Funções auxiliares
 │   ├── App.jsx
-│   └── main.jsx
+│   └── styles.css
 ├── .env.example
-├── .gitignore
 ├── index.html
 ├── package.json
 └── README.md
 ```
 
-_Alguns arquivos e pastas podem variar conforme a versão atual do projeto._
+## Requisitos
 
-## ⚙️ Requisitos
+- Node.js LTS e npm.
+- MySQL 8 ou compatível, caso utilize a API.
+- Conta/projeto Supabase apenas para os recursos que dependem dele.
 
-Antes de executar o projeto, instale:
-
-- [Node.js](https://nodejs.org/)
-- [Git](https://git-scm.com/)
-- Uma conta no [Supabase](https://supabase.com/), para utilizar os recursos de nuvem.
-
-## 🚀 Como executar localmente
-
-### 1. Clonar o repositório
+Confira as versões instaladas:
 
 ```bash
-git clone https://github.com/SEU-USUARIO/meu-assistente-pessoal.git
+node --version
+npm --version
 ```
 
-Substitua `SEU-USUARIO` pelo seu nome de usuário do GitHub.
+## Configuração e execução
 
-### 2. Entrar na pasta
+### 1. Frontend
 
-```bash
-cd meu-assistente-pessoal
-```
-
-### 3. Instalar as dependências
+Na pasta raiz do projeto:
 
 ```bash
 npm install
 ```
 
-### 4. Configurar as variáveis de ambiente
-
-Crie um arquivo `.env` na raiz do projeto:
-
-```env
-VITE_SUPABASE_URL=https://SEU-PROJETO.supabase.co
-VITE_SUPABASE_PUBLISHABLE_KEY=SUA_CHAVE_PUBLICA
-```
-
-Obtenha os valores nas configurações do seu projeto Supabase. Utilize a URL da API e uma chave pública `sb_publishable_...`, não o endereço do painel administrativo.
-
-**Importante:** não envie o arquivo `.env` para o GitHub. Nunca coloque chaves secretas ou `service_role` no frontend.
-
-### 5. Iniciar o servidor
-
-```bash
-npm run dev
-```
-
-Abra no navegador o endereço apresentado pelo Vite, geralmente:
-
-```text
-http://localhost:5173
-```
-
-## 🧪 Testes
-
-Para executar os testes automatizados:
-
-```bash
-npx vitest run
-```
-
-## 📦 Compilação para produção
-
-Para verificar se a aplicação compila corretamente:
-
-```bash
-npm run build
-```
-
-Os arquivos de produção serão gerados na pasta `dist/`.
-
-Para testar a versão compilada localmente:
-
-```bash
-npm run preview
-```
-
-## ☁️ Publicação na Vercel
-
-1. Envie o projeto para um repositório no GitHub.
-2. Acesse [Vercel](https://vercel.com/).
-3. Importe o repositório.
-4. Configure as variáveis `VITE_SUPABASE_URL` e `VITE_SUPABASE_PUBLISHABLE_KEY` nas configurações do projeto.
-5. Execute a publicação.
-
-Configuração padrão para Vite:
-
-- **Build Command:** `npm run build`
-- **Output Directory:** `dist`
-- **Install Command:** `npm install`
-
-Após a publicação, o Vercel fornecerá um endereço para acessar a aplicação.
-
-## 🔒 Segurança e armazenamento
-
-- O GitHub armazena o código-fonte e o histórico de alterações.
-- A Vercel hospeda a aplicação web.
-- O Supabase pode armazenar dados na nuvem, desde que o aplicativo esteja configurado para gravá-los no banco de dados.
-- As tabelas que contêm dados pessoais devem utilizar políticas de segurança adequadas, como Row Level Security (RLS).
-- As credenciais dos usuários devem ser gerenciadas pelo sistema de autenticação, nunca armazenadas em texto puro pelo aplicativo.
-- O arquivo `.env` deve permanecer fora do controle de versão.
-
-## 🗺️ Próximas melhorias
-
-- [ ] Aprimorar a organização das tarefas.
-- [ ] Garantir a persistência dos dados na nuvem.
-- [ ] Validar o isolamento dos dados entre usuários.
-- [ ] Melhorar a experiência em dispositivos móveis.
-- [ ] Ampliar a cobertura de testes.
-- [ ] Documentar novas funcionalidades.
-
-## 👨‍💻 Desenvolvimento
-
-Projeto pessoal desenvolvido com o objetivo de praticar desenvolvimento web, React, integração com serviços de backend, testes automatizados e publicação de aplicações.
-
----
-
-**Meu Assistente Pessoal** — organização, tecnologia e produtividade em um só lugar.
-
-## Fase 2 — Contas e Conexões
-
-A Fase 2 usa uma API Node/Express separada com MySQL e JWT.
-
-### Frontend
-
-Configure `.env` a partir de `.env.example`:
+Copie `.env.example` para `.env` e ajuste as variáveis necessárias:
 
 ```env
 VITE_API_URL=http://localhost:3001
 ```
 
-O frontend implementa:
+Se utilizar recursos Supabase, configure também as variáveis exigidas pelo arquivo `src/services/supabase.js`. Nunca coloque chave `service_role` ou segredo privado em variáveis `VITE_*`, pois elas são expostas ao navegador.
 
-- cadastro com nome, e-mail, senha e nome de usuário;
-- login;
-- sessão persistida por JWT;
-- recuperação da sessão com `/api/auth/me`;
-- logout local;
-- pesquisa de usuários;
-- envio de convite de conexão;
-- aceitar/recusar convite;
-- bloqueio de conexão pela API;
-- menu lateral personalizado por conta.
+Inicie:
 
-### Backend
+```bash
+npm run dev
+```
 
-O backend fica na pasta separada `backend/` do projeto de desenvolvimento e não deve ser enviado para o deploy do frontend na Vercel.
+O Vite normalmente disponibiliza o frontend em `http://localhost:5173`.
 
-Para desenvolvimento local, mantenha a API em `http://localhost:3001` e o frontend em `http://localhost:5173`.
+### 2. Backend (opcional, para autenticação e recursos da API)
 
-### Limite desta fase
+Abra outro terminal:
 
-As informações dos módulos pessoais (tarefas, hábitos, diário, calendário, finanças etc.) ainda usam a persistência local existente. A migração desses dados para MySQL será uma etapa posterior.
+```bash
+cd backend
+npm install
+```
+
+Copie `backend/.env.example` para `backend/.env` e configure os dados reais do MySQL e um segredo JWT forte:
+
+```env
+PORT=3001
+DB_HOST=localhost
+DB_PORT=3306
+DB_USER=root
+DB_PASSWORD=sua_senha
+DB_NAME=meu_assistente
+JWT_SECRET=gere-um-segredo-longo-e-aleatorio
+FRONTEND_URL=http://localhost:5173
+```
+
+Crie o banco `meu_assistente` no MySQL e aplique os scripts SQL necessários que estão em `backend/src/db/`, respeitando a sequência/fase indicada no nome dos arquivos e a estrutura já existente do banco.
+
+Inicie a API:
+
+```bash
+npm run dev
+```
+
+A rota `http://localhost:3001/api/health` permite verificar se a API está respondendo.
+
+Para executar em modo normal:
+
+```bash
+npm start
+```
+
+## Testes e build
+
+Na raiz do frontend:
+
+```bash
+npm test
+npx vitest run
+npm run build
+npm run preview
+```
+
+- `npm test`: inicia o Vitest em modo interativo.
+- `npx vitest run`: executa os testes uma vez.
+- `npm run build`: gera a versão de produção em `dist/`.
+- `npm run preview`: serve localmente a build gerada.
+
+O backend atualmente não possui script de testes automatizados configurado.
+
+## Publicação
+
+### Frontend na Vercel
+
+1. Envie o repositório ao GitHub sem arquivos `.env`.
+2. Importe o repositório na Vercel.
+3. Defina as variáveis de ambiente do frontend no painel da Vercel.
+4. Use `npm run build` como comando de build e `dist` como diretório de saída.
+5. Publique e valide autenticação, navegação e persistência.
+
+A API Express/MySQL precisa ser hospedada separadamente em um ambiente que suporte Node.js e tenha acesso ao banco. Atualize `VITE_API_URL` para a URL pública da API e configure `FRONTEND_URL` no backend com o domínio publicado do frontend.
+
+## Segurança e dados
+
+- Não versionar `.env`, senhas, tokens ou credenciais privadas.
+- Manter `.env.example` apenas com nomes de variáveis e valores ilustrativos.
+- Não expor segredos em variáveis `VITE_*`.
+- Usar senha forte para o MySQL e `JWT_SECRET` aleatório e exclusivo.
+- Aplicar controles de acesso e validação no backend.
+- Revisar políticas RLS do Supabase para tabelas acessadas pelo cliente.
+- Fazer backup antes de executar scripts de alteração do banco.
+
+## Convenções para manutenção
+
+- Preserve os identificadores de seções usados pelo `Sidebar` e pelo `App.jsx`.
+- Antes de alterar persistência, confira `src/hooks/useAppData.js` e os serviços em `src/services/`.
+- Centralize estilos compartilhados em `src/styles.css`; evite regras duplicadas e seletores globais muito abrangentes.
+- Ao adicionar uma tela, verifique navegação, tema claro/escuro, responsividade e estados vazios.
+- Rode `npx vitest run` e `npm run build` antes de integrar mudanças.
+
+---
+
+**Meu Assistente Pessoal** — organização, produtividade e desenvolvimento contínuo.

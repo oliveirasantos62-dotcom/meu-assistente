@@ -7180,3 +7180,209 @@ body.dark .profile-feedback-success {
     width: 100%;
   }
 }
+
+
+/* =========================================================
+   AJUSTES DE CONSISTÊNCIA — SIDEBAR E TEMAS
+   ========================================================= */
+
+/* A grade do menu não deve distribuir a altura livre entre poucos itens. */
+.sidebar-nav {
+  align-content: start;
+  grid-auto-rows: max-content;
+  justify-items: stretch;
+  min-height: 0;
+}
+
+.sidebar-nav > .nav-item {
+  display: flex;
+  flex: 0 0 auto;
+  height: auto;
+  min-height: 42px;
+  max-height: 48px;
+  align-self: start;
+  justify-content: flex-start;
+  line-height: 1.35;
+}
+
+.nav-item-label {
+  display: block;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sidebar-empty {
+  align-self: start;
+  margin: 8px 2px;
+  padding: 12px;
+  color: var(--site-text-muted);
+  border: 1px dashed var(--site-border);
+  border-radius: 12px;
+  font-size: 13px;
+}
+
+.sidebar-footer {
+  flex: 0 0 auto;
+}
+
+.sidebar-footer > button {
+  width: 100%;
+  min-height: 40px;
+  margin-top: 7px;
+  justify-content: flex-start;
+}
+
+.sidebar-settings-content {
+  min-height: 0;
+  overscroll-behavior: contain;
+}
+
+.sidebar-settings-modal,
+.sidebar-settings-content,
+.sidebar-option,
+.sidebar-settings-info,
+.sidebar-settings-footer {
+  color: var(--site-on-background);
+}
+
+body,
+#app,
+.main-content,
+.sidebar,
+.sidebar-settings-modal,
+.sidebar-option,
+.card,
+.profile-card,
+input,
+select,
+textarea,
+button {
+  transition:
+    background-color 180ms ease,
+    color 180ms ease,
+    border-color 180ms ease,
+    box-shadow 180ms ease;
+}
+
+body.dark {
+  color-scheme: dark;
+}
+
+body.dark .sidebar,
+body.dark .sidebar-settings-modal,
+body.dark .sidebar-option,
+body.dark .sidebar-settings-info,
+body.dark .sidebar-settings-content,
+body.dark .sidebar-settings-footer,
+body.dark .card,
+body.dark .profile-card {
+  color: var(--site-on-background);
+  border-color: var(--site-border);
+}
+
+body.dark .sidebar-option {
+  background: var(--site-card-bg);
+}
+
+body.dark .sidebar-option small,
+body.dark .sidebar-settings-header p,
+body.dark .sidebar-settings-info {
+  color: var(--site-text-muted);
+}
+
+body.dark input,
+body.dark select,
+body.dark textarea {
+  background-color: var(--site-card-bg);
+  color: var(--site-on-background);
+  border-color: var(--site-border);
+}
+
+body.dark input::placeholder,
+body.dark textarea::placeholder {
+  color: var(--site-text-muted);
+}
+
+@media (max-width: 900px) {
+  .sidebar {
+    position: relative;
+    inset: auto;
+    width: 100%;
+    min-height: 0;
+    margin: 0 0 16px;
+  }
+
+  .sidebar-nav {
+    flex: 0 1 auto;
+    max-height: min(42vh, 360px);
+  }
+
+  .main-content {
+    margin-left: 0;
+    max-width: 100%;
+    padding: 12px 0;
+  }
+
+  #app {
+    padding: 14px;
+  }
+}
+
+@media (max-width: 560px) {
+  .sidebar {
+    padding: 14px;
+    border-radius: 18px;
+  }
+
+  .sidebar-nav {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 6px;
+    max-height: 260px;
+  }
+
+  .sidebar-nav > .nav-item {
+    min-width: 0;
+    padding: 9px 10px;
+    font-size: 12px;
+  }
+
+  .sidebar-footer {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .main-content {
+    padding: 8px 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
+}
+
+
+/* Mantém os itens inativos da navegação visualmente neutros no tema escuro. */
+body.dark .sidebar-nav > .nav-item {
+  background: transparent;
+  border-color: transparent;
+  color: var(--site-text-muted);
+}
+body.dark .sidebar-nav > .nav-item:hover {
+  background: var(--site-primary-soft);
+  border-color: var(--site-border);
+  color: var(--site-primary);
+}
+body.dark .sidebar-nav > .nav-item.active {
+  background: var(--site-primary);
+  border-color: var(--site-primary);
+  color: #fff;
+}
