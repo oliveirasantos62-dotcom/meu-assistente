@@ -358,7 +358,7 @@ export default function App() {
         {/* DIÁRIO */}
         {activeSection === 'diario' && <Diario data={data} save={save} />}
 
-        {/* ESTUDOS + LEITURA */}
+        {/* ESTUDOS */}
         {activeSection === 'estudos' && <Estudos />}
 
         {/* OBJETIVOS */}

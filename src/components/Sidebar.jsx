@@ -5,7 +5,7 @@ const SECTIONS = [
   { id: 'tasks', label: '✅ Tarefas' },
   { id: 'calendar', label: '📅 Calendário & Agenda' },
   { id: 'diario', label: '📔 Diário' },
-  { id: 'estudos', label: '📚 Estudos & Leitura' },
+  { id: 'estudos', label: '📚 Estudos' },
   { id: 'goals', label: '🎯 Objetivos' },
   { id: 'habits', label: '🔥 Hábitos' },
   { id: 'projects', label: '📁 Projetos' },
