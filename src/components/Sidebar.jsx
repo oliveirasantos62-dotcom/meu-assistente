@@ -279,7 +279,9 @@ export default function Sidebar({
   );
 
   const filteredSections = menuSections.filter((section) =>
-    section.label.toLocaleLowerCase('pt-BR').includes(searchTerm.trim().toLocaleLowerCase('pt-BR')),
+    section.label
+      .toLocaleLowerCase('pt-BR')
+      .includes(searchTerm.trim().toLocaleLowerCase('pt-BR')),
   );
 
   useEffect(() => {
@@ -320,7 +322,10 @@ export default function Sidebar({
         />
       )}
 
-      <aside id='app-sidebar' className={`sidebar ${mobileOpen ? 'mobile-open' : ''}`}>
+      <aside
+        id='app-sidebar'
+        className={`sidebar ${mobileOpen ? 'mobile-open' : ''}`}
+      >
         <div className='sidebar-mobile-header'>
           <span>MENU</span>
           <button
@@ -347,7 +352,10 @@ export default function Sidebar({
         <nav className='sidebar-nav' aria-label='Navegação principal'>
           <div className='sidebar-nav-heading'>
             <span>ESPAÇO DE TRABALHO</span>
-            <small>{menuSections.length} {menuSections.length === 1 ? 'página' : 'páginas'}</small>
+            <small>
+              {menuSections.length}{' '}
+              {menuSections.length === 1 ? 'página' : 'páginas'}
+            </small>
           </div>
 
           <div className='sidebar-search'>
