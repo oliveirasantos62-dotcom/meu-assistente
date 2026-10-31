@@ -1137,4 +1137,31 @@ body.dark .assistant-page .assistant-analysis-button strong,
 body.dark .assistant-page .assistant-integrated-summary strong { color: #f0f2f5; }
 body.dark .assistant-page .quick-prompt:hover { background: #292e49; border-color: #7667e8; }
 
+/* Resposta do assistente: contraste próprio para o modo escuro */
+body.dark .assistant-page .assistant-answer {
+  background: linear-gradient(135deg, #20243a, #1b2930);
+  border-color: #3b4260;
+  color: #edf0fa;
+}
+body.dark .assistant-page .assistant-answer .answer-heading {
+  color: #b7aaff;
+}
+body.dark .assistant-page .assistant-answer p {
+  color: #e2e6f2;
+}
+body.dark .assistant-page .assistant-answer strong,
+body.dark .assistant-page .assistant-answer li {
+  color: #f1f3fb;
+}
+body.dark .assistant-page .assistant-answer a {
+  color: #b9adff;
+}
+body.dark .assistant-page .assistant-answer code {
+  color: #e7e3ff;
+  background: #111625;
+  border: 1px solid #39405a;
+  border-radius: 5px;
+  padding: 2px 5px;
+}
+
 `;
