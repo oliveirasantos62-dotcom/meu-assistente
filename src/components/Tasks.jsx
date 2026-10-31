@@ -6,7 +6,6 @@ const EMPTY_FORM = {
   priority: 'Média',
   deadline: '',
   frequency: '1x',
-  tag: 'Geral',
   xp: 40,
   projectId: '',
   areaId: '',
@@ -30,12 +29,15 @@ function createId() {
 
 function localDate() {
   const d = new Date();
+
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
 
 function formatDate(value) {
   if (!value) return '';
+
   const [year, month, day] = value.split('-');
+
   return `${day}/${month}/${year}`;
 }
 
@@ -68,6 +70,10 @@ export default function Tasks({ data, save, completeTask }) {
     );
   };
 
+  // =====================================
+  // FILTROS
+  // =====================================
+
   const visibleTasks = useMemo(() => {
     const query = search.trim().toLocaleLowerCase('pt-BR');
 
@@ -78,9 +84,6 @@ export default function Tasks({ data, save, completeTask }) {
           .toLocaleLowerCase('pt-BR')
           .includes(query) ||
         String(task.description || '')
-          .toLocaleLowerCase('pt-BR')
-          .includes(query) ||
-        String(task.tag || '')
           .toLocaleLowerCase('pt-BR')
           .includes(query);
 
@@ -93,11 +96,13 @@ export default function Tasks({ data, save, completeTask }) {
           task.deadline &&
           task.deadline < localDate());
 
+      const taskArea = getTaskArea(task);
+
       const matchesArea =
         areaFilter === 'all' ||
         (areaFilter === 'none'
-          ? !getTaskArea(task)
-          : String(getTaskArea(task)?.id) === String(areaFilter));
+          ? !taskArea
+          : String(taskArea?.id) === String(areaFilter));
 
       return matchesSearch && matchesFilter && matchesArea;
     });
@@ -130,6 +135,9 @@ export default function Tasks({ data, save, completeTask }) {
       areaId: taskArea ? String(taskArea.id) : '',
     });
 
+    // Não reutiliza a categoria antiga no formulário.
+    delete task.tag;
+
     setShowForm(true);
   };
 
@@ -137,6 +145,7 @@ export default function Tasks({ data, save, completeTask }) {
     event.preventDefault();
 
     const name = form.name.trim();
+
     if (!name) return;
 
     const taskData = {
@@ -150,9 +159,19 @@ export default function Tasks({ data, save, completeTask }) {
     };
 
     const updatedTasks = editingId
-      ? tasksList.map((task) =>
-          task.id === editingId ? { ...task, ...taskData } : task,
-        )
+      ? tasksList.map((task) => {
+          if (task.id !== editingId) return task;
+
+          const updatedTask = {
+            ...task,
+            ...taskData,
+          };
+
+          // Remove a categoria antiga ao salvar a tarefa.
+          delete updatedTask.tag;
+
+          return updatedTask;
+        })
       : [
           ...tasksList,
           {
@@ -350,6 +369,7 @@ export default function Tasks({ data, save, completeTask }) {
   const getAreaCount = (areaId) =>
     tasksList.filter((task) => {
       const area = getTaskArea(task);
+
       return area && String(area.id) === String(areaId);
     }).length;
 
@@ -419,46 +439,58 @@ export default function Tasks({ data, save, completeTask }) {
         </button>
       </div>
 
-      {/* =====================================
-          ABA DE TAREFAS
-      ===================================== */}
-
+      {/* ABA DE TAREFAS */}
       {tab === 'tasks' && (
         <>
           <div className='tasks-toolbar'>
-            <input
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder='Buscar tarefa, descrição ou categoria...'
-              aria-label='Buscar tarefas'
-            />
+            <div className='filter-field search-field'>
+              <label htmlFor='task-search'>Pesquisar</label>
 
-            <select
-              value={filter}
-              onChange={(e) => setFilter(e.target.value)}
-              aria-label='Filtrar por status'
-            >
-              <option value='all'>Todos os status</option>
-              <option value='pending'>Pendentes</option>
-              <option value='done'>Concluídas</option>
-              <option value='overdue'>Atrasadas</option>
-            </select>
+              <input
+                id='task-search'
+                type='search'
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder='Buscar tarefa ou descrição...'
+                aria-label='Buscar tarefas'
+              />
+            </div>
 
-            <select
-              value={areaFilter}
-              onChange={(e) => setAreaFilter(e.target.value)}
-              aria-label='Filtrar por área'
-            >
-              <option value='all'>Todas as áreas</option>
+            <div className='filter-field'>
+              <label htmlFor='task-status-filter'>Status</label>
 
-              <option value='none'>Sem área</option>
+              <select
+                id='task-status-filter'
+                value={filter}
+                onChange={(e) => setFilter(e.target.value)}
+                aria-label='Filtrar por status'
+              >
+                <option value='all'>Todos os status</option>
+                <option value='pending'>Pendentes</option>
+                <option value='done'>Concluídas</option>
+                <option value='overdue'>Atrasadas</option>
+              </select>
+            </div>
 
-              {areasList.map((area) => (
-                <option key={area.id} value={String(area.id)}>
-                  {area.icon} {area.name}
-                </option>
-              ))}
-            </select>
+            <div className='filter-field'>
+              <label htmlFor='task-area-filter'>Áreas</label>
+
+              <select
+                id='task-area-filter'
+                value={areaFilter}
+                onChange={(e) => setAreaFilter(e.target.value)}
+                aria-label='Filtrar por área'
+              >
+                <option value='all'>Todas as áreas</option>
+                <option value='none'>Sem área</option>
+
+                {areasList.map((area) => (
+                  <option key={area.id} value={String(area.id)}>
+                    {area.icon} {area.name}
+                  </option>
+                ))}
+              </select>
+            </div>
           </div>
 
           <div className='tasks-list'>
@@ -509,8 +541,6 @@ export default function Tasks({ data, save, completeTask }) {
                       <span className='frequency'>
                         {task.frequency || '1x'}
                       </span>
-
-                      <span className='tag'>{task.tag || 'Geral'}</span>
 
                       {area && (
                         <span
@@ -583,10 +613,7 @@ export default function Tasks({ data, save, completeTask }) {
         </>
       )}
 
-      {/* =====================================
-          ABA DE RECORRENTES
-      ===================================== */}
-
+      {/* ABA DE RECORRENTES */}
       {tab === 'daily' && (
         <div className='daily'>
           {recurringTasks.length ? (
@@ -597,6 +624,7 @@ export default function Tasks({ data, save, completeTask }) {
                 <div className='daily-row' key={task.id}>
                   <div>
                     <strong>{task.name}</strong>
+
                     {area && (
                       <small className='subtitle'>
                         {area.icon} {area.name}
@@ -625,15 +653,13 @@ export default function Tasks({ data, save, completeTask }) {
         </div>
       )}
 
-      {/* =====================================
-          ABA DE ÁREAS
-      ===================================== */}
-
+      {/* ABA DE ÁREAS */}
       {tab === 'areas' && (
         <div className='areas-section'>
           <div className='section-title'>
             <div>
               <h3>📂 Minhas áreas</h3>
+
               <p className='subtitle'>
                 Crie espaços para organizar diferentes partes da sua vida.
               </p>
@@ -698,7 +724,9 @@ export default function Tasks({ data, save, completeTask }) {
           ) : (
             <div className='empty-areas'>
               <span>📂</span>
+
               <h3>Nenhuma área criada</h3>
+
               <p className='subtitle'>
                 Crie sua primeira área para começar a organizar suas tarefas.
               </p>
@@ -715,10 +743,7 @@ export default function Tasks({ data, save, completeTask }) {
         </div>
       )}
 
-      {/* =====================================
-          MODAL DE TAREFAS
-      ===================================== */}
-
+      {/* MODAL DE TAREFAS */}
       {showForm && (
         <div
           className='task-modal-backdrop'
@@ -801,16 +826,6 @@ export default function Tasks({ data, save, completeTask }) {
               </label>
 
               <label>
-                Categoria
-                <input
-                  value={form.tag}
-                  onChange={(e) => updateForm('tag', e.target.value)}
-                  maxLength={40}
-                  placeholder='Geral, Estudos...'
-                />
-              </label>
-
-              <label>
                 Recompensa XP
                 <input
                   type='number'
@@ -877,10 +892,7 @@ export default function Tasks({ data, save, completeTask }) {
         </div>
       )}
 
-      {/* =====================================
-          MODAL DE ÁREAS
-      ===================================== */}
-
+      {/* MODAL DE ÁREAS */}
       {showAreaForm && (
         <div
           className='task-modal-backdrop'
@@ -958,7 +970,9 @@ export default function Tasks({ data, save, completeTask }) {
 
             <div className='area-preview'>
               <span>{areaForm.icon || '📁'}</span>
+
               <strong>{areaForm.name || 'Nome da área'}</strong>
+
               <div
                 className='area-preview-dot'
                 style={{ background: areaForm.color }}
@@ -982,11 +996,12 @@ export default function Tasks({ data, save, completeTask }) {
         </div>
       )}
 
-      {/* =====================================
-          ESTILIZAÇÃO
-      ===================================== */}
-
+      {/* ESTILIZAÇÃO */}
       <style>{`
+        .tasks-page {
+          min-width: 0;
+        }
+
         .tasks-page .section-title {
           display: flex;
           justify-content: space-between;
@@ -995,26 +1010,77 @@ export default function Tasks({ data, save, completeTask }) {
           flex-wrap: wrap;
         }
 
-        .tasks-toolbar {
-          display: flex;
-          gap: 10px;
-          margin: 14px 0;
-          flex-wrap: wrap;
+        /* FILTROS */
+
+        .tasks-page .tasks-toolbar {
+          display: grid;
+          grid-template-columns: minmax(220px, 1fr) minmax(160px, 200px) minmax(160px, 220px);
+          gap: 14px;
+          width: 100%;
+          margin: 20px 0;
+          padding: 0;
+          align-items: end;
+          box-sizing: border-box;
+          overflow: visible;
+          position: relative;
+          z-index: 1;
         }
 
-        .tasks-toolbar input {
-          flex: 1;
-          min-width: 180px;
+        .tasks-page .filter-field {
+          display: flex !important;
+          flex-direction: column;
+          align-items: stretch;
+          justify-content: flex-end;
+          gap: 7px;
+          width: 100%;
+          min-width: 0;
+          opacity: 1 !important;
+          visibility: visible !important;
+          overflow: visible;
         }
 
-        .tasks-toolbar select {
-          min-width: 140px;
+        .tasks-page .filter-field label {
+          display: block !important;
+          position: static !important;
+          visibility: visible !important;
+          opacity: 1 !important;
+          font-size: 13px;
+          font-weight: 700;
+          line-height: 1.4;
+          margin: 0;
+          color: inherit;
+        }
+
+        .tasks-page .tasks-toolbar input,
+        .tasks-page .tasks-toolbar select {
+          display: block !important;
+          visibility: visible !important;
+          opacity: 1 !important;
+          position: static !important;
+          width: 100% !important;
+          min-width: 0 !important;
           max-width: 100%;
+          height: 44px;
+          box-sizing: border-box;
+          margin: 0;
+          flex: none;
+          font: inherit;
+        }
+
+        .tasks-page .tasks-toolbar input {
+          padding: 0 12px;
+        }
+
+        .tasks-page .tasks-toolbar select {
+          padding: 0 30px 0 12px;
+          cursor: pointer;
+          appearance: auto;
         }
 
         .tasks-list {
           display: grid;
           gap: 10px;
+          min-width: 0;
         }
 
         .tasks-page .task {
@@ -1024,6 +1090,7 @@ export default function Tasks({ data, save, completeTask }) {
           padding: 14px;
           border: 1px solid var(--border-color, rgba(120,120,120,.2));
           border-radius: 14px;
+          min-width: 0;
         }
 
         .tasks-page .task.done .task-name {
@@ -1053,6 +1120,7 @@ export default function Tasks({ data, save, completeTask }) {
         .task-name {
           display: block;
           margin-bottom: 6px;
+          overflow-wrap: anywhere;
         }
 
         .task-meta {
@@ -1068,11 +1136,20 @@ export default function Tasks({ data, save, completeTask }) {
           display: flex;
           gap: 4px;
           flex-wrap: wrap;
+          flex-shrink: 0;
         }
 
-        .priority-alta { color: #ef4444; }
-        .priority-média { color: #d97706; }
-        .priority-baixa { color: #16a34a; }
+        .priority-alta {
+          color: #ef4444;
+        }
+
+        .priority-média {
+          color: #d97706;
+        }
+
+        .priority-baixa {
+          color: #16a34a;
+        }
 
         .deadline.overdue {
           color: #ef4444;
@@ -1268,7 +1345,30 @@ export default function Tasks({ data, save, completeTask }) {
           min-width: 0;
         }
 
-        @media(max-width: 650px) {
+        /* TABLETS */
+
+        @media (max-width: 850px) {
+          .tasks-page .tasks-toolbar {
+            grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+          }
+
+          .tasks-page .search-field {
+            grid-column: 1 / -1;
+          }
+        }
+
+        /* CELULARES */
+
+        @media (max-width: 520px) {
+          .tasks-page .tasks-toolbar {
+            grid-template-columns: minmax(0, 1fr);
+            gap: 12px;
+          }
+
+          .tasks-page .search-field {
+            grid-column: auto;
+          }
+
           .tasks-page .task {
             flex-wrap: wrap;
           }
@@ -1276,11 +1376,6 @@ export default function Tasks({ data, save, completeTask }) {
           .task-actions {
             width: 100%;
             justify-content: flex-end;
-          }
-
-          .tasks-toolbar > * {
-            width: 100%;
-            min-width: 0;
           }
 
           .form-grid {
