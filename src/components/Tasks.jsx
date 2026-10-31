@@ -59,6 +59,8 @@ export default function Tasks({ data, save, completeTask }) {
   const tasksList = Array.isArray(data?.tasks) ? data.tasks : [];
   const projectsList = Array.isArray(data?.projects) ? data.projects : [];
   const areasList = Array.isArray(data?.areas) ? data.areas : [];
+  const habitsList = Array.isArray(data?.habits) ? data.habits : [];
+  const today = localDate();
 
   // Localiza a área de uma tarefa.
   // Também reconhece tarefas antigas que guardavam o nome em "area".
@@ -77,27 +79,43 @@ export default function Tasks({ data, save, completeTask }) {
   const visibleTasks = useMemo(() => {
     const query = search.trim().toLocaleLowerCase('pt-BR');
 
-    return tasksList.filter((task) => {
+    const regularItems = tasksList.map((task) => ({
+      ...task,
+      itemType: 'task',
+      itemKey: `task-${task.id}`,
+    }));
+
+    // Hábitos são projetados na lista usando o histórico do dia.
+    // Não são convertidos em tarefas nem gravados em data.tasks.
+    const habitItems = habitsList.map((habit) => ({
+      id: habit.id,
+      name: habit.name,
+      description: 'Hábito diário',
+      done: Boolean(habit.history?.[today]),
+      xp: 30,
+      frequency: 'Diária',
+      itemType: 'habit',
+      itemKey: `habit-${habit.id}`,
+      habit,
+    }));
+
+    return [...regularItems, ...habitItems].filter((item) => {
       const matchesSearch =
         !query ||
-        String(task.name || '')
-          .toLocaleLowerCase('pt-BR')
-          .includes(query) ||
-        String(task.description || '')
-          .toLocaleLowerCase('pt-BR')
-          .includes(query);
+        String(item.name || '').toLocaleLowerCase('pt-BR').includes(query) ||
+        String(item.description || '').toLocaleLowerCase('pt-BR').includes(query);
 
       const matchesFilter =
         filter === 'all' ||
-        (filter === 'pending' && !task.done) ||
-        (filter === 'done' && task.done) ||
+        (filter === 'pending' && !item.done) ||
+        (filter === 'done' && item.done) ||
         (filter === 'overdue' &&
-          !task.done &&
-          task.deadline &&
-          task.deadline < localDate());
+          item.itemType === 'task' &&
+          !item.done &&
+          item.deadline &&
+          item.deadline < today);
 
-      const taskArea = getTaskArea(task);
-
+      const taskArea = item.itemType === 'task' ? getTaskArea(item) : null;
       const matchesArea =
         areaFilter === 'all' ||
         (areaFilter === 'none'
@@ -106,7 +124,7 @@ export default function Tasks({ data, save, completeTask }) {
 
       return matchesSearch && matchesFilter && matchesArea;
     });
-  }, [tasksList, search, filter, areaFilter, areasList]);
+  }, [tasksList, habitsList, search, filter, areaFilter, areasList, today]);
 
   const updateForm = (field, value) => {
     setForm((prev) => ({ ...prev, [field]: value }));
@@ -187,6 +205,36 @@ export default function Tasks({ data, save, completeTask }) {
     setShowForm(false);
     setEditingId(null);
     setForm({ ...EMPTY_FORM });
+  };
+
+  const toggleHabit = (habit) => {
+    const currentHabits = Array.isArray(data?.habits) ? data.habits : [];
+    const target = currentHabits.find((item) => String(item.id) === String(habit.id));
+    if (!target || typeof save !== 'function') return;
+
+    const history = { ...(target.history || {}) };
+    const missed = { ...(target.missed || {}) };
+    const missedReasons = { ...(target.missedReasons || {}) };
+    const wasDone = Boolean(history[today]);
+    history[today] = !wasDone;
+    // Ao alterar o status pela lista de Tarefas, remove eventual falta registrada.
+    delete missed[today];
+    delete missedReasons[today];
+
+    const updatedHabits = currentHabits.map((item) =>
+      String(item.id) === String(habit.id)
+        ? { ...item, history, missed, missedReasons }
+        : item,
+    );
+
+    // Mantém a mesma regra da página Hábitos: 30 XP por conclusão,
+    // removendo os mesmos 30 XP ao desmarcar.
+    const xpChange = wasDone ? -30 : 30;
+    save({
+      ...data,
+      xp: Math.max(0, (Number(data?.xp) || 0) + xpChange),
+      habits: updatedHabits,
+    });
   };
 
   const toggleTask = (task) => {
@@ -354,9 +402,14 @@ export default function Tasks({ data, save, completeTask }) {
   // MÉTRICAS
   // =====================================
 
-  const completedCount = tasksList.filter((task) => task.done).length;
+  const completedCount =
+    tasksList.filter((task) => task.done).length +
+    habitsList.filter((habit) => Boolean(habit.history?.[today])).length;
 
-  const pendingCount = tasksList.filter((task) => !task.done).length;
+  const pendingCount = tasksList.filter((task) => !task.done).length +
+    habitsList.filter((habit) => !habit.history?.[today]).length;
+
+  const totalItemsCount = tasksList.length + habitsList.length;
 
   const overdueCount = tasksList.filter(
     (task) => !task.done && task.deadline && task.deadline < localDate(),
@@ -392,7 +445,7 @@ export default function Tasks({ data, save, completeTask }) {
       {/* INDICADORES */}
       <div className='metrics personal-metrics'>
         <div className='reward'>
-          <strong>{tasksList.length}</strong>
+          <strong>{totalItemsCount}</strong>
           <small>📋 Total</small>
         </div>
 
@@ -495,24 +548,25 @@ export default function Tasks({ data, save, completeTask }) {
 
           <div className='tasks-list'>
             {visibleTasks.map((task) => {
+              const isHabit = task.itemType === 'habit';
               const project = projectsList.find(
                 (p) => String(p.id) === String(task.projectId),
               );
 
-              const area = getTaskArea(task);
+              const area = isHabit ? null : getTaskArea(task);
 
               const overdue =
-                !task.done && task.deadline && task.deadline < localDate();
+                !isHabit && !task.done && task.deadline && task.deadline < today;
 
               return (
                 <article
                   className={`task ${task.done ? 'done' : ''}`}
-                  key={task.id}
+                  key={task.itemKey || `task-${task.id}`}
                 >
                   <button
                     type='button'
                     className={`check ${task.done ? 'checked' : ''}`}
-                    onClick={() => toggleTask(task)}
+                    onClick={() => (isHabit ? toggleHabit(task.habit) : toggleTask(task))}
                     aria-label={
                       task.done ? 'Reabrir tarefa' : 'Concluir tarefa'
                     }
@@ -522,25 +576,27 @@ export default function Tasks({ data, save, completeTask }) {
 
                   <div className='task-content'>
                     <strong className='task-name'>{task.name}</strong>
+                    {isHabit && <span className='task-habit-badge'>🔥 Hábito</span>}
 
                     {task.description && (
                       <p className='subtitle'>{task.description}</p>
                     )}
 
                     <div className='task-meta'>
-                      <span
-                        className={`priority priority-${String(
-                          task.priority || 'Média',
-                        ).toLowerCase()}`}
-                      >
-                        ● {task.priority || 'Média'}
-                      </span>
+                      {!isHabit && (
+                        <span
+                          className={`priority priority-${String(
+                            task.priority || 'Média',
+                          ).toLowerCase()}`}
+                        >
+                          ● {task.priority || 'Média'}
+                        </span>
+                      )}
 
                       <span className='value'>{Number(task.xp) || 0} XP</span>
 
-                      <span className='frequency'>
-                        {task.frequency || '1x'}
-                      </span>
+                      {!isHabit && <span className='frequency'>{task.frequency || '1x'}</span>}
+                      {isHabit && <span className='frequency'>Diário</span>}
 
                       {area && (
                         <span
@@ -568,7 +624,7 @@ export default function Tasks({ data, save, completeTask }) {
                     </div>
                   </div>
 
-                  <div className='task-actions'>
+                  {!isHabit && <div className='task-actions'>
                     <button
                       type='button'
                       className='ghost'
@@ -585,7 +641,7 @@ export default function Tasks({ data, save, completeTask }) {
                     >
                       🗑️
                     </button>
-                  </div>
+                  </div>}
                 </article>
               );
             })}
@@ -1115,6 +1171,19 @@ export default function Tasks({ data, save, completeTask }) {
         .task-content {
           flex: 1;
           min-width: 0;
+        }
+
+        .task-habit-badge {
+          display: inline-flex;
+          align-items: center;
+          margin: 0 0 6px 8px;
+          padding: 3px 8px;
+          border-radius: 999px;
+          font-size: 11px;
+          font-weight: 700;
+          color: var(--site-warning, #b26500);
+          background: rgba(255, 152, 0, .12);
+          vertical-align: middle;
         }
 
         .task-name {

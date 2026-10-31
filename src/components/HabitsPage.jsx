@@ -105,6 +105,9 @@ const calculateBestStreak = (habit) => {
 export default function HabitsPage({ data, save }) {
   const [habitName, setHabitName] = useState('');
   const [habitFeedback, setHabitFeedback] = useState('');
+  const [selectedDay, setSelectedDay] = useState(null);
+  const [dayStatus, setDayStatus] = useState('done');
+  const [dayReason, setDayReason] = useState('');
 
   const habits = Array.isArray(data?.habits) ? data.habits : [];
 
@@ -266,69 +269,71 @@ export default function HabitsPage({ data, save }) {
   };
 
   /* =======================================================
-     MARCAR / DESMARCAR DIA
+     REGISTRAR O STATUS DE UM DIA
   ======================================================= */
 
-  const toggleDayHabit = (habitId, day) => {
+  const openDayEditor = (habit, day) => {
     const dateStr = formatDate(year, month, day);
+    const missed = Boolean(habit.missed?.[dateStr]);
+    const done = Boolean(habit.history?.[dateStr]);
 
-    const targetHabit = habits.find((habit) => habit.id === habitId);
+    setSelectedDay({ habitId: habit.id, dateStr, habitName: habit.name, day });
+    setDayStatus(done ? 'done' : missed ? 'missed' : 'pending');
+    setDayReason(habit.missedReasons?.[dateStr] || '');
+  };
 
+  const saveDayStatus = (event) => {
+    event.preventDefault();
+    if (!selectedDay || typeof save !== 'function') return;
+
+    const targetHabit = habits.find(
+      (habit) => String(habit.id) === String(selectedDay.habitId),
+    );
     if (!targetHabit) return;
 
-    const history = {
-      ...(targetHabit.history || {}),
-    };
-
+    const dateStr = selectedDay.dateStr;
+    const history = { ...(targetHabit.history || {}) };
+    const missed = { ...(targetHabit.missed || {}) };
+    const missedReasons = { ...(targetHabit.missedReasons || {}) };
     const wasDone = Boolean(history[dateStr]);
+    const willBeDone = dayStatus === 'done';
 
-    const nextDone = !wasDone;
+    history[dateStr] = willBeDone;
 
-    history[dateStr] = nextDone;
+    if (dayStatus === 'missed') {
+      missed[dateStr] = true;
+      if (dayReason.trim()) missedReasons[dateStr] = dayReason.trim();
+      else delete missedReasons[dateStr];
+    } else {
+      delete missed[dateStr];
+      delete missedReasons[dateStr];
+    }
 
-    /*
-     * Recalcula as sequências a partir do
-     * histórico completo.
-     */
-    const temporaryHabit = {
-      ...targetHabit,
-      history,
-    };
-
+    const temporaryHabit = { ...targetHabit, history };
     const newStreak = calculateCurrentStreak(temporaryHabit);
-
     const newBestStreak = calculateBestStreak(temporaryHabit);
+    const updatedHabits = habits.map((habit) =>
+      String(habit.id) === String(selectedDay.habitId)
+        ? {
+            ...habit,
+            history,
+            missed,
+            missedReasons,
+            streak: newStreak,
+            bestStreak: Math.max(Number(habit.bestStreak) || 0, newBestStreak),
+          }
+        : habit,
+    );
 
-    const updatedHabits = habits.map((habit) => {
-      if (habit.id !== habitId) {
-        return habit;
-      }
-
-      return {
-        ...habit,
-
-        streak: newStreak,
-
-        bestStreak: Math.max(Number(habit.bestStreak) || 0, newBestStreak),
-
-        history,
-      };
-    });
-
-    /*
-     * Cada conclusão vale 30 XP.
-     *
-     * Ao desmarcar, removemos os mesmos 30 XP.
-     */
-    const xpChange = wasDone ? -30 : 30;
-
+    const xpChange = wasDone === willBeDone ? 0 : willBeDone ? 30 : -30;
     save({
       ...data,
-
       xp: Math.max(0, (Number(data?.xp) || 0) + xpChange),
-
       habits: updatedHabits,
     });
+
+    setSelectedDay(null);
+    setDayReason('');
   };
 
   /* =======================================================
@@ -907,6 +912,7 @@ export default function HabitsPage({ data, save }) {
                     const dateStr = formatDate(year, month, day);
 
                     const isDone = Boolean(history[dateStr]);
+                    const isMissed = Boolean(habit.missed?.[dateStr]) && !isDone;
 
                     const isToday = dateStr === todayDate;
 
@@ -930,11 +936,9 @@ export default function HabitsPage({ data, save }) {
                       >
                         <button
                           type='button'
-                          onClick={() => toggleDayHabit(habit.id, day)}
+                          onClick={() => openDayEditor(habit, day)}
                           aria-label={`${habit.name} — dia ${day}`}
-                          title={`Dia ${day}: ${
-                            isDone ? 'Concluído' : 'Pendente'
-                          }`}
+                          title={`Dia ${day}: ${isDone ? 'Concluído' : isMissed ? `Não realizado${habit.missedReasons?.[dateStr] ? ` — ${habit.missedReasons[dateStr]}` : ''}` : 'Sem registro'}. Clique para editar.`}
                           style={{
                             width: 28,
                             height: 28,
@@ -942,11 +946,15 @@ export default function HabitsPage({ data, save }) {
                             borderRadius: 8,
                             border: isDone
                               ? '2px solid var(--site-primary)'
-                              : '2px solid var(--site-border)',
+                              : isMissed
+                                ? '2px solid var(--site-danger, #dc2626)'
+                                : '2px solid var(--site-border)',
                             background: isDone
                               ? 'var(--site-primary)'
-                              : 'var(--site-background)',
-                            color: isDone ? '#fff' : 'transparent',
+                              : isMissed
+                                ? 'color-mix(in srgb, var(--site-danger, #dc2626) 14%, transparent)'
+                                : 'var(--site-background)',
+                            color: isDone ? '#fff' : isMissed ? 'var(--site-danger, #dc2626)' : 'transparent',
                             cursor: 'pointer',
                             fontSize: 13,
                             fontWeight: 900,
@@ -959,7 +967,7 @@ export default function HabitsPage({ data, save }) {
                               : 'none',
                           }}
                         >
-                          {isDone ? '✓' : ''}
+                          {isDone ? '✓' : isMissed ? '×' : ''}
                         </button>
                       </td>
                     );
@@ -1037,6 +1045,68 @@ export default function HabitsPage({ data, save }) {
         </table>
       </div>
 
+      {/* HISTÓRICO DE DIAS NÃO REALIZADOS */}
+      {habits.some((habit) => Object.values(habit.missed || {}).some(Boolean)) && (
+        <section style={{ marginTop: 24 }}>
+          <h3 style={{ margin: '0 0 12px' }}>📝 Histórico de dias não realizados</h3>
+          <div style={{ display: 'grid', gap: 8 }}>
+            {habits.flatMap((habit) =>
+              Object.keys(habit.missed || {})
+                .filter((date) => habit.missed[date])
+                .sort((a, b) => b.localeCompare(a))
+                .map((date) => (
+                  <div key={`${habit.id}-${date}`} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8, padding: '10px 12px', border: '1px solid var(--site-border)', borderRadius: 10, background: 'var(--site-background)' }}>
+                    <div>
+                      <strong>{habit.name}</strong>
+                      <span className='subtitle' style={{ display: 'block', fontSize: 12 }}>{date.split('-').reverse().join('/')}</span>
+                    </div>
+                    <span style={{ color: 'var(--site-danger, #dc2626)', fontSize: 13 }}>
+                      {habit.missedReasons?.[date] || 'Motivo não informado'}
+                    </span>
+                  </div>
+                )),
+            )}
+          </div>
+        </section>
+      )}
+
+      {/* EDITAR REGISTRO DO DIA */}
+      {selectedDay && (
+        <div
+          role='presentation'
+          onMouseDown={(event) => { if (event.target === event.currentTarget) setSelectedDay(null); }}
+          style={{ position: 'fixed', inset: 0, zIndex: 1000, display: 'grid', placeItems: 'center', padding: 16, background: 'rgba(0,0,0,.55)' }}
+        >
+          <form onSubmit={saveDayStatus} className='card' style={{ width: 'min(100%, 440px)', padding: 22, borderRadius: 16, background: 'var(--site-card-bg)', color: 'var(--site-text)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12 }}>
+              <h3 style={{ margin: 0 }}>Registro do hábito</h3>
+              <button type='button' className='ghost' onClick={() => setSelectedDay(null)} aria-label='Fechar'>✕</button>
+            </div>
+            <p className='subtitle' style={{ margin: '8px 0 16px' }}>
+              {selectedDay.habitName} · {selectedDay.dateStr.split('-').reverse().join('/')}
+            </p>
+            <label style={{ display: 'grid', gap: 6, marginBottom: 14 }}>
+              Como foi esse dia?
+              <select value={dayStatus} onChange={(event) => setDayStatus(event.target.value)}>
+                <option value='done'>Concluí o hábito</option>
+                <option value='missed'>Não consegui fazer</option>
+                <option value='pending'>Ainda não quero registrar</option>
+              </select>
+            </label>
+            {dayStatus === 'missed' && (
+              <label style={{ display: 'grid', gap: 6, marginBottom: 14 }}>
+                Qual foi o motivo? (opcional)
+                <textarea rows={3} maxLength={300} value={dayReason} onChange={(event) => setDayReason(event.target.value)} placeholder='Ex.: falta de tempo, cansaço, imprevisto...' />
+              </label>
+            )}
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, flexWrap: 'wrap' }}>
+              <button type='button' className='ghost' onClick={() => setSelectedDay(null)}>Cancelar</button>
+              <button type='submit' className='primary'>Salvar registro</button>
+            </div>
+          </form>
+        </div>
+      )}
+
       {/* ===================================================
           LEGENDA
       ==================================================== */}
@@ -1077,6 +1147,11 @@ export default function HabitsPage({ data, save }) {
               ✓
             </span>
             Hábito concluído
+          </div>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <span style={{ width: 18, height: 18, borderRadius: 5, display: 'inline-grid', placeItems: 'center', border: '1px solid var(--site-danger, #dc2626)', color: 'var(--site-danger, #dc2626)', fontWeight: 900 }}>×</span>
+            Não realizado
           </div>
 
           <div>
