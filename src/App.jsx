@@ -6,6 +6,7 @@ import { useAppData } from './hooks/useAppData';
 // Autenticação e navegação
 import Auth from './components/Auth';
 import Sidebar from './components/Sidebar';
+import Perfil from './components/Perfil';
 
 // Painel principal
 import PainelPrincipal from './components/PainelPrincipal';
@@ -53,10 +54,14 @@ export default function App() {
     async function loadSession() {
       try {
         const user = await getCurrentUser();
-        if (active) setCurrentUser(user);
+
+        if (active) {
+          setCurrentUser(user);
+        }
       } catch (error) {
         if (active) {
           setCurrentUser(null);
+
           if (error.status !== 401 && error.status !== 404) {
             setAuthError(
               error.message || 'Não foi possível verificar sua sessão.',
@@ -64,17 +69,20 @@ export default function App() {
           }
         }
       } finally {
-        if (active) setCheckingSession(false);
+        if (active) {
+          setCheckingSession(false);
+        }
       }
     }
 
     loadSession();
+
     return () => {
       active = false;
     };
   }, []);
 
-  // O hook recebe o usuário completo, incluindo o UUID do Supabase.
+  // O hook recebe o usuário completo.
   const appDataHook = useAppData(currentUser);
 
   const {
@@ -119,7 +127,7 @@ export default function App() {
   const [askText, setAskText] = useState('');
 
   // =========================================
-  // MODO FOCO (temporizador funcional)
+  // MODO FOCO
   // =========================================
   const [focusOpen, setFocusOpen] = useState(false);
   const [focusTaskId, setFocusTaskId] = useState('');
@@ -129,7 +137,9 @@ export default function App() {
   const [focusCompleted, setFocusCompleted] = useState(false);
 
   useEffect(() => {
-    if (!focusRunning) return undefined;
+    if (!focusRunning) {
+      return undefined;
+    }
 
     const timerId = window.setInterval(() => {
       setFocusSeconds((current) => {
@@ -139,6 +149,7 @@ export default function App() {
           setFocusCompleted(true);
           return 0;
         }
+
         return current - 1;
       });
     }, 1000);
@@ -166,7 +177,10 @@ export default function App() {
     setFocusSeconds(focusMinutes * 60);
   }
 
-  const formattedFocusTime = `${String(Math.floor(focusSeconds / 60)).padStart(2, '0')}:${String(focusSeconds % 60).padStart(2, '0')}`;
+  const formattedFocusTime = `${String(Math.floor(focusSeconds / 60)).padStart(
+    2,
+    '0',
+  )}:${String(focusSeconds % 60).padStart(2, '0')}`;
 
   // =========================================
   // MODO ESCURO
@@ -177,7 +191,7 @@ export default function App() {
     try {
       localStorage.setItem('assistant_dark_mode', String(darkMode));
     } catch {
-      // O aplicativo continua funcionando sem localStorage.
+      // Continua funcionando sem localStorage.
     }
 
     return () => {
@@ -190,6 +204,7 @@ export default function App() {
   // =========================================
   function handleLogout() {
     clearSession();
+
     setCurrentUser(null);
     setActiveSection('dashboard');
     setAnswer('');
@@ -197,7 +212,7 @@ export default function App() {
   }
 
   // =========================================
-  // ESTADOS DE AUTENTICAÇÃO
+  // AUTENTICAÇÃO
   // =========================================
   if (checkingSession) {
     return (
@@ -215,6 +230,7 @@ export default function App() {
             {authError}
           </p>
         )}
+
         <Auth onLogin={setCurrentUser} />
       </>
     );
@@ -298,8 +314,11 @@ export default function App() {
 
             <div className='subtitle' role='status' aria-live='polite'>
               {syncStatus === 'loading' && '☁️ Carregando dados...'}
+
               {syncStatus === 'local' && '💾 Modo local'}
+
               {syncStatus === 'synced' && '☁️ Dados sincronizados'}
+
               {syncStatus === 'error' && '⚠️ Erro na sincronização'}
             </div>
 
@@ -335,7 +354,9 @@ export default function App() {
           </div>
         </header>
 
-        {/* PAINEL PRINCIPAL */}
+        {/* =========================================
+            PAINEL PRINCIPAL
+        ========================================= */}
         {activeSection === 'dashboard' && (
           <PainelPrincipal
             data={data}
@@ -350,37 +371,69 @@ export default function App() {
           />
         )}
 
-        {/* CALENDÁRIO */}
+        {/* =========================================
+            CALENDÁRIO
+        ========================================= */}
         {activeSection === 'calendar' && (
           <SmartCalendar data={data} save={save} />
         )}
 
-        {/* DIÁRIO */}
+        {/* =========================================
+            DIÁRIO
+        ========================================= */}
         {activeSection === 'diario' && <Diario data={data} save={save} />}
 
-        {/* ESTUDOS */}
+        {/* =========================================
+            ESTUDOS
+        ========================================= */}
         {activeSection === 'estudos' && <Estudos />}
 
-        {/* OBJETIVOS */}
+        {/* =========================================
+            OBJETIVOS
+        ========================================= */}
         {activeSection === 'goals' && <Goals data={data} save={save} />}
 
-        {/* HÁBITOS */}
+        {/* =========================================
+            HÁBITOS
+        ========================================= */}
         {activeSection === 'habits' && <HabitsPage data={data} save={save} />}
 
-        {/* TAREFAS */}
+        {/* =========================================
+            TAREFAS
+        ========================================= */}
         {activeSection === 'tasks' && (
           <Tasks data={data} save={save} completeTask={completeTask} />
         )}
 
-        {/* PROJETOS */}
+        {/* =========================================
+            PROJETOS
+            PÁGINA INDEPENDENTE
+        ========================================= */}
         {activeSection === 'projects' && <ProjetosColaborativos />}
 
-        {/* COLEÇÕES E CONQUISTAS */}
+        {/* =========================================
+            GRUPOS
+            PÁGINA INDEPENDENTE
+        ========================================= */}
+        {activeSection === 'groups' && <Grupos />}
+
+        {/* =========================================
+            MEU PERFIL
+        ========================================= */}
+        {activeSection === 'profile' && (
+          <Perfil currentUser={currentUser} setCurrentUser={setCurrentUser} />
+        )}
+
+        {/* =========================================
+            COLEÇÕES E CONQUISTAS
+        ========================================= */}
         {activeSection === 'collections' && (
           <ColecoesConquistas data={data} save={save} />
         )}
 
-        {/* CIÊNCIA DE DADOS */}
+        {/* =========================================
+            CIÊNCIA DE DADOS
+        ========================================= */}
         {activeSection === 'fase12' && (
           <>
             <DataDashboard
@@ -406,15 +459,21 @@ export default function App() {
           </>
         )}
 
-        {/* FINANÇAS */}
+        {/* =========================================
+            FINANÇAS
+        ========================================= */}
         {activeSection === 'fase13' && <Finance data={data} save={save} />}
 
-        {/* INVESTIMENTOS */}
+        {/* =========================================
+            INVESTIMENTOS
+        ========================================= */}
         {activeSection === 'investments' && (
           <Investments data={data} save={save} />
         )}
 
-        {/* GAMIFICAÇÃO */}
+        {/* =========================================
+            GAMIFICAÇÃO
+        ========================================= */}
         {activeSection === 'gamification' && (
           <Gamification
             data={data}
@@ -423,14 +482,19 @@ export default function App() {
           />
         )}
 
-        {/* CONEXÕES */}
+        {/* =========================================
+            CONEXÕES
+        ========================================= */}
         {activeSection === 'connections' && <Connections />}
 
-        {/* FOGUINHO */}
+        {/* =========================================
+            FOGUINHO
+        ========================================= */}
         {activeSection === 'foguinho' && <Foguinho currentUser={currentUser} />}
-        {activeSection === 'groups' && <Grupos />}
 
-        {/* ASSISTENTE */}
+        {/* =========================================
+            ASSISTENTE
+        ========================================= */}
         {activeSection === 'assistant' && (
           <Assistant
             data={data}
@@ -442,12 +506,16 @@ export default function App() {
           />
         )}
 
-        {/* MODAL DO MODO FOCO */}
+        {/* =========================================
+            MODAL MODO FOCO
+        ========================================= */}
         {focusOpen && (
           <div
             role='presentation'
             onMouseDown={(event) => {
-              if (event.target === event.currentTarget) closeFocusMode();
+              if (event.target === event.currentTarget) {
+                closeFocusMode();
+              }
             }}
             style={{
               position: 'fixed',
@@ -490,13 +558,26 @@ export default function App() {
                   >
                     SESSÃO DE PRODUTIVIDADE
                   </div>
-                  <h2 id='focus-mode-title' style={{ margin: '6px 0 4px' }}>
+
+                  <h2
+                    id='focus-mode-title'
+                    style={{
+                      margin: '6px 0 4px',
+                    }}
+                  >
                     🎯 Modo foco
                   </h2>
-                  <p className='subtitle' style={{ margin: 0 }}>
+
+                  <p
+                    className='subtitle'
+                    style={{
+                      margin: 0,
+                    }}
+                  >
                     Uma tarefa por vez. Evite trocar de contexto.
                   </p>
                 </div>
+
                 <button
                   type='button'
                   className='ghost'
@@ -518,6 +599,7 @@ export default function App() {
               >
                 O que você vai fazer?
               </label>
+
               <select
                 id='focus-task'
                 value={focusTaskId}
@@ -533,6 +615,7 @@ export default function App() {
                 }}
               >
                 <option value=''>Foco livre / estudo</option>
+
                 {safePendingTasks.map((task) => (
                   <option key={task.id} value={String(task.id)}>
                     {task.title ||
@@ -589,7 +672,9 @@ export default function App() {
                       setFocusSeconds(minutes * 60);
                       setFocusCompleted(false);
                     }}
-                    style={{ minWidth: 58 }}
+                    style={{
+                      minWidth: 58,
+                    }}
                   >
                     {minutes} min
                   </button>
@@ -610,16 +695,29 @@ export default function App() {
                 </p>
               )}
 
-              <div style={{ display: 'flex', gap: 10, marginTop: 22 }}>
+              <div
+                style={{
+                  display: 'flex',
+                  gap: 10,
+                  marginTop: 22,
+                }}
+              >
                 <button
                   type='button'
                   className='primary'
                   onClick={() => {
-                    if (focusSeconds <= 0) resetFocusTimer();
+                    if (focusSeconds <= 0) {
+                      resetFocusTimer();
+                    }
+
                     setFocusCompleted(false);
+
                     setFocusRunning((running) => !running);
                   }}
-                  style={{ flex: 1, minHeight: 44 }}
+                  style={{
+                    flex: 1,
+                    minHeight: 44,
+                  }}
                 >
                   {focusRunning
                     ? 'Pausar'
@@ -627,11 +725,14 @@ export default function App() {
                       ? 'Recomeçar'
                       : 'Iniciar foco'}
                 </button>
+
                 <button
                   type='button'
                   className='ghost'
                   onClick={resetFocusTimer}
-                  style={{ minHeight: 44 }}
+                  style={{
+                    minHeight: 44,
+                  }}
                 >
                   Reiniciar
                 </button>

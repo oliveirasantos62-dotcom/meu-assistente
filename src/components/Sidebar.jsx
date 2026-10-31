@@ -8,16 +8,22 @@ const SECTIONS = [
   { id: 'estudos', label: '📚 Estudos' },
   { id: 'goals', label: '🎯 Objetivos' },
   { id: 'habits', label: '🔥 Hábitos' },
+
+  // PROJETOS E GRUPOS CONTINUAM SENDO PÁGINAS DIFERENTES
   { id: 'projects', label: '📁 Projetos' },
+  { id: 'groups', label: '👥 Grupos' },
+
   { id: 'collections', label: '🏆 Coleções & Conquistas' },
   { id: 'fase12', label: '📊 Ciência de Dados' },
   { id: 'gamification', label: '🎮 Gamificação' },
   { id: 'fase13', label: '💵 Finanças Pessoais' },
   { id: 'investments', label: '📈 Investimentos' },
-  { id: 'connections', label: '👥 Conexões' },
+  { id: 'connections', label: '🤝 Conexões' },
   { id: 'foguinho', label: '🔥 Foguinho' },
-  { id: 'groups', label: '👥 Grupos' },
   { id: 'assistant', label: '🤖 Assistente' },
+
+  // NOVA PÁGINA
+  { id: 'profile', label: '👤 Meu Perfil' },
 ];
 
 const STORAGE_PREFIX = 'meu-assistente-sidebar-config-';
@@ -31,7 +37,9 @@ const DEFAULT_VISIBLE = {
   estudos: true,
   goals: true,
   habits: true,
+
   projects: true,
+  groups: true,
 
   collections: false,
   fase12: false,
@@ -40,8 +48,10 @@ const DEFAULT_VISIBLE = {
   investments: false,
   connections: false,
   foguinho: false,
-  groups: false,
   assistant: false,
+
+  // NOVO
+  profile: true,
 };
 
 const DEFAULT_ORDER = SECTIONS.map((section) => section.id);
@@ -69,8 +79,8 @@ function loadSidebarConfig(currentUser) {
 
     const parsed = JSON.parse(saved);
 
-    // Compatibilidade com a versão antiga,
-    // que salvava somente as páginas ativadas.
+    // Compatibilidade com versões antigas
+    // que salvavam somente as páginas ativadas.
     const oldVisible = parsed.visibleSections || parsed;
 
     const visibleSections = {
@@ -89,13 +99,14 @@ function loadSidebarConfig(currentUser) {
         DEFAULT_ORDER.includes(id) && savedOrder.indexOf(id) === index,
     );
 
-    // Adiciona páginas novas que não existiam na configuração salva.
+    // Adiciona páginas novas que não existiam
+    // na configuração salva.
     let order = [
       ...validOrder,
       ...DEFAULT_ORDER.filter((id) => !validOrder.includes(id)),
     ];
 
-    // O Painel Principal permanece sempre na primeira posição.
+    // Painel Principal permanece sempre na primeira posição.
     order = ['dashboard', ...order.filter((id) => id !== 'dashboard')];
 
     return {
@@ -187,12 +198,13 @@ export default function Sidebar({
     }));
   }
 
-  // Restaura as páginas e a ordem padrão.
+  // Restaura páginas e ordem padrão.
   function restoreDefault() {
     updateConfig(createDefaultConfig());
   }
 
-  // Calcula a posição do mouse: antes ou depois do item.
+  // Calcula a posição do mouse:
+  // antes ou depois do item.
   function getDropPosition(event) {
     const rect = event.currentTarget.getBoundingClientRect();
 
@@ -207,7 +219,7 @@ export default function Sidebar({
       return;
     }
 
-    // O Painel Principal não pode ser ultrapassado.
+    // Painel Principal não pode ser ultrapassado.
     if (targetId === 'dashboard') {
       position = 'after';
     }
@@ -217,22 +229,26 @@ export default function Sidebar({
 
       const draggedIndex = order.indexOf(draggedId);
 
-      if (draggedIndex < 0) return current;
+      if (draggedIndex < 0) {
+        return current;
+      }
 
       // Retira o item da posição original.
       order.splice(draggedIndex, 1);
 
-      // Encontra a posição de destino depois da remoção.
+      // Encontra a posição de destino.
       const targetIndex = order.indexOf(targetId);
 
-      if (targetIndex < 0) return current;
+      if (targetIndex < 0) {
+        return current;
+      }
 
       // Insere antes ou depois do destino.
       const insertIndex = position === 'after' ? targetIndex + 1 : targetIndex;
 
       order.splice(insertIndex, 0, draggedId);
 
-      // Garante que o Painel Principal continue no início.
+      // Garante Painel Principal no início.
       const finalOrder = [
         'dashboard',
         ...order.filter((id) => id !== 'dashboard'),
@@ -271,7 +287,7 @@ export default function Sidebar({
           </div>
         </div>
 
-        {/* MENU PRINCIPAL COM ROLAGEM */}
+        {/* MENU PRINCIPAL */}
         <nav className='sidebar-nav' aria-label='Navegação principal'>
           {menuSections.map((section) => {
             const isActive = activeSection === section.id;
@@ -403,6 +419,7 @@ export default function Sidebar({
                       setDraggedId(section.id);
 
                       event.dataTransfer.effectAllowed = 'move';
+
                       event.dataTransfer.setData('text/plain', section.id);
                     }}
                     onDragOver={(event) => {
