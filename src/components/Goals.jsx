@@ -1,4 +1,5 @@
 import React, { useMemo, useState } from 'react';
+import './Goals.css';
 
 const today = () => {
   const date = new Date();
