@@ -4,22 +4,20 @@ const STORAGE_PREFIX = 'app_data_';
 const BACKUP_PREFIX = 'app_backup_';
 const CURRENT_USER_KEY = 'currentUser';
 
-const STORAGE_VERSION = 3;
+const STORAGE_VERSION = 4;
 
 /*
 |--------------------------------------------------------------------------
 | Estrutura inicial da aplicação
 |--------------------------------------------------------------------------
-|
-| Sempre que criarmos uma nova funcionalidade, adicionamos o campo aqui.
-|
 */
 
 export const emptyAppData = {
-  version: 2,
+  version: STORAGE_VERSION,
 
   habits: [],
   tasks: [],
+  areas: [],
   calendarEvents: [],
 
   xp: 0,
@@ -43,11 +41,12 @@ export const emptyAppData = {
 
   investments: [],
   portfolioHistory: [],
+
   targetAllocation: {
-    'Ações': 60,
-    'FIIs': 20,
+    Ações: 60,
+    FIIs: 20,
     'Renda Fixa': 20,
-    'Cripto': 0,
+    Cripto: 0,
   },
 
   gamification: {
@@ -68,7 +67,7 @@ export const emptyAppData = {
   errors: [],
   weeklyReflections: [],
 
-  collections: [], // NOVO: categorias e itens das coleções
+  collections: [],
 
   settings: {},
 };
@@ -95,26 +94,6 @@ function clone(value) {
 |--------------------------------------------------------------------------
 | Merge profundo
 |--------------------------------------------------------------------------
-|
-| Evita perder dados quando adicionamos uma nova propriedade.
-|
-| Exemplo:
-|
-| Dados antigos:
-| {
-|   habits: [],
-|   xp: 100
-| }
-|
-| Nova estrutura:
-| {
-|   habits: [],
-|   xp: 100,
-|   diaryEntries: []
-| }
-|
-| O diaryEntries será adicionado sem apagar o resto.
-|
 */
 
 function deepMerge(defaults, current) {
@@ -148,9 +127,6 @@ function deepMerge(defaults, current) {
 |--------------------------------------------------------------------------
 | Sanitização dos dados
 |--------------------------------------------------------------------------
-|
-| Garante que arrays importantes nunca virem null ou undefined.
-|
 */
 
 function normalizeData(data) {
@@ -162,6 +138,11 @@ function normalizeData(data) {
 
   if (!Array.isArray(merged.tasks)) {
     merged.tasks = [];
+  }
+
+  // NOVO: áreas personalizadas
+  if (!Array.isArray(merged.areas)) {
+    merged.areas = [];
   }
 
   if (!Array.isArray(merged.collections)) {
@@ -192,9 +173,18 @@ function normalizeData(data) {
     merged.weeklyReflections = [];
   }
 
+  // FINANÇAS
   if (!isObject(merged.finance)) {
     merged.finance = {
       transactions: [],
+      monthlyBudget: 0,
+      savingsGoal: 0,
+      creditLimit: 0,
+      currentBalance: 0,
+      salary: 0,
+      financialGoals: [],
+      budgetsByCategory: {},
+      accounts: [],
     };
   }
 
@@ -214,6 +204,7 @@ function normalizeData(data) {
     merged.finance.accounts = [];
   }
 
+  // INVESTIMENTOS
   if (!Array.isArray(merged.investments)) {
     merged.investments = [];
   }
@@ -224,13 +215,14 @@ function normalizeData(data) {
 
   if (!isObject(merged.targetAllocation)) {
     merged.targetAllocation = {
-      'Ações': 60,
-      'FIIs': 20,
+      Ações: 60,
+      FIIs: 20,
       'Renda Fixa': 20,
-      'Cripto': 0,
+      Cripto: 0,
     };
   }
 
+  // GAMIFICAÇÃO
   if (!isObject(merged.gamification)) {
     merged.gamification = {
       missions: [],
@@ -240,21 +232,40 @@ function normalizeData(data) {
     };
   }
 
-  if (!Array.isArray(merged.gamification.missions)) merged.gamification.missions = [];
-  if (!Array.isArray(merged.gamification.achievements)) merged.gamification.achievements = [];
-  if (!Array.isArray(merged.gamification.rewards)) merged.gamification.rewards = [];
-
-  if (!isObject(merged.assistant)) {
-    merged.assistant = { history: [], notes: [] };
+  if (!Array.isArray(merged.gamification.missions)) {
+    merged.gamification.missions = [];
   }
 
-  if (!Array.isArray(merged.assistant.history)) merged.assistant.history = [];
-  if (!Array.isArray(merged.assistant.notes)) merged.assistant.notes = [];
+  if (!Array.isArray(merged.gamification.achievements)) {
+    merged.gamification.achievements = [];
+  }
 
+  if (!Array.isArray(merged.gamification.rewards)) {
+    merged.gamification.rewards = [];
+  }
+
+  // ASSISTENTE
+  if (!isObject(merged.assistant)) {
+    merged.assistant = {
+      history: [],
+      notes: [],
+    };
+  }
+
+  if (!Array.isArray(merged.assistant.history)) {
+    merged.assistant.history = [];
+  }
+
+  if (!Array.isArray(merged.assistant.notes)) {
+    merged.assistant.notes = [];
+  }
+
+  // CONFIGURAÇÕES
   if (!isObject(merged.settings)) {
     merged.settings = {};
   }
 
+  // XP
   if (typeof merged.xp !== 'number' || Number.isNaN(merged.xp)) {
     merged.xp = 0;
   }
@@ -263,6 +274,7 @@ function normalizeData(data) {
     merged.xp = 0;
   }
 
+  // VERSÃO ATUAL
   merged.version = STORAGE_VERSION;
 
   return merged;
@@ -273,7 +285,9 @@ function normalizeData(data) {
 | Migrações
 |--------------------------------------------------------------------------
 |
-| Aqui podemos evoluir o sistema sem destruir dados antigos.
+| Versão 1 -> 2: Diário e estudos.
+| Versão 2 -> 3: Estrutura anterior.
+| Versão 3 -> 4: Áreas personalizadas.
 |
 */
 
@@ -290,9 +304,6 @@ function migrateData(data) {
   |--------------------------------------------------------------------------
   | Versão 1 -> 2
   |--------------------------------------------------------------------------
-  |
-  | Adicionamos o sistema do Diário.
-  |
   */
 
   if (version < 2) {
@@ -300,16 +311,45 @@ function migrateData(data) {
       ...migrated,
 
       diaryEntries: migrated.diaryEntries || [],
-
       studySessions: migrated.studySessions || [],
-
       knowledgeItems: migrated.knowledgeItems || [],
-
       errors: migrated.errors || [],
-
       weeklyReflections: migrated.weeklyReflections || [],
-
       settings: migrated.settings || {},
+    };
+  }
+
+  /*
+  |--------------------------------------------------------------------------
+  | Versão 2 -> 3
+  |--------------------------------------------------------------------------
+  |
+  | Preserva os dados anteriores e prepara a estrutura da versão 3.
+  | O normalizeData completa os campos padrão.
+  |
+  */
+
+  if (version < 3) {
+    migrated = {
+      ...migrated,
+    };
+  }
+
+  /*
+  |--------------------------------------------------------------------------
+  | Versão 3 -> 4
+  |--------------------------------------------------------------------------
+  |
+  | Adiciona áreas personalizadas.
+  | Não remove nem altera as tarefas antigas.
+  |
+  */
+
+  if (version < 4) {
+    migrated = {
+      ...migrated,
+
+      areas: Array.isArray(migrated.areas) ? migrated.areas : [],
     };
   }
 
@@ -383,7 +423,6 @@ export const storageService = {
       return localStorage.getItem(CURRENT_USER_KEY);
     } catch (error) {
       console.error('Erro ao obter usuário atual:', error);
-
       return null;
     }
   },
@@ -403,7 +442,6 @@ export const storageService = {
       return true;
     } catch (error) {
       console.error('Erro ao definir usuário atual:', error);
-
       return false;
     }
   },
@@ -428,32 +466,17 @@ export const storageService = {
     try {
       const raw = localStorage.getItem(key);
 
-      /*
-      |--------------------------------------------------------------------------
-      | Usuário ainda não possui dados
-      |--------------------------------------------------------------------------
-      */
-
+      // Usuário sem dados
       if (!raw) {
         return clone(emptyAppData);
       }
 
       const parsed = JSON.parse(raw);
 
-      /*
-      |--------------------------------------------------------------------------
-      | Migra dados antigos
-      |--------------------------------------------------------------------------
-      */
-
+      // Migração automática
       const migrated = migrateData(parsed);
 
-      /*
-      |--------------------------------------------------------------------------
-      | Se a estrutura mudou, salva novamente.
-      |--------------------------------------------------------------------------
-      */
-
+      // Salva novamente quando a versão mudou
       const parsedVersion = Number(parsed?.version || 1);
 
       if (parsedVersion !== STORAGE_VERSION) {
@@ -464,25 +487,13 @@ export const storageService = {
     } catch (error) {
       console.error('Erro ao carregar dados:', error);
 
-      /*
-      |--------------------------------------------------------------------------
-      | Tenta recuperar backup
-      |--------------------------------------------------------------------------
-      */
-
+      // Recuperação do backup
       const backup = this.restoreBackup(username);
 
       if (backup) {
         console.warn('Dados restaurados a partir do backup.');
-
         return backup;
       }
-
-      /*
-      |--------------------------------------------------------------------------
-      | Se tudo falhar, retorna estrutura limpa.
-      |--------------------------------------------------------------------------
-      */
 
       return clone(emptyAppData);
     }
@@ -506,20 +517,10 @@ export const storageService = {
     }
 
     try {
-      /*
-      |--------------------------------------------------------------------------
-      | Normaliza antes de salvar
-      |--------------------------------------------------------------------------
-      */
-
+      // Normaliza antes de salvar
       const normalizedData = migrateData(data);
 
-      /*
-      |--------------------------------------------------------------------------
-      | Faz backup dos dados atuais
-      |--------------------------------------------------------------------------
-      */
-
+      // Backup dos dados atuais
       const currentRaw = localStorage.getItem(key);
 
       if (currentRaw) {
@@ -532,30 +533,17 @@ export const storageService = {
         }
       }
 
-      /*
-      |--------------------------------------------------------------------------
-      | Salva os dados novos
-      |--------------------------------------------------------------------------
-      */
-
+      // Salva dados atualizados
       localStorage.setItem(key, JSON.stringify(normalizedData));
 
       return true;
     } catch (error) {
-      /*
-      |--------------------------------------------------------------------------
-      | QuotaExceededError
-      |--------------------------------------------------------------------------
-      */
-
       if (error?.name === 'QuotaExceededError' || error?.code === 22) {
         console.error('O armazenamento local está cheio.');
-
         return false;
       }
 
       console.error('Erro ao salvar dados:', error);
-
       return false;
     }
   },
@@ -564,15 +552,6 @@ export const storageService = {
   |--------------------------------------------------------------------------
   | Atualização parcial
   |--------------------------------------------------------------------------
-  |
-  | Útil para páginas que querem alterar apenas uma parte dos dados.
-  |
-  | Exemplo:
-  |
-  | storageService.updateData(username, {
-  |   xp: 100
-  | });
-  |
   */
 
   updateData(username, partialData) {
@@ -613,7 +592,6 @@ export const storageService = {
       return true;
     } catch (error) {
       console.error('Erro ao criar backup:', error);
-
       return false;
     }
   },
@@ -643,7 +621,6 @@ export const storageService = {
       return migrateData(parsed);
     } catch (error) {
       console.error('Erro ao restaurar backup:', error);
-
       return null;
     }
   },
@@ -662,12 +639,6 @@ export const storageService = {
     const key = getUserKey(username);
 
     try {
-      /*
-      |--------------------------------------------------------------------------
-      | Antes de apagar, cria backup.
-      |--------------------------------------------------------------------------
-      */
-
       this.createBackup(username);
 
       localStorage.removeItem(key);
@@ -675,7 +646,6 @@ export const storageService = {
       return true;
     } catch (error) {
       console.error('Erro ao apagar dados:', error);
-
       return false;
     }
   },
@@ -692,45 +662,17 @@ export const storageService = {
     }
 
     const key = getUserKey(username);
-    const backupKey = getBackupKey(username);
 
     try {
-      /*
-      |--------------------------------------------------------------------------
-      | Backup antes do reset.
-      |--------------------------------------------------------------------------
-      */
-
       this.createBackup(username);
-
-      /*
-      |--------------------------------------------------------------------------
-      | Remove dados atuais.
-      |--------------------------------------------------------------------------
-      */
 
       localStorage.removeItem(key);
 
-      /*
-      |--------------------------------------------------------------------------
-      | Cria nova estrutura.
-      |--------------------------------------------------------------------------
-      */
-
-      localStorage.setItem(key, JSON.stringify(emptyAppData));
-
-      /*
-      |--------------------------------------------------------------------------
-      | Mantém o backup separado.
-      |--------------------------------------------------------------------------
-      */
-
-      void backupKey;
+      localStorage.setItem(key, JSON.stringify(clone(emptyAppData)));
 
       return true;
     } catch (error) {
       console.error('Erro ao resetar dados:', error);
-
       return false;
     }
   },
@@ -780,7 +722,6 @@ export const storageService = {
         types: [
           {
             description: 'JSON Files',
-
             accept: {
               'application/json': ['.json'],
             },
@@ -801,7 +742,6 @@ export const storageService = {
       }
 
       console.error('Erro ao salvar arquivo:', error);
-
       return false;
     }
   },
@@ -829,7 +769,6 @@ export const storageService = {
         types: [
           {
             description: 'JSON Files',
-
             accept: {
               'application/json': ['.json'],
             },
@@ -838,7 +777,6 @@ export const storageService = {
       });
 
       const file = await handle.getFile();
-
       const text = await file.text();
 
       if (!text.trim()) {
@@ -846,12 +784,6 @@ export const storageService = {
       }
 
       const parsed = JSON.parse(text);
-
-      /*
-      |--------------------------------------------------------------------------
-      | Valida minimamente o arquivo
-      |--------------------------------------------------------------------------
-      */
 
       if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
         throw new Error('Formato de dados inválido.');
@@ -864,7 +796,6 @@ export const storageService = {
       }
 
       console.error('Erro ao carregar arquivo:', error);
-
       return null;
     }
   },
@@ -886,12 +817,6 @@ export const storageService = {
       return false;
     }
 
-    /*
-    |--------------------------------------------------------------------------
-    | Backup antes de substituir
-    |--------------------------------------------------------------------------
-    */
-
     this.createBackup(username);
 
     return this.saveData(username, imported);
@@ -899,7 +824,7 @@ export const storageService = {
 
   /*
   |--------------------------------------------------------------------------
-  | Verificar se existe dados
+  | Verificar se existem dados
   |--------------------------------------------------------------------------
   */
 
@@ -942,11 +867,8 @@ export const storageService = {
 
       return {
         exists: Boolean(raw),
-
         bytes,
-
         kilobytes: Number((bytes / 1024).toFixed(2)),
-
         megabytes: Number((bytes / 1024 / 1024).toFixed(2)),
       };
     } catch (error) {
@@ -975,9 +897,6 @@ export const storageService = {
   |--------------------------------------------------------------------------
   | Normalizar dados externos
   |--------------------------------------------------------------------------
-  |
-  | Útil quando uma página recebe dados vindos de outro lugar.
-  |
   */
 
   normalize(data) {
