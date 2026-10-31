@@ -10,7 +10,10 @@ const SECTIONS = [
   { id: 'goals', label: '🎯 Objetivos' },
   { id: 'habits', label: '🔥 Hábitos' },
 
-  // PROJETOS E GRUPOS CONTINUAM SENDO PÁGINAS DIFERENTES
+  // EVOLUÇÃO E PROGRESSO
+  { id: 'evolucao', label: '📈 Evolução & Progresso' },
+
+  // PROJETOS E GRUPOS
   { id: 'projects', label: '📁 Projetos' },
   { id: 'groups', label: '👥 Grupos' },
 
@@ -23,7 +26,7 @@ const SECTIONS = [
   { id: 'foguinho', label: '🔥 Foguinho' },
   { id: 'assistant', label: '🤖 Assistente' },
 
-  // NOVA PÁGINA
+  // PERFIL
   { id: 'profile', label: '👤 Meu Perfil' },
 ];
 
@@ -39,6 +42,9 @@ const DEFAULT_VISIBLE = {
   estudos: true,
   goals: true,
   habits: true,
+
+  // Evolução aparece por padrão.
+  evolucao: true,
 
   projects: true,
   groups: true,
@@ -68,7 +74,6 @@ function createDefaultConfig() {
     visibleSections: { ...DEFAULT_VISIBLE },
     order: [...DEFAULT_ORDER],
 
-    // NOVO:
     // Define se o campo de pesquisa aparece no menu.
     showSearch: true,
   };
@@ -116,11 +121,10 @@ function loadSidebarConfig(currentUser) {
 
     return {
       visibleSections,
-
       order,
 
-      // Compatibilidade com configurações antigas:
-      // se ainda não existir, pesquisa fica ativada.
+      // Compatibilidade com configurações antigas.
+      // Se ainda não existir, pesquisa fica ativada.
       showSearch:
         typeof parsed.showSearch === 'boolean' ? parsed.showSearch : true,
     };
@@ -319,6 +323,7 @@ export default function Sidebar({
       )
     : menuSections;
 
+  // Fecha o menu com ESC.
   useEffect(() => {
     function handleEscape(event) {
       if (event.key === 'Escape') {
@@ -332,6 +337,7 @@ export default function Sidebar({
     return () => window.removeEventListener('keydown', handleEscape);
   }, []);
 
+  // Fecha menu mobile ao trocar de página.
   useEffect(() => {
     setMobileOpen(false);
   }, [activeSection]);
@@ -506,10 +512,12 @@ export default function Sidebar({
               <span>✓ Ative somente os recursos que deseja visualizar.</span>
             </div>
 
-            {/* CONFIGURAÇÃO DA PESQUISA */}
+            {/* PESQUISA DO MENU */}
             <div className='sidebar-search-setting'>
               <div className='sidebar-search-setting-info'>
                 <div className='sidebar-search-setting-icon'>🔎</div>
+
+                <strong>Pesquisa de páginas</strong>
               </div>
 
               <label className='sidebar-switch-label'>
@@ -517,7 +525,11 @@ export default function Sidebar({
                   type='checkbox'
                   checked={showSearch}
                   onChange={toggleSearch}
-                  aria-label='Mostrar pesquisa de páginas'
+                  aria-label={
+                    showSearch
+                      ? 'Ocultar pesquisa de páginas'
+                      : 'Mostrar pesquisa de páginas'
+                  }
                 />
 
                 <span className='sidebar-switch'>
