@@ -136,6 +136,8 @@ export default function Sidebar({
   }));
 
   const [customizing, setCustomizing] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
   const [draggedId, setDraggedId] = useState(null);
   const [dragOverId, setDragOverId] = useState(null);
 
@@ -276,9 +278,61 @@ export default function Sidebar({
     (section) => visibleSections[section.id],
   );
 
+  const filteredSections = menuSections.filter((section) =>
+    section.label.toLocaleLowerCase('pt-BR').includes(searchTerm.trim().toLocaleLowerCase('pt-BR')),
+  );
+
+  useEffect(() => {
+    function handleEscape(event) {
+      if (event.key === 'Escape') {
+        setMobileOpen(false);
+        setCustomizing(false);
+      }
+    }
+
+    window.addEventListener('keydown', handleEscape);
+    return () => window.removeEventListener('keydown', handleEscape);
+  }, []);
+
+  useEffect(() => {
+    setMobileOpen(false);
+  }, [activeSection]);
+
   return (
     <>
-      <aside className='sidebar'>
+      <button
+        type='button'
+        className='mobile-sidebar-trigger'
+        onClick={() => setMobileOpen(true)}
+        aria-label='Abrir menu de navegação'
+        aria-expanded={mobileOpen}
+        aria-controls='app-sidebar'
+      >
+        <span aria-hidden='true'>☰</span>
+      </button>
+
+      {mobileOpen && (
+        <button
+          type='button'
+          className='sidebar-mobile-backdrop'
+          onClick={() => setMobileOpen(false)}
+          aria-label='Fechar menu de navegação'
+        />
+      )}
+
+      <aside id='app-sidebar' className={`sidebar ${mobileOpen ? 'mobile-open' : ''}`}>
+        <div className='sidebar-mobile-header'>
+          <span>MENU</span>
+          <button
+            type='button'
+            className='sidebar-mobile-close'
+            onClick={() => setMobileOpen(false)}
+            aria-label='Fechar menu'
+          >
+            ×
+          </button>
+        </div>
+
         {/* IDENTIDADE */}
         <div className='sidebar-brand'>
           <div className='logo'>A</div>
@@ -291,7 +345,32 @@ export default function Sidebar({
 
         {/* MENU PRINCIPAL */}
         <nav className='sidebar-nav' aria-label='Navegação principal'>
-          {menuSections.map((section) => {
+          <div className='sidebar-nav-heading'>
+            <span>ESPAÇO DE TRABALHO</span>
+            <small>{menuSections.length} {menuSections.length === 1 ? 'página' : 'páginas'}</small>
+          </div>
+
+          <div className='sidebar-search'>
+            <span aria-hidden='true'>⌕</span>
+            <input
+              type='search'
+              value={searchTerm}
+              onChange={(event) => setSearchTerm(event.target.value)}
+              placeholder='Buscar página...'
+              aria-label='Buscar página no menu'
+            />
+            {searchTerm && (
+              <button
+                type='button'
+                onClick={() => setSearchTerm('')}
+                aria-label='Limpar busca'
+              >
+                ×
+              </button>
+            )}
+          </div>
+
+          {filteredSections.map((section) => {
             const isActive = activeSection === section.id;
 
             return (
@@ -310,6 +389,9 @@ export default function Sidebar({
           {menuSections.length === 0 && (
             <p className='sidebar-empty'>Nenhuma página ativada.</p>
           )}
+          {menuSections.length > 0 && filteredSections.length === 0 && (
+            <p className='sidebar-empty'>Nenhuma página encontrada.</p>
+          )}
         </nav>
 
         {/* RODAPÉ */}
@@ -317,7 +399,10 @@ export default function Sidebar({
           <button
             type='button'
             className='ghost sidebar-settings-button'
-            onClick={() => setCustomizing(true)}
+            onClick={() => {
+              setMobileOpen(false);
+              setCustomizing(true);
+            }}
           >
             ⚙️ Personalizar menu
           </button>
