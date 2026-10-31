@@ -6625,3 +6625,558 @@ body.dark textarea {
     padding: 0 14px 14px;
   }
 }
+/* =========================================================
+   SISTEMA DE BOTÕES — AJUSTE FINAL
+   Compatível com modo claro e escuro
+   ========================================================= */
+
+button {
+  appearance: none;
+  -webkit-appearance: none;
+
+  min-height: 42px;
+  padding: 10px 15px;
+
+  border: 1px solid var(--site-border);
+  border-radius: 12px;
+
+  background: var(--site-card-bg);
+  color: var(--site-on-background);
+
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.2;
+
+  cursor: pointer;
+
+  transition:
+    background-color 0.18s ease,
+    border-color 0.18s ease,
+    color 0.18s ease,
+    box-shadow 0.18s ease,
+    transform 0.18s ease;
+}
+
+/* ---------------------------------------------------------
+   BOTÃO PADRÃO
+   --------------------------------------------------------- */
+
+button:hover:not(:disabled) {
+  background: var(--site-primary-soft);
+  border-color: color-mix(in srgb, var(--site-primary) 45%, var(--site-border));
+
+  color: var(--site-primary);
+
+  transform: translateY(-1px);
+}
+
+button:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+/* ---------------------------------------------------------
+   BOTÃO PRINCIPAL
+   --------------------------------------------------------- */
+
+button.primary,
+.primary,
+button[type='submit'].primary {
+  background: var(--site-primary);
+  border-color: var(--site-primary);
+  color: #ffffff;
+
+  box-shadow: 0 6px 16px
+    color-mix(in srgb, var(--site-primary) 24%, transparent);
+}
+
+button.primary:hover:not(:disabled),
+.primary:hover:not(:disabled),
+button[type='submit'].primary:hover:not(:disabled) {
+  background: var(--site-primary-hover);
+  border-color: var(--site-primary-hover);
+  color: #ffffff;
+
+  transform: translateY(-1px);
+
+  box-shadow: 0 9px 22px
+    color-mix(in srgb, var(--site-primary) 32%, transparent);
+}
+
+/* ---------------------------------------------------------
+   BOTÃO SECUNDÁRIO
+   --------------------------------------------------------- */
+
+button.secondary,
+.secondary {
+  background: var(--site-primary-soft);
+  border-color: var(--site-border);
+  color: var(--site-on-background);
+}
+
+button.secondary:hover:not(:disabled),
+.secondary:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--site-primary) 14%, var(--site-card-bg));
+
+  border-color: var(--site-primary);
+  color: var(--site-primary);
+}
+
+/* ---------------------------------------------------------
+   BOTÃO GHOST
+   --------------------------------------------------------- */
+
+button.ghost,
+.ghost {
+  background: transparent;
+  border-color: var(--site-border);
+  color: var(--site-on-background);
+
+  box-shadow: none;
+}
+
+button.ghost:hover:not(:disabled),
+.ghost:hover:not(:disabled) {
+  background: var(--site-primary-soft);
+  border-color: var(--site-primary);
+  color: var(--site-primary);
+}
+
+/* ---------------------------------------------------------
+   BOTÕES DE PERIGO
+   --------------------------------------------------------- */
+
+button.danger,
+.danger,
+button.danger-button,
+.danger-button {
+  background: transparent;
+  border-color: var(--site-border);
+  color: var(--site-danger);
+}
+
+button.danger:hover:not(:disabled),
+.danger:hover:not(:disabled),
+button.danger-button:hover:not(:disabled),
+.danger-button:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--site-danger) 10%, transparent);
+
+  border-color: var(--site-danger);
+  color: var(--site-danger);
+}
+
+/* ---------------------------------------------------------
+   BOTÕES DESABILITADOS
+   --------------------------------------------------------- */
+
+button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none !important;
+  box-shadow: none !important;
+}
+
+/* ---------------------------------------------------------
+   BOTÕES DO HEADER
+   --------------------------------------------------------- */
+
+header .actions button {
+  background: var(--site-card-bg);
+  border-color: var(--site-border);
+  color: var(--site-on-background);
+}
+
+header .actions button:hover:not(:disabled) {
+  background: var(--site-primary-soft);
+  border-color: var(--site-primary);
+  color: var(--site-primary);
+}
+
+/* ---------------------------------------------------------
+   BOTÕES DE FORMULÁRIO
+   --------------------------------------------------------- */
+
+form button[type='submit'] {
+  background: var(--site-primary);
+  border-color: var(--site-primary);
+  color: #ffffff;
+
+  box-shadow: 0 6px 16px
+    color-mix(in srgb, var(--site-primary) 20%, transparent);
+}
+
+form button[type='submit']:hover:not(:disabled) {
+  background: var(--site-primary-hover);
+  border-color: var(--site-primary-hover);
+  color: #ffffff;
+
+  transform: translateY(-1px);
+}
+
+/* ---------------------------------------------------------
+   MODO ESCURO
+   --------------------------------------------------------- */
+
+body.dark button {
+  background: #1a1d2b;
+  border-color: #2f344b;
+  color: #f0f2f5;
+}
+
+body.dark button:hover:not(:disabled) {
+  background: rgba(139, 121, 255, 0.14);
+  border-color: #8b79ff;
+  color: #a99fff;
+}
+
+body.dark button.primary,
+body.dark .primary,
+body.dark form button[type='submit'] {
+  background: #8b79ff;
+  border-color: #8b79ff;
+  color: #ffffff;
+
+  box-shadow: 0 8px 22px rgba(139, 121, 255, 0.24);
+}
+
+body.dark button.primary:hover:not(:disabled),
+body.dark .primary:hover:not(:disabled),
+body.dark form button[type='submit']:hover:not(:disabled) {
+  background: #9b8bff;
+  border-color: #9b8bff;
+  color: #ffffff;
+
+  box-shadow: 0 10px 28px rgba(139, 121, 255, 0.32);
+}
+
+body.dark button.secondary,
+body.dark .secondary {
+  background: rgba(139, 121, 255, 0.12);
+  border-color: #343953;
+  color: #f0f2f5;
+}
+
+body.dark button.secondary:hover:not(:disabled),
+body.dark .secondary:hover:not(:disabled) {
+  background: rgba(139, 121, 255, 0.2);
+  border-color: #8b79ff;
+  color: #b7adff;
+}
+
+body.dark button.ghost,
+body.dark .ghost {
+  background: transparent;
+  border-color: #343953;
+  color: #d7d9e3;
+}
+
+body.dark button.ghost:hover:not(:disabled),
+body.dark .ghost:hover:not(:disabled) {
+  background: rgba(139, 121, 255, 0.12);
+  border-color: #8b79ff;
+  color: #b7adff;
+}
+
+/* ---------------------------------------------------------
+   ACESSIBILIDADE
+   --------------------------------------------------------- */
+
+button:focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--site-primary) 45%, transparent);
+
+  outline-offset: 2px;
+}
+/* =========================================================
+   PERFIL
+   ========================================================= */
+
+.profile-page {
+  width: 100%;
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+.profile-card {
+  width: 100%;
+  padding: 30px;
+
+  background: var(--site-card-bg);
+  border: 1px solid var(--site-border);
+  border-radius: var(--site-radius);
+
+  box-shadow: var(--site-shadow);
+
+  transition:
+    background-color 0.25s ease,
+    border-color 0.25s ease,
+    box-shadow 0.25s ease;
+}
+
+.profile-header {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+
+  margin-bottom: 30px;
+}
+
+.profile-avatar {
+  width: 64px;
+  height: 64px;
+
+  display: grid;
+  place-items: center;
+
+  flex-shrink: 0;
+
+  border-radius: 18px;
+
+  background: linear-gradient(135deg, var(--site-primary), #9a8fff);
+
+  color: #ffffff;
+
+  font-size: 25px;
+  font-weight: 800;
+
+  box-shadow: 0 10px 25px
+    color-mix(in srgb, var(--site-primary) 25%, transparent);
+}
+
+.profile-eyebrow {
+  display: block;
+
+  margin-bottom: 3px;
+
+  color: var(--site-primary);
+
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+}
+
+.profile-header h2 {
+  margin: 0 0 4px;
+
+  color: var(--site-on-background);
+
+  font-size: 26px;
+}
+
+.profile-header p {
+  margin: 0;
+
+  color: var(--site-text-muted);
+
+  line-height: 1.5;
+}
+
+.profile-form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.profile-field {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+
+  margin-bottom: 8px;
+}
+
+.profile-field label {
+  color: var(--site-on-background);
+
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.profile-field input {
+  width: 100%;
+  min-height: 44px;
+
+  padding: 11px 13px;
+
+  border: 1px solid var(--site-border);
+  border-radius: 12px;
+
+  background: var(--site-card-bg);
+  color: var(--site-on-background);
+
+  outline: none;
+
+  transition:
+    border-color 0.18s ease,
+    box-shadow 0.18s ease,
+    background-color 0.18s ease;
+}
+
+.profile-field input:hover:not(:disabled) {
+  border-color: color-mix(in srgb, var(--site-primary) 35%, var(--site-border));
+}
+
+.profile-field input:focus {
+  border-color: var(--site-primary);
+
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--site-primary) 14%, transparent);
+}
+
+.profile-field input:disabled {
+  opacity: 0.65;
+
+  background: var(--site-primary-soft);
+  cursor: not-allowed;
+}
+
+.username-input {
+  display: flex;
+  align-items: center;
+
+  min-height: 44px;
+
+  border: 1px solid var(--site-border);
+  border-radius: 12px;
+
+  background: var(--site-card-bg);
+
+  overflow: hidden;
+
+  transition:
+    border-color 0.18s ease,
+    box-shadow 0.18s ease;
+}
+
+.username-input:focus-within {
+  border-color: var(--site-primary);
+
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--site-primary) 14%, transparent);
+}
+
+.username-input > span {
+  padding-left: 13px;
+
+  color: var(--site-primary);
+
+  font-weight: 800;
+}
+
+.username-input input {
+  min-height: 42px;
+
+  padding-left: 5px;
+
+  border: 0;
+  border-radius: 0;
+
+  background: transparent;
+
+  box-shadow: none !important;
+}
+
+.profile-help {
+  color: var(--site-text-muted);
+
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.profile-feedback {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+
+  padding: 12px 14px;
+
+  border-radius: 12px;
+
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.profile-feedback-error {
+  border: 1px solid
+    color-mix(in srgb, var(--site-danger) 30%, var(--site-border));
+
+  background: color-mix(in srgb, var(--site-danger) 8%, transparent);
+
+  color: var(--site-danger);
+}
+
+.profile-feedback-success {
+  border: 1px solid
+    color-mix(in srgb, var(--site-success) 30%, var(--site-border));
+
+  background: color-mix(in srgb, var(--site-success) 8%, transparent);
+
+  color: var(--site-success);
+}
+
+.profile-actions {
+  display: flex;
+  justify-content: flex-end;
+
+  margin-top: 8px;
+}
+
+/* =========================================================
+   PERFIL — MODO ESCURO
+   ========================================================= */
+
+body.dark .profile-card {
+  background: #1a1d2b;
+  border-color: #2f344b;
+}
+
+body.dark .profile-field input,
+body.dark .username-input {
+  background: #151824;
+  border-color: #30354c;
+}
+
+body.dark .profile-field input:disabled {
+  background: rgba(139, 121, 255, 0.08);
+}
+
+body.dark .profile-feedback-error {
+  background: rgba(163, 59, 59, 0.12);
+}
+
+body.dark .profile-feedback-success {
+  background: rgba(33, 119, 100, 0.12);
+}
+
+/* =========================================================
+   PERFIL — MOBILE
+   ========================================================= */
+
+@media (max-width: 600px) {
+  .profile-card {
+    padding: 22px;
+    border-radius: 18px;
+  }
+
+  .profile-header {
+    align-items: flex-start;
+  }
+
+  .profile-avatar {
+    width: 54px;
+    height: 54px;
+
+    border-radius: 15px;
+
+    font-size: 21px;
+  }
+
+  .profile-header h2 {
+    font-size: 22px;
+  }
+
+  .profile-actions {
+    justify-content: stretch;
+  }
+
+  .profile-actions button {
+    width: 100%;
+  }
+}
