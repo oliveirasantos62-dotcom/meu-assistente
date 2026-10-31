@@ -31,6 +31,7 @@ export default function Processos({ data, save }) {
   const processes = Array.isArray(data?.processes) ? data.processes : [];
   const [activeId, setActiveId] = useState(processes[0]?.id || null);
   const [selectedId, setSelectedId] = useState(null);
+  const [selectedConnectionId, setSelectedConnectionId] = useState(null);
   const [tool, setTool] = useState('select');
   const [zoom, setZoom] = useState(1);
   const [connectionStart, setConnectionStart] = useState(null);
@@ -51,7 +52,10 @@ export default function Processos({ data, save }) {
       const typing = target && ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName);
       if (typing) return;
       if (event.key === 'Delete' || event.key === 'Backspace') {
-        if (selectedId) {
+        if (selectedConnectionId) {
+          event.preventDefault();
+          deleteSelectedConnection();
+        } else if (selectedId) {
           event.preventDefault();
           deleteSelected();
         }
@@ -68,7 +72,7 @@ export default function Processos({ data, save }) {
     }
     window.addEventListener('keydown', handleShortcuts);
     return () => window.removeEventListener('keydown', handleShortcuts);
-  }, [selectedId, activeProcess, undoStack, redoStack]);
+  }, [selectedId, selectedConnectionId, activeProcess, undoStack, redoStack]);
 
   useEffect(() => {
     setTitleDraft(null);
@@ -107,6 +111,7 @@ export default function Processos({ data, save }) {
     persist([...processes, item]);
     setActiveId(item.id);
     setSelectedId(null);
+    setSelectedConnectionId(null);
     setUndoStack([]);
     setRedoStack([]);
     setTool('select');
@@ -139,6 +144,7 @@ export default function Processos({ data, save }) {
     persist([...processes, item]);
     setActiveId(item.id);
     setSelectedId(null);
+    setSelectedConnectionId(null);
     setTool('select');
     setUndoStack([]);
     setRedoStack([]);
@@ -160,10 +166,12 @@ export default function Processos({ data, save }) {
       persist([...processes, item]);
       setActiveId(item.id);
       setSelectedId(element.id);
+      setSelectedConnectionId(null);
     } else {
       const element = createElement(type, x, y);
       commitProcess({ ...activeProcess, elements: [...activeProcess.elements, element] });
       setSelectedId(element.id);
+      setSelectedConnectionId(null);
     }
     setTool('select');
   }
@@ -178,6 +186,7 @@ export default function Processos({ data, save }) {
 
   function handleNodeClick(event, element) {
     event.stopPropagation();
+    setSelectedConnectionId(null);
     if (tool === 'connect') {
       if (!connectionStart) {
         setConnectionStart(element.id);
@@ -204,6 +213,7 @@ export default function Processos({ data, save }) {
     if (tool !== 'select') return;
     event.stopPropagation();
     setSelectedId(element.id);
+    setSelectedConnectionId(null);
     const rect = svgRef.current.getBoundingClientRect();
     dragRef.current = {
       id: element.id,
@@ -249,6 +259,16 @@ export default function Processos({ data, save }) {
       connections: activeProcess.connections.filter((edge) => edge.from !== selectedId && edge.to !== selectedId),
     });
     setSelectedId(null);
+    setSelectedConnectionId(null);
+  }
+
+  function deleteSelectedConnection() {
+    if (!activeProcess || !selectedConnectionId) return;
+    commitProcess({
+      ...activeProcess,
+      connections: activeProcess.connections.filter((edge) => edge.id !== selectedConnectionId),
+    });
+    setSelectedConnectionId(null);
   }
 
 
@@ -419,7 +439,12 @@ export default function Processos({ data, save }) {
                   if (!from || !to) return null;
                   const a = center(from);
                   const b = center(to);
-                  return <path key={edge.id} d={`M ${a.x} ${a.y} L ${b.x} ${b.y}`} className="process-connection" markerEnd="url(#process-arrow)" />;
+                  const selected = selectedConnectionId === edge.id;
+                  return <path key={edge.id} d={`M ${a.x} ${a.y} L ${b.x} ${b.y}`}
+                    className={`process-connection ${selected ? 'is-selected' : ''}`}
+                    markerEnd="url(#process-arrow)" role="button" tabIndex="0"
+                    aria-label="Selecionar conexão"
+                    onClick={(event) => { event.stopPropagation(); setSelectedId(null); setSelectedConnectionId(edge.id); setTool('select'); }} />;
                 })}
                 {activeProcess.elements.map((element) => {
                   const current = draft?.id === element.id ? { ...element, x: draft.x, y: draft.y } : element;
@@ -439,7 +464,7 @@ export default function Processos({ data, save }) {
                       {(current.type === 'rect' || current.type === 'text') && <rect width={current.width} height={current.height} rx={current.type === 'text' ? 5 : 12} {...common} />}
                       <text x={current.width / 2} y={current.height / 2} textAnchor="middle" dominantBaseline="middle"
                         className={`process-node-label ${current.type === 'text' ? 'is-text' : ''}`}
-                        style={{ fill: current.type === 'text' ? 'var(--process-text)' : '#243047' }}>
+                        style={{ fill: current.textColor || (current.type === 'text' ? 'var(--process-text)' : '#243047') }}>
                         {String(current.label || '').length > 25
                           ? `${String(current.label).slice(0, 24)}…`
                           : current.label}
@@ -476,9 +501,16 @@ export default function Processos({ data, save }) {
               }} /></label>
               <label>Cor de preenchimento<input type="color" value={selectedElement.fill === 'transparent' ? '#ffffff' : selectedElement.fill} onChange={(event) => updateElement(selectedId, { fill: event.target.value })} /></label>
               <label>Cor da borda<input type="color" value={selectedElement.stroke === 'transparent' ? '#ffffff' : selectedElement.stroke} onChange={(event) => updateElement(selectedId, { stroke: event.target.value })} /></label>
+              <label>Cor das letras<input type="color" value={selectedElement.textColor || '#243047'} onChange={(event) => updateElement(selectedId, { textColor: event.target.value })} /></label>
               <label>Largura<input type="range" min="90" max="280" value={selectedElement.width} onChange={(event) => updateElement(selectedId, { width: Number(event.target.value) })} /></label>
               <label>Altura<input type="range" min="45" max="180" value={selectedElement.height} onChange={(event) => updateElement(selectedId, { height: Number(event.target.value) })} /></label>
               <button type="button" className="ghost process-remove-element" onClick={deleteSelected}>Remover elemento</button>
+            </div>
+          ) : selectedConnectionId ? (
+            <div className="process-property-fields">
+              <strong>Conexão selecionada</strong>
+              <p className="process-connection-help">Esta ligação conecta dois elementos do seu processo.</p>
+              <button type="button" className="ghost process-remove-element" onClick={deleteSelectedConnection}>Apagar conexão</button>
             </div>
           ) : (
             <div className="process-property-empty">
@@ -489,7 +521,7 @@ export default function Processos({ data, save }) {
           )}
           <div className="process-shape-help">
             <strong>Atalhos rápidos</strong>
-            <p><kbd>Delete</kbd> remover elemento selecionado</p>
+            <p><kbd>Delete</kbd> remover elemento ou conexão selecionada</p>
             <p><kbd>Ctrl</kbd> + <kbd>Z</kbd> desfazer</p>
             <p><kbd>Ctrl</kbd> + <kbd>Y</kbd> refazer</p>
           </div>
