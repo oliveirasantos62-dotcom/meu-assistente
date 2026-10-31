@@ -22,7 +22,17 @@ function normalizeAppData(rawData) {
     ...source,
 
     habits: Array.isArray(source.habits) ? source.habits : [],
-    tasks: Array.isArray(source.tasks) ? source.tasks : [],
+    tasks: Array.isArray(source.tasks)
+      ? source.tasks.map((task) => ({
+          ...task,
+          observations: Array.isArray(task.observations)
+            ? task.observations
+            : [],
+        }))
+      : [],
+    goals: Array.isArray(source.goals) ? source.goals : [],
+    projects: Array.isArray(source.projects) ? source.projects : [],
+    areas: Array.isArray(source.areas) ? source.areas : [],
     processes: Array.isArray(source.processes) ? source.processes : [],
 
     calendarEvents: Array.isArray(source.calendarEvents)
@@ -77,19 +87,16 @@ function normalizeAppData(rawData) {
         : [],
     },
 
-    investments: Array.isArray(source.investments)
-      ? source.investments
-      : [],
+    investments: Array.isArray(source.investments) ? source.investments : [],
 
     portfolioHistory: Array.isArray(source.portfolioHistory)
       ? source.portfolioHistory
       : [],
 
     targetAllocation:
-      source.targetAllocation &&
-      typeof source.targetAllocation === 'object'
+      source.targetAllocation && typeof source.targetAllocation === 'object'
         ? source.targetAllocation
-        : { 'Ações': 60, 'FIIs': 20, 'Renda Fixa': 20, 'Cripto': 0 },
+        : { Ações: 60, FIIs: 20, 'Renda Fixa': 20, Cripto: 0 },
 
     gamification: {
       ...(emptyAppData.gamification || {}),
@@ -265,47 +272,78 @@ export function useAppData(user) {
     (Number(daily?.focus) > 0 && Number(daily.focus) <= 2);
 
   /**
-   * Conclui uma tarefa e registra XP, moedas e histórico.
+   * Alterna o status da tarefa. Ao reabrir, estorna a recompensa e
+   * corrige o histórico do dia em que ela havia sido concluída.
    */
   const completeTask = useCallback(
     (id) => {
-      const task = tasks.find((item) => item.id === id);
-
-      if (!task || task.done) return;
+      const task = tasks.find((item) => String(item.id) === String(id));
+      if (!task) return;
 
       const now = new Date();
-      const historyToday = history[today] || {};
-      const taskXP = Number(task.xp) || 0;
+      const taskXP = Math.max(0, Number(task.xp) || 0);
+      const rewardCoins = Math.floor(taskXP / 10);
+
+      if (!task.done) {
+        const timestamp = now.toISOString();
+        const historyToday = history[today] || {};
+        const updatedTasks = tasks.map((item) =>
+          String(item.id) === String(id)
+            ? { ...item, done: true, completedAt: timestamp }
+            : item,
+        );
+
+        save({
+          ...safeData,
+          xp: (Number(safeData.xp) || 0) + taskXP,
+          coins: (Number(safeData.coins) || 0) + rewardCoins,
+          tasks: updatedTasks,
+          history: {
+            ...history,
+            [today]: {
+              ...historyToday,
+              completed: (Number(historyToday.completed) || 0) + 1,
+              xp: (Number(historyToday.xp) || 0) + taskXP,
+              completionTimes: [
+                ...(Array.isArray(historyToday.completionTimes)
+                  ? historyToday.completionTimes
+                  : []),
+                timestamp,
+              ],
+            },
+          },
+        });
+        return;
+      }
+
+      const completedAt = task.completedAt || now.toISOString();
+      const completedDate = completedAt.slice(0, 10);
+      const dayHistory = history[completedDate] || {};
+      const updatedHistory = {
+        ...history,
+        [completedDate]: {
+          ...dayHistory,
+          completed: Math.max(0, (Number(dayHistory.completed) || 0) - 1),
+          xp: Math.max(0, (Number(dayHistory.xp) || 0) - taskXP),
+          completionTimes: (Array.isArray(dayHistory.completionTimes)
+            ? dayHistory.completionTimes
+            : []
+          ).filter((timestamp) => timestamp !== completedAt),
+        },
+      };
 
       const updatedTasks = tasks.map((item) =>
-        item.id === id
-          ? {
-              ...item,
-              done: true,
-              completedAt: now.toISOString(),
-            }
+        String(item.id) === String(id)
+          ? { ...item, done: false, completedAt: null }
           : item,
       );
 
       save({
         ...safeData,
-        xp: (Number(safeData.xp) || 0) + taskXP,
-        coins: (Number(safeData.coins) || 0) + Math.floor(taskXP / 10),
+        xp: Math.max(0, (Number(safeData.xp) || 0) - taskXP),
+        coins: Math.max(0, (Number(safeData.coins) || 0) - rewardCoins),
         tasks: updatedTasks,
-        history: {
-          ...history,
-          [today]: {
-            ...historyToday,
-            completed: (Number(historyToday.completed) || 0) + 1,
-            xp: (Number(historyToday.xp) || 0) + taskXP,
-            completionTimes: [
-              ...(Array.isArray(historyToday.completionTimes)
-                ? historyToday.completionTimes
-                : []),
-              now.toISOString(),
-            ],
-          },
-        },
+        history: updatedHistory,
       });
     },
     [tasks, history, today, safeData, save],

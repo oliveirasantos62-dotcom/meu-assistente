@@ -55,6 +55,7 @@ export default function Tasks({ data, save, completeTask }) {
 
   const [form, setForm] = useState(EMPTY_FORM);
   const [areaForm, setAreaForm] = useState(EMPTY_AREA);
+  const [observationDrafts, setObservationDrafts] = useState({});
 
   const tasksList = Array.isArray(data?.tasks) ? data.tasks : [];
   const projectsList = Array.isArray(data?.projects) ? data.projects : [];
@@ -203,6 +204,57 @@ export default function Tasks({ data, save, completeTask }) {
               ...item,
               done: !item.done,
               completedAt: !item.done ? new Date().toISOString() : null,
+            }
+          : item,
+      ),
+    });
+  };
+
+  // Observações ficam vinculadas à tarefa recorrente e permanecem salvas
+  // até que sejam excluídas manualmente após a resolução.
+  const updateObservationDraft = (taskId, value) => {
+    setObservationDrafts((current) => ({ ...current, [taskId]: value }));
+  };
+
+  const addObservation = (task) => {
+    const text = String(observationDrafts[task.id] || '').trim();
+    if (!text) return;
+
+    const observation = {
+      id: createId(),
+      text,
+      createdAt: new Date().toISOString(),
+    };
+
+    save({
+      ...data,
+      tasks: tasksList.map((item) =>
+        item.id === task.id
+          ? {
+              ...item,
+              observations: [
+                ...(Array.isArray(item.observations) ? item.observations : []),
+                observation,
+              ],
+            }
+          : item,
+      ),
+    });
+    updateObservationDraft(task.id, '');
+  };
+
+  const deleteObservation = (task, observationId) => {
+    if (!window.confirm('Excluir esta observação?')) return;
+    save({
+      ...data,
+      tasks: tasksList.map((item) =>
+        item.id === task.id
+          ? {
+              ...item,
+              observations: (Array.isArray(item.observations)
+                ? item.observations
+                : []
+              ).filter((note) => note.id !== observationId),
             }
           : item,
       ),
@@ -528,9 +580,6 @@ export default function Tasks({ data, save, completeTask }) {
                     <span className='completion-icon' aria-hidden='true'>
                       {task.done ? '✓' : '○'}
                     </span>
-                    <span className='completion-label'>
-                      {task.done ? 'Concluída' : 'Concluir'}
-                    </span>
                   </button>
 
                   <div className='task-content'>
@@ -635,25 +684,84 @@ export default function Tasks({ data, save, completeTask }) {
 
               return (
                 <div className='daily-row' key={task.id}>
-                  <div>
-                    <strong>{task.name}</strong>
+                  <div className='daily-task-content'>
+                    <div className='daily-task-heading'>
+                      <div>
+                        <strong>{task.name}</strong>
+                        {area && (
+                          <small className='subtitle'>
+                            {area.icon} {area.name}
+                          </small>
+                        )}
+                      </div>
+                      <strong>{task.frequency}</strong>
+                    </div>
 
-                    {area && (
-                      <small className='subtitle'>
-                        {area.icon} {area.name}
-                      </small>
-                    )}
+                    <div className='observation-panel'>
+                      <strong>📝 Observações para consultar depois</strong>
+                      {(Array.isArray(task.observations)
+                        ? task.observations
+                        : []
+                      ).length > 0 ? (
+                        <ul className='observation-list'>
+                          {task.observations.map((observation) => (
+                            <li key={observation.id}>
+                              <span>{observation.text}</span>
+                              <button
+                                type='button'
+                                className='ghost observation-delete'
+                                onClick={() =>
+                                  deleteObservation(task, observation.id)
+                                }
+                                aria-label='Excluir observação resolvida'
+                                title='Excluir quando estiver resolvido'
+                              >
+                                🗑️
+                              </button>
+                            </li>
+                          ))}
+                        </ul>
+                      ) : (
+                        <small className='subtitle'>
+                          Nenhuma observação registrada.
+                        </small>
+                      )}
+                      <div className='observation-entry'>
+                        <input
+                          type='text'
+                          value={observationDrafts[task.id] || ''}
+                          onChange={(event) =>
+                            updateObservationDraft(task.id, event.target.value)
+                          }
+                          onKeyDown={(event) => {
+                            if (event.key === 'Enter') {
+                              event.preventDefault();
+                              addObservation(task);
+                            }
+                          }}
+                          placeholder='Anote algo para lembrar futuramente...'
+                          aria-label={`Nova observação para ${task.name}`}
+                        />
+                        <button
+                          type='button'
+                          className='ghost'
+                          onClick={() => addObservation(task)}
+                        >
+                          Adicionar
+                        </button>
+                      </div>
+                    </div>
                   </div>
 
-                  <strong>{task.frequency}</strong>
-
-                  <button
-                    type='button'
-                    className='ghost'
-                    onClick={() => openEdit(task)}
-                  >
-                    Editar
-                  </button>
+                  <div className='task-actions'>
+                    <button
+                      type='button'
+                      className='ghost'
+                      onClick={() => openEdit(task)}
+                    >
+                      Editar
+                    </button>
+                  </div>
                 </div>
               );
             })
@@ -1113,15 +1221,17 @@ export default function Tasks({ data, save, completeTask }) {
 
         .tasks-page .task-completion-button {
           flex: 0 0 auto;
-          min-width: 112px;
-          min-height: 36px;
+          width: 34px;
+          height: 34px;
+          min-width: 34px;
+          min-height: 34px;
           display: inline-flex;
           align-items: center;
           justify-content: center;
-          gap: 7px;
-          padding: 7px 11px;
+          gap: 0;
+          padding: 0;
           border: 1px solid var(--accent-color, #6366f1);
-          border-radius: 999px;
+          border-radius: 50%;
           background: color-mix(in srgb, var(--accent-color, #6366f1) 10%, transparent);
           color: var(--accent-color, #6366f1);
           font: inherit;
@@ -1159,8 +1269,8 @@ export default function Tasks({ data, save, completeTask }) {
         }
 
         .tasks-page .completion-icon {
-          width: 17px;
-          height: 17px;
+          width: 22px;
+          height: 22px;
           display: inline-grid;
           place-items: center;
           border: 1.5px solid currentColor;
@@ -1227,6 +1337,73 @@ export default function Tasks({ data, save, completeTask }) {
           border-radius: 20px;
           padding: 3px 9px;
           font-weight: 600;
+        }
+
+        .daily-task-content {
+          flex: 1;
+          min-width: 0;
+        }
+
+        .daily-task-heading {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 12px;
+          flex-wrap: wrap;
+        }
+
+        .daily-task-heading > div {
+          display: grid;
+          gap: 4px;
+        }
+
+        .observation-panel {
+          display: grid;
+          gap: 9px;
+          margin-top: 12px;
+          padding: 12px;
+          border-radius: 12px;
+          background: color-mix(in srgb, var(--accent-color, #6366f1) 6%, transparent);
+          border: 1px solid var(--border-color, rgba(120,120,120,.2));
+        }
+
+        .observation-list {
+          display: grid;
+          gap: 7px;
+          list-style: none;
+          margin: 0;
+          padding: 0;
+        }
+
+        .observation-list li {
+          display: flex;
+          align-items: flex-start;
+          justify-content: space-between;
+          gap: 10px;
+          padding: 8px 10px;
+          border-radius: 8px;
+          background: var(--card-background, rgba(120,120,120,.07));
+        }
+
+        .observation-list li span {
+          min-width: 0;
+          overflow-wrap: anywhere;
+        }
+
+        .observation-delete {
+          flex: 0 0 auto;
+          padding: 2px 6px;
+        }
+
+        .observation-entry {
+          display: flex;
+          gap: 8px;
+          align-items: center;
+        }
+
+        .observation-entry input {
+          flex: 1;
+          min-width: 0;
         }
 
         /* ÁREAS */
@@ -1445,6 +1622,15 @@ export default function Tasks({ data, save, completeTask }) {
 
           .daily-row {
             flex-wrap: wrap;
+          }
+
+          .observation-entry {
+            align-items: stretch;
+            flex-direction: column;
+          }
+
+          .observation-entry button {
+            width: 100%;
           }
         }
       `}</style>
