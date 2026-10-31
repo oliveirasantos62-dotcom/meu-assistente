@@ -515,9 +515,9 @@ export default function Sidebar({
             {/* PESQUISA DO MENU */}
             <div className='sidebar-search-setting'>
               <div className='sidebar-search-setting-info'>
-                <div className='sidebar-search-setting-icon'>🔎</div>
-
-                <strong>Pesquisa de páginas</strong>
+                <div className='sidebar-search-setting-icon'>
+                  🔎Pesquisa de páginas
+                </div>
               </div>
 
               <label className='sidebar-switch-label'>
