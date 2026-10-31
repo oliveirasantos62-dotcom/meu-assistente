@@ -9,6 +9,8 @@ import studyRoutes from "./routes/studyRoutes.js";
 import projectRoutes from "./routes/projectRoutes.js";
 import groupRoutes from "./routes/groupRoutes.js";
 import investmentRoutes from "./routes/investmentRoutes.js";
+import appDataRoutes from "./routes/appDataRoutes.js";
+import { initializeDatabase, query } from "./db/pool.js";
 
 dotenv.config();
 
@@ -33,22 +35,26 @@ app.use(
 
 app.use(express.json());
 
-app.get(
-  "/api/health",
-  (_req, res) => {
+app.get("/api/health", async (_req, res) => {
+  try {
+    await query("SELECT 1");
     res.json({
       ok: true,
-      service:
-        "meu-assistente-api",
-      database: "mysql",
+      service: "meu-assistente-api",
+      database: "TiDB/MySQL",
+    });
+  } catch (error) {
+    console.error("Falha no health check do banco:", error);
+    res.status(503).json({
+      ok: false,
+      service: "meu-assistente-api",
+      database: "unavailable",
     });
   }
-);
+});
 
-app.use(
-  "/api/auth",
-  authRoutes
-);
+app.use("/api/auth", authRoutes);
+app.use("/api/app-data", appDataRoutes);
 
 app.use(
   "/api/connections",
@@ -91,14 +97,17 @@ app.use(
   }
 );
 
-app.listen(
-  PORT,
-  () => {
-    console.log(
-      `API rodando em http://localhost:${PORT}`
-    );
-    console.log(
-      "Banco configurado: MySQL"
-    );
+async function start() {
+  try {
+    await initializeDatabase();
+    app.listen(PORT, () => {
+      console.log(`API rodando em http://localhost:${PORT}`);
+      console.log("Banco configurado: TiDB (compatível com MySQL)");
+    });
+  } catch (error) {
+    console.error("Não foi possível inicializar o banco TiDB.", error);
+    process.exit(1);
   }
-);
+}
+
+start();

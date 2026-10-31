@@ -1,6 +1,6 @@
 # Meu Assistente Pessoal
 
-Aplicação de produtividade e organização pessoal construída com **React + Vite**, com API complementar em **Node.js/Express** e banco **MySQL**. O projeto também mantém integração com serviços do Supabase conforme a configuração do frontend.
+Aplicação de produtividade e organização pessoal construída com **React + Vite**, com API complementar em **Node.js/Express** e banco **TiDB Cloud** (compatível com o protocolo MySQL). Os dados principais do aplicativo são carregados e salvos pela API no TiDB.
 
 ## Funcionalidades
 
@@ -13,7 +13,7 @@ Aplicação de produtividade e organização pessoal construída com **React + V
 - Personalização da navegação: ativar/desativar e reordenar páginas.
 - Tema claro/escuro com preferência salva no navegador.
 - Modo foco com temporizador.
-- Persistência local e sincronização/serviços de nuvem conforme configuração.
+- Persistência centralizada no TiDB para contas autenticadas; armazenamento local usado como cache e migração inicial.
 - API de autenticação e recursos sociais com JWT e MySQL.
 
 > A disponibilidade de cada integração depende das variáveis de ambiente, do banco e dos serviços externos configurados.
@@ -28,7 +28,7 @@ Os processos são armazenados no campo `processes` dos dados da aplicação, usa
 
 **Frontend:** React 18, Vite 6, JavaScript, CSS e Vitest.  
 **Backend:** Node.js, Express 5, MySQL2, JWT, bcryptjs, CORS e dotenv.  
-**Serviços:** Supabase (quando configurado).  
+**Banco:** TiDB Cloud (compatibilidade MySQL, conexão TLS).  
 **Ferramentas:** Git, GitHub e Vercel (frontend).
 
 ## Estrutura
@@ -49,7 +49,7 @@ meu-assistente/
 ├── src/
 │   ├── components/           # Telas e componentes React
 │   ├── hooks/                # Hooks e testes
-│   ├── services/             # API, armazenamento e Supabase
+│   ├── services/             # API e armazenamento local
 │   ├── utils/                # Funções auxiliares
 │   ├── App.jsx
 │   └── styles.css
@@ -62,8 +62,8 @@ meu-assistente/
 ## Requisitos
 
 - Node.js LTS e npm.
-- MySQL 8 ou compatível, caso utilize a API.
-- Conta/projeto Supabase apenas para os recursos que dependem dele.
+- Uma instância TiDB Cloud com banco criado e credenciais de conexão.
+- Conta TiDB Cloud com banco de dados criado.
 
 Confira as versões instaladas:
 
@@ -88,7 +88,7 @@ Copie `.env.example` para `.env` e ajuste as variáveis necessárias:
 VITE_API_URL=http://localhost:3001
 ```
 
-Se utilizar recursos Supabase, configure também as variáveis exigidas pelo arquivo `src/services/supabase.js`. Nunca coloque chave `service_role` ou segredo privado em variáveis `VITE_*`, pois elas são expostas ao navegador.
+As credenciais do TiDB devem existir somente no `.env` da raiz (lido pelo backend como alternativa) ou em `backend/.env`. Nunca use o prefixo `VITE_` em credenciais do banco, pois variáveis com esse prefixo são expostas ao navegador.
 
 Inicie:
 
@@ -107,20 +107,20 @@ cd backend
 npm install
 ```
 
-Copie `backend/.env.example` para `backend/.env` e configure os dados reais do MySQL e um segredo JWT forte:
+Copie `backend/.env.example` para `backend/.env` e configure os dados de conexão do TiDB Cloud (TiDB Cloud Console → Connect → General) e um segredo JWT forte. Em desenvolvimento, o backend também lê as variáveis do `.env` da raiz como alternativa:
 
 ```env
 PORT=3001
-DB_HOST=localhost
-DB_PORT=3306
-DB_USER=root
-DB_PASSWORD=sua_senha
-DB_NAME=meu_assistente
+DB_HOST=gateway01.<regiao>.prod.aws.tidbcloud.com
+DB_PORT=4000
+DB_USER=seu_usuario_tidb
+DB_PASSWORD=sua_senha_tidb
+DB_NAME=nome_do_banco
 JWT_SECRET=gere-um-segredo-longo-e-aleatorio
 FRONTEND_URL=http://localhost:5173
 ```
 
-Crie o banco `meu_assistente` no MySQL e aplique os scripts SQL necessários que estão em `backend/src/db/`, respeitando a sequência/fase indicada no nome dos arquivos e a estrutura já existente do banco.
+Crie/selecione o banco no TiDB Cloud antes de iniciar a API. No editor SQL do TiDB, selecione o schema no seletor de database ou execute `USE nome_do_banco;` antes de rodar comandos manualmente — isso evita o erro `No database selected` da imagem. A tabela `user_app_data` é criada automaticamente na inicialização; ela armazena o estado completo das telas por usuário em JSON. As tabelas de autenticação, conexões, estudos, investimentos, projetos, grupos e Foguinho continuam sendo usadas pelas rotas existentes. Se o banco ainda não tiver essas tabelas, aplique os scripts SQL de `backend/src/db/` na ordem das fases documentadas, após backup.
 
 Inicie a API:
 
@@ -128,7 +128,7 @@ Inicie a API:
 npm run dev
 ```
 
-A rota `http://localhost:3001/api/health` permite verificar se a API está respondendo.
+A rota `http://localhost:3001/api/health` verifica também a conexão com o TiDB. O frontend envia os dados pela API autenticada; as credenciais do TiDB ficam exclusivamente no backend, nunca em variáveis `VITE_*`.
 
 Para executar em modo normal:
 
@@ -173,7 +173,7 @@ A API Express/MySQL precisa ser hospedada separadamente em um ambiente que supor
 - Não expor segredos em variáveis `VITE_*`.
 - Usar senha forte para o MySQL e `JWT_SECRET` aleatório e exclusivo.
 - Aplicar controles de acesso e validação no backend.
-- Revisar políticas RLS do Supabase para tabelas acessadas pelo cliente.
+- Não expor credenciais do TiDB no frontend nem versionar arquivos `.env`.
 - Fazer backup antes de executar scripts de alteração do banco.
 
 ## Convenções para manutenção

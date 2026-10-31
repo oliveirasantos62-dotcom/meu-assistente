@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { storageService, emptyAppData } from '../services/storage';
+import { loadAppData, saveAppData } from '../services/api';
 import {
   getTodayDate,
   calculateLevelInfo,
@@ -181,7 +182,7 @@ function normalizeAppData(rawData) {
 
 /**
  * Aceita:
- * - objeto do Supabase: { id, email, ... }
+ * - objeto de usuário autenticado: { id, email, ... }
  * - string antiga de usuário, para compatibilidade.
  */
 function getUserInfo(user) {
@@ -208,36 +209,102 @@ export function useAppData(user) {
 
   const [period, setPeriod] = useState('7');
 
-  // O backend de autenticação já identifica cada conta.
-  // Os dados de produtividade continuam locais nesta etapa da migração.
-  const [cloudReady] = useState(true);
+  // Dados de contas autenticadas são carregados e persistidos no TiDB pela API.
+  const [cloudReady, setCloudReady] = useState(!backendUser);
+  const [loadedUserKey, setLoadedUserKey] = useState(null);
   const [syncError, setSyncError] = useState('');
-  const [syncStatus, setSyncStatus] = useState('local');
+  const [syncStatus, setSyncStatus] = useState(backendUser ? 'loading' : 'local');
 
   useEffect(() => {
+    let cancelled = false;
+
     if (!storageKey) {
       setData(normalizeAppData(null));
+      setCloudReady(false);
+      setLoadedUserKey(null);
       setSyncStatus('local');
-      return;
+      setSyncError('');
+      return () => { cancelled = true; };
     }
 
-    setData(normalizeAppData(storageService.loadData(storageKey)));
-    setSyncStatus('local');
+    if (!backendUser || !userId) {
+      setData(normalizeAppData(storageService.loadData(storageKey)));
+      setCloudReady(true);
+      setLoadedUserKey(null);
+      setSyncStatus('local');
+      setSyncError('');
+      return () => { cancelled = true; };
+    }
+
+    setCloudReady(false);
+    setLoadedUserKey(null);
+    setSyncStatus('loading');
     setSyncError('');
-  }, [storageKey]);
+
+    const localData = normalizeAppData(storageService.loadData(storageKey));
+
+    loadAppData()
+      .then(async (remote) => {
+        if (cancelled) return;
+
+        if (remote?.exists && remote.appData) {
+          const cloudData = normalizeAppData(remote.appData);
+          setData(cloudData);
+          storageService.saveData(storageKey, cloudData);
+        } else {
+          // Migra automaticamente os dados locais antigos para o TiDB na primeira entrada.
+          await saveAppData(localData);
+          if (cancelled) return;
+          setData(localData);
+        }
+
+        setLoadedUserKey(storageKey);
+        setCloudReady(true);
+        setSyncStatus('synced');
+      })
+      .catch((error) => {
+        if (cancelled) return;
+        setData(localData);
+        setSyncError(error?.message || 'Não foi possível carregar os dados do TiDB.');
+        setSyncStatus('error');
+        setCloudReady(false);
+      });
+
+    return () => { cancelled = true; };
+  }, [storageKey, userId, backendUser]);
 
   useEffect(() => {
     if (!storageKey || !data) return;
 
-    const result = storageService.saveData(storageKey, normalizeAppData(data));
-    if (result === false) {
-      setSyncError('Não foi possível salvar os dados neste dispositivo.');
-      setSyncStatus('error');
-    } else {
+    const normalized = normalizeAppData(data);
+    storageService.saveData(storageKey, normalized);
+
+    if (!backendUser) {
       setSyncError('');
       setSyncStatus('local');
+      return;
     }
-  }, [data, storageKey]);
+
+    // Impede gravações antes de concluir a carga/migração da conta atual.
+    if (loadedUserKey !== storageKey || !cloudReady) return;
+
+    let cancelled = false;
+    setSyncStatus('saving');
+
+    saveAppData(normalized)
+      .then(() => {
+        if (cancelled) return;
+        setSyncError('');
+        setSyncStatus('synced');
+      })
+      .catch((error) => {
+        if (cancelled) return;
+        setSyncError(error?.message || 'Não foi possível salvar os dados no TiDB.');
+        setSyncStatus('error');
+      });
+
+    return () => { cancelled = true; };
+  }, [data, storageKey, backendUser, loadedUserKey, cloudReady]);
 
   /**
    * Função principal usada pelas páginas.

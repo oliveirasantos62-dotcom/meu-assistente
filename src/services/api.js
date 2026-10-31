@@ -146,6 +146,23 @@ export async function getCurrentUser() {
 
 /*
 |--------------------------------------------------------------------------
+| DADOS PRINCIPAIS DO APLICATIVO (TiDB)
+|--------------------------------------------------------------------------
+*/
+
+export async function loadAppData() {
+  return request('/api/app-data');
+}
+
+export async function saveAppData(appData) {
+  return request('/api/app-data', {
+    method: 'PUT',
+    body: JSON.stringify({ appData }),
+  });
+}
+
+/*
+|--------------------------------------------------------------------------
 | ATUALIZAÇÃO DO PERFIL
 |--------------------------------------------------------------------------
 */

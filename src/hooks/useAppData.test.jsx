@@ -3,7 +3,7 @@ import { act, renderHook, waitFor } from '@testing-library/react';
 
 import { useAppData } from './useAppData';
 import { storageService, emptyAppData } from '../services/storage';
-import { loadCloudData, saveCloudData } from '../services/cloudStorage';
+import { loadAppData, saveAppData } from '../services/api';
 
 vi.mock('../services/storage', () => ({
   emptyAppData: {
@@ -27,15 +27,16 @@ vi.mock('../services/storage', () => ({
   },
 }));
 
-vi.mock('../services/cloudStorage', () => ({
-  loadCloudData: vi.fn(),
-  saveCloudData: vi.fn(),
+vi.mock('../services/api', () => ({
+  loadAppData: vi.fn(),
+  saveAppData: vi.fn(),
 }));
 
 describe('useAppData', () => {
   const user = {
     id: 'user-test-123',
     email: 'teste@exemplo.com',
+    authProvider: 'backend',
   };
 
   beforeEach(() => {
@@ -44,7 +45,7 @@ describe('useAppData', () => {
     storageService.loadData.mockReturnValue(null);
     storageService.saveData.mockReturnValue(true);
 
-    loadCloudData.mockResolvedValue({
+    loadAppData.mockResolvedValue({
       exists: true,
       appData: {
         ...emptyAppData,
@@ -55,7 +56,7 @@ describe('useAppData', () => {
       },
     });
 
-    saveCloudData.mockResolvedValue({
+    saveAppData.mockResolvedValue({
       updated_at: new Date().toISOString(),
     });
   });
@@ -80,7 +81,7 @@ describe('useAppData', () => {
       xp: 50,
     };
 
-    loadCloudData.mockResolvedValue({
+    loadAppData.mockResolvedValue({
       exists: true,
       appData: cloudData,
       updatedAt: new Date().toISOString(),
@@ -92,7 +93,7 @@ describe('useAppData', () => {
       expect(result.current.cloudReady).toBe(true);
     });
 
-    expect(loadCloudData).toHaveBeenCalledWith(user.id);
+    expect(loadAppData).toHaveBeenCalled();
     expect(result.current.data.xp).toBe(50);
     expect(result.current.data.tasks).toHaveLength(1);
     expect(result.current.data.tasks[0].title).toBe('Estudar React');
@@ -106,7 +107,7 @@ describe('useAppData', () => {
 
     storageService.loadData.mockReturnValue(localData);
 
-    loadCloudData.mockResolvedValue({
+    loadAppData.mockResolvedValue({
       exists: false,
       appData: null,
       updatedAt: null,
@@ -121,7 +122,7 @@ describe('useAppData', () => {
     expect(result.current.data.tasks[0].title).toBe('Tarefa local');
 
     await waitFor(() => {
-      expect(saveCloudData).toHaveBeenCalledWith(
+      expect(saveAppData).toHaveBeenCalledWith(
         user.id,
         expect.objectContaining({
           tasks: localData.tasks,
@@ -149,7 +150,7 @@ describe('useAppData', () => {
     });
 
     await waitFor(() => {
-      expect(saveCloudData).toHaveBeenCalledWith(
+      expect(saveAppData).toHaveBeenCalledWith(
         user.id,
         expect.objectContaining({ xp: 100 }),
       );
@@ -157,7 +158,7 @@ describe('useAppData', () => {
   });
 
   it('calcula as tarefas pendentes e concluídas', async () => {
-    loadCloudData.mockResolvedValue({
+    loadAppData.mockResolvedValue({
       exists: true,
       appData: {
         ...emptyAppData,
@@ -180,7 +181,7 @@ describe('useAppData', () => {
   });
 
   it('registra erro quando não consegue carregar a nuvem', async () => {
-    loadCloudData.mockRejectedValue(new Error('Falha de conexão'));
+    loadAppData.mockRejectedValue(new Error('Falha de conexão'));
 
     const { result } = renderHook(() => useAppData(user));
 
@@ -199,7 +200,7 @@ describe('useAppData', () => {
       expect(result.current.syncStatus).toBe('local');
     });
 
-    expect(loadCloudData).not.toHaveBeenCalled();
-    expect(saveCloudData).not.toHaveBeenCalled();
+    expect(loadAppData).not.toHaveBeenCalled();
+    expect(saveAppData).not.toHaveBeenCalled();
   });
 });

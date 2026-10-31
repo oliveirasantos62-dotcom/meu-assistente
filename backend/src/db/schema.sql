@@ -46,3 +46,17 @@ CREATE INDEX idx_users_username ON users(username);
 
 
 -- As tabelas de Estudos e Investimentos estão em phase7.sql.
+
+
+-- Estado completo das telas e módulos do aplicativo por usuário.
+-- O conteúdo JSON mantém compatibilidade com o modelo atual do frontend.
+CREATE TABLE IF NOT EXISTS user_app_data (
+  user_id CHAR(36) NOT NULL PRIMARY KEY,
+  app_data JSON NOT NULL,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+    ON UPDATE CURRENT_TIMESTAMP,
+  CONSTRAINT fk_user_app_data_user
+    FOREIGN KEY (user_id) REFERENCES users(id)
+    ON DELETE CASCADE
+);
