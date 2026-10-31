@@ -145,6 +145,7 @@ export default function SmartCalendar({ data, save, completeTask }) {
   const [name, setName] = useState('');
 
   const [time, setTime] = useState('');
+  const [endTime, setEndTime] = useState('');
 
   const [duration, setDuration] = useState('60');
 
@@ -223,9 +224,12 @@ export default function SmartCalendar({ data, save, completeTask }) {
         let matches = false;
 
         if (event.recurrence === 'daily') matches = true;
-        if (event.recurrence === 'weekly') matches = cursor.getDay() === start.getDay();
-        if (event.recurrence === 'weekdays') matches = cursor.getDay() >= 1 && cursor.getDay() <= 5;
-        if (event.recurrence === 'monthly') matches = cursor.getDate() === start.getDate();
+        if (event.recurrence === 'weekly')
+          matches = cursor.getDay() === start.getDay();
+        if (event.recurrence === 'weekdays')
+          matches = cursor.getDay() >= 1 && cursor.getDay() <= 5;
+        if (event.recurrence === 'monthly')
+          matches = cursor.getDate() === start.getDate();
 
         if (afterStart && matches) {
           occurrences.push({
@@ -322,24 +326,40 @@ export default function SmartCalendar({ data, save, completeTask }) {
 
   useEffect(() => {
     const interval = window.setInterval(() => {
-      if (!('Notification' in window) || Notification.permission !== 'granted') return;
+      if (!('Notification' in window) || Notification.permission !== 'granted')
+        return;
       const now = Date.now();
       const notifiedKey = 'meu-assistente-reminders-notified';
       let notified = {};
-      try { notified = JSON.parse(localStorage.getItem(notifiedKey) || '{}'); } catch { notified = {}; }
+      try {
+        notified = JSON.parse(localStorage.getItem(notifiedKey) || '{}');
+      } catch {
+        notified = {};
+      }
 
       allEvents.forEach((event) => {
-        if (!event.scheduledTime || !event.reminder || event.reminder === 'none') return;
-        const target = new Date(`${event.date}T${event.scheduledTime}:00`).getTime();
+        if (
+          !event.scheduledTime ||
+          !event.reminder ||
+          event.reminder === 'none'
+        )
+          return;
+        const target = new Date(
+          `${event.date}T${event.scheduledTime}:00`,
+        ).getTime();
         const reminderAt = target - Number(event.reminder) * 60000;
         const key = `${event.id}-${event.date}-${event.reminder}`;
         if (now >= reminderAt && now < target + 60000 && !notified[key]) {
-          new Notification(`⏰ ${event.name}`, { body: `${event.reminder} min antes · ${event.scheduledTime}` });
+          new Notification(`⏰ ${event.name}`, {
+            body: `${event.reminder} min antes · ${event.scheduledTime}`,
+          });
           notified[key] = true;
         }
       });
 
-      try { localStorage.setItem(notifiedKey, JSON.stringify(notified)); } catch {}
+      try {
+        localStorage.setItem(notifiedKey, JSON.stringify(notified));
+      } catch {}
     }, 30000);
 
     return () => window.clearInterval(interval);
@@ -351,7 +371,11 @@ export default function SmartCalendar({ data, save, completeTask }) {
       return;
     }
     const permission = await Notification.requestPermission();
-    setMessage(permission === 'granted' ? '🔔 Lembretes ativados!' : 'As notificações não foram autorizadas.');
+    setMessage(
+      permission === 'granted'
+        ? '🔔 Lembretes ativados!'
+        : 'As notificações não foram autorizadas.',
+    );
     window.setTimeout(() => setMessage(''), 2500);
   };
 
@@ -417,6 +441,7 @@ export default function SmartCalendar({ data, save, completeTask }) {
   const resetForm = () => {
     setName('');
     setTime('');
+    setEndTime('');
     setDuration('60');
     setAmount('');
     setCategory('');
@@ -465,9 +490,17 @@ export default function SmartCalendar({ data, save, completeTask }) {
 
     setName(sourceEvent.name || '');
 
-    setTime(sourceEvent.scheduledTime || '');
-
-    setDuration(String(sourceEvent.duration || 60));
+    const startTime = sourceEvent.scheduledTime || '';
+    setTime(startTime);
+    const savedDuration = Number(sourceEvent.duration || 60);
+    if (startTime) {
+      const [hours, minutes] = startTime.split(':').map(Number);
+      const end = hours * 60 + minutes + savedDuration;
+      setEndTime(`${pad(Math.floor((end % 1440) / 60))}:${pad(end % 60)}`);
+    } else {
+      setEndTime('');
+    }
+    setDuration(String(savedDuration));
 
     setAmount(sourceEvent.amount || '');
 
@@ -505,10 +538,21 @@ export default function SmartCalendar({ data, save, completeTask }) {
     }
 
     const editingSourceTask = Boolean(editingEvent?.sourceTask);
-    const requiresTime = eventType === 'appointment' || (eventType === 'task' && !editingSourceTask);
+    const requiresTime =
+      eventType === 'appointment' ||
+      (eventType === 'task' && !editingSourceTask);
 
-    if (requiresTime && !time) {
-      setMessage('Informe o horário do evento.');
+    if (requiresTime && (!time || !endTime)) {
+      setMessage('Informe os horários de início e término.');
+      return;
+    }
+
+    const calculatedDuration = requiresTime
+      ? getMinutes(endTime) - getMinutes(time)
+      : 0;
+
+    if (requiresTime && calculatedDuration <= 0) {
+      setMessage('O horário de término precisa ser depois do início.');
       return;
     }
 
@@ -531,7 +575,7 @@ export default function SmartCalendar({ data, save, completeTask }) {
 
       scheduledTime: requiresTime ? time : '',
 
-      duration: requiresTime ? Number(duration || 60) : 0,
+      duration: requiresTime ? calculatedDuration : 0,
 
       type: eventType,
 
@@ -586,7 +630,7 @@ export default function SmartCalendar({ data, save, completeTask }) {
               priority: newEvent.priority || task.priority,
               description: notes.trim() || task.description || '',
               scheduledTime: time,
-              duration: Number(duration || 0),
+              duration: calculatedDuration || Number(duration || 0),
               updatedAt: new Date().toISOString(),
             }
           : task,
@@ -594,11 +638,12 @@ export default function SmartCalendar({ data, save, completeTask }) {
       save({ ...data, tasks: updatedTasks });
     } else {
       const updatedEvents = editingEvent
-        ? events.map((event) => event.id === editingEvent.id ? newEvent : event)
+        ? events.map((event) =>
+            event.id === editingEvent.id ? newEvent : event,
+          )
         : [...events, newEvent];
       save({ ...data, calendarEvents: updatedEvents });
     }
-
 
     const wasEditing = Boolean(editingEvent);
 
@@ -627,7 +672,9 @@ export default function SmartCalendar({ data, save, completeTask }) {
     if (event.sourceTask) {
       save({
         ...data,
-        tasks: (data.tasks || []).filter((task) => String(task.id) !== String(targetId)),
+        tasks: (data.tasks || []).filter(
+          (task) => String(task.id) !== String(targetId),
+        ),
       });
     } else {
       save({
@@ -658,7 +705,11 @@ export default function SmartCalendar({ data, save, completeTask }) {
           ...data,
           tasks: (data.tasks || []).map((task) =>
             String(task.id) === String(targetId)
-              ? { ...task, done: !task.done, completedAt: !task.done ? new Date().toISOString() : null }
+              ? {
+                  ...task,
+                  done: !task.done,
+                  completedAt: !task.done ? new Date().toISOString() : null,
+                }
               : task,
           ),
         });
@@ -803,7 +854,10 @@ export default function SmartCalendar({ data, save, completeTask }) {
 
           <button
             className={view === 'week' ? 'primary' : 'ghost'}
-            onClick={() => { syncWeekToDate(selectedDate); setView('week'); }}
+            onClick={() => {
+              syncWeekToDate(selectedDate);
+              setView('week');
+            }}
           >
             Semana
           </button>
@@ -1042,30 +1096,93 @@ export default function SmartCalendar({ data, save, completeTask }) {
 
       {view === 'week' && (
         <div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12, gap: 8 }}>
-            <button className='ghost' onClick={previousWeek}>‹ Semana anterior</button>
+          <div
+            style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              marginBottom: 12,
+              gap: 8,
+            }}
+          >
+            <button className='ghost' onClick={previousWeek}>
+              ‹ Semana anterior
+            </button>
             <strong>
-              {weekStart.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' })}
+              {weekStart.toLocaleDateString('pt-BR', {
+                day: '2-digit',
+                month: 'short',
+              })}
               {' — '}
-              {(() => { const d = new Date(weekStart); d.setDate(d.getDate() + 6); return d.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' }); })()}
+              {(() => {
+                const d = new Date(weekStart);
+                d.setDate(d.getDate() + 6);
+                return d.toLocaleDateString('pt-BR', {
+                  day: '2-digit',
+                  month: 'short',
+                  year: 'numeric',
+                });
+              })()}
             </strong>
-            <button className='ghost' onClick={nextWeek}>Próxima semana ›</button>
+            <button className='ghost' onClick={nextWeek}>
+              Próxima semana ›
+            </button>
           </div>
 
           <div style={{ overflowX: 'auto' }}>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, minmax(135px, 1fr))', gap: 6, minWidth: 960 }}>
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(7, minmax(135px, 1fr))',
+                gap: 6,
+                minWidth: 960,
+              }}
+            >
               {Array.from({ length: 7 }, (_, index) => {
                 const date = new Date(weekStart);
                 date.setDate(date.getDate() + index);
                 const dateString = formatDate(date);
-                const dayEvents = allEvents.filter((event) => event.date === dateString).sort((a, b) => getMinutes(a.scheduledTime) - getMinutes(b.scheduledTime));
+                const dayEvents = allEvents
+                  .filter((event) => event.date === dateString)
+                  .sort(
+                    (a, b) =>
+                      getMinutes(a.scheduledTime) - getMinutes(b.scheduledTime),
+                  );
                 const isToday = dateString === todayString;
                 return (
-                  <div key={dateString} style={{ minHeight: 420, border: isToday ? '2px solid var(--site-primary)' : '1px solid var(--site-border)', borderRadius: 10, padding: 8, background: 'var(--site-card)' }}>
-                    <button type='button' className='ghost' onClick={() => { setSelectedDate(dateString); setView('day'); }} style={{ width: '100%', marginBottom: 8, textAlign: 'left' }}>
-                      <strong>{date.toLocaleDateString('pt-BR', { weekday: 'short' })}</strong> · {date.getDate()}
+                  <div
+                    key={dateString}
+                    style={{
+                      minHeight: 420,
+                      border: isToday
+                        ? '2px solid var(--site-primary)'
+                        : '1px solid var(--site-border)',
+                      borderRadius: 10,
+                      padding: 8,
+                      background: 'var(--site-card)',
+                    }}
+                  >
+                    <button
+                      type='button'
+                      className='ghost'
+                      onClick={() => {
+                        setSelectedDate(dateString);
+                        setView('day');
+                      }}
+                      style={{
+                        width: '100%',
+                        marginBottom: 8,
+                        textAlign: 'left',
+                      }}
+                    >
+                      <strong>
+                        {date.toLocaleDateString('pt-BR', { weekday: 'short' })}
+                      </strong>{' '}
+                      · {date.getDate()}
                     </button>
-                    {dayEvents.length === 0 && <small className='subtitle'>Livre</small>}
+                    {dayEvents.length === 0 && (
+                      <small className='subtitle'>Livre</small>
+                    )}
                     {dayEvents.map((event) => renderEvent(event, true))}
                   </div>
                 );
@@ -1202,7 +1319,13 @@ export default function SmartCalendar({ data, save, completeTask }) {
                       )}
 
                       {event.notes && (
-                        <small style={{ display: 'block', marginTop: 5, opacity: 0.75 }}>
+                        <small
+                          style={{
+                            display: 'block',
+                            marginTop: 5,
+                            opacity: 0.75,
+                          }}
+                        >
                           📝 {event.notes}
                         </small>
                       )}
@@ -1317,6 +1440,7 @@ export default function SmartCalendar({ data, save, completeTask }) {
 
       {showModal && (
         <div
+          className='calendar-event-overlay'
           onClick={closeModal}
           style={{
             position: 'fixed',
@@ -1337,20 +1461,21 @@ export default function SmartCalendar({ data, save, completeTask }) {
           {/* CONTAINER DO MODAL */}
 
           <div
+            className='calendar-event-modal'
             onClick={(e) => e.stopPropagation()}
             style={{
               width: '100%',
               maxWidth: 620,
 
-              height: 'auto',
-              maxHeight: '90vh',
+              height: 'min(900px, calc(100dvh - 32px))',
+              maxHeight: 'calc(100dvh - 32px)',
 
               display: 'flex',
               flexDirection: 'column',
 
-              background: 'var(--site-card, #fff)',
+              background: 'var(--site-card-bg, #1a1d2b)',
 
-              color: 'var(--site-text, #222)',
+              color: 'var(--site-on-background, #f0f2f5)',
 
               borderRadius: 18,
 
@@ -1366,6 +1491,7 @@ export default function SmartCalendar({ data, save, completeTask }) {
                 ========================= */}
 
             <div
+              className='calendar-event-header'
               style={{
                 display: 'flex',
                 justifyContent: 'space-between',
@@ -1431,6 +1557,7 @@ export default function SmartCalendar({ data, save, completeTask }) {
 
             <form
               onSubmit={handleSaveEvent}
+              className='calendar-event-form'
               style={{
                 display: 'flex',
                 flexDirection: 'column',
@@ -1447,6 +1574,7 @@ export default function SmartCalendar({ data, save, completeTask }) {
                   ========================= */}
 
               <div
+                className='calendar-event-scroll'
                 style={{
                   flex: 1,
 
@@ -1598,16 +1726,10 @@ export default function SmartCalendar({ data, save, completeTask }) {
                   />
                 </div>
 
-                {/* HORÁRIO E DURAÇÃO */}
+                {/* HORÁRIO DE INÍCIO E TÉRMINO */}
 
                 {(eventType === 'task' || eventType === 'appointment') && (
-                  <div
-                    style={{
-                      display: 'grid',
-                      gridTemplateColumns: '1fr 1fr',
-                      gap: 12,
-                    }}
-                  >
+                  <div className='calendar-time-fields'>
                     <div>
                       <label
                         style={{
@@ -1616,21 +1738,36 @@ export default function SmartCalendar({ data, save, completeTask }) {
                           marginBottom: 7,
                         }}
                       >
-                        Horário
+                        Horário de início
                       </label>
-
                       <input
                         type='time'
                         value={time}
-                        onChange={(e) => setTime(e.target.value)}
-                        required
-                        style={{
-                          width: '100%',
-                          boxSizing: 'border-box',
+                        onChange={(e) => {
+                          const nextStart = e.target.value;
+                          setTime(nextStart);
+                          if (
+                            nextStart &&
+                            endTime &&
+                            getMinutes(endTime) <= getMinutes(nextStart)
+                          ) {
+                            const nextEnd =
+                              getMinutes(nextStart) + Number(duration || 60);
+                            setEndTime(
+                              `${pad(Math.floor((nextEnd % 1440) / 60))}:${pad(nextEnd % 60)}`,
+                            );
+                          } else if (nextStart && !endTime) {
+                            const nextEnd =
+                              getMinutes(nextStart) + Number(duration || 60);
+                            setEndTime(
+                              `${pad(Math.floor((nextEnd % 1440) / 60))}:${pad(nextEnd % 60)}`,
+                            );
+                          }
                         }}
+                        required
+                        style={{ width: '100%', boxSizing: 'border-box' }}
                       />
                     </div>
-
                     <div>
                       <label
                         style={{
@@ -1639,32 +1776,34 @@ export default function SmartCalendar({ data, save, completeTask }) {
                           marginBottom: 7,
                         }}
                       >
-                        Duração
+                        Horário de término
                       </label>
-
-                      <select
-                        value={duration}
-                        onChange={(e) => setDuration(e.target.value)}
-                        style={{
-                          width: '100%',
-                          boxSizing: 'border-box',
+                      <input
+                        type='time'
+                        value={endTime}
+                        onChange={(e) => {
+                          setEndTime(e.target.value);
+                          if (
+                            time &&
+                            e.target.value &&
+                            getMinutes(e.target.value) > getMinutes(time)
+                          ) {
+                            setDuration(
+                              String(
+                                getMinutes(e.target.value) - getMinutes(time),
+                              ),
+                            );
+                          }
                         }}
-                      >
-                        <option value='15'>15 minutos</option>
-
-                        <option value='30'>30 minutos</option>
-
-                        <option value='45'>45 minutos</option>
-
-                        <option value='60'>1 hora</option>
-
-                        <option value='90'>1h30</option>
-
-                        <option value='120'>2 horas</option>
-
-                        <option value='180'>3 horas</option>
-                      </select>
+                        required
+                        style={{ width: '100%', boxSizing: 'border-box' }}
+                      />
                     </div>
+                    <p className='calendar-time-hint'>
+                      {time && endTime && getMinutes(endTime) > getMinutes(time)
+                        ? `Duração: ${Math.floor((getMinutes(endTime) - getMinutes(time)) / 60)}h${pad((getMinutes(endTime) - getMinutes(time)) % 60)}min`
+                        : 'Defina o início e o término do evento.'}
+                    </p>
                   </div>
                 )}
 
@@ -1679,10 +1818,20 @@ export default function SmartCalendar({ data, save, completeTask }) {
                     }}
                   >
                     <div>
-                      <label style={{ display: 'block', fontWeight: 700, marginBottom: 7 }}>
+                      <label
+                        style={{
+                          display: 'block',
+                          fontWeight: 700,
+                          marginBottom: 7,
+                        }}
+                      >
                         Repetir
                       </label>
-                      <select value={recurrence} onChange={(e) => setRecurrence(e.target.value)} style={{ width: '100%', boxSizing: 'border-box' }}>
+                      <select
+                        value={recurrence}
+                        onChange={(e) => setRecurrence(e.target.value)}
+                        style={{ width: '100%', boxSizing: 'border-box' }}
+                      >
                         <option value='none'>Não repetir</option>
                         <option value='daily'>Todos os dias</option>
                         <option value='weekdays'>Dias úteis</option>
@@ -1692,10 +1841,20 @@ export default function SmartCalendar({ data, save, completeTask }) {
                     </div>
 
                     <div>
-                      <label style={{ display: 'block', fontWeight: 700, marginBottom: 7 }}>
+                      <label
+                        style={{
+                          display: 'block',
+                          fontWeight: 700,
+                          marginBottom: 7,
+                        }}
+                      >
                         Lembrete
                       </label>
-                      <select value={reminder} onChange={(e) => setReminder(e.target.value)} style={{ width: '100%', boxSizing: 'border-box' }}>
+                      <select
+                        value={reminder}
+                        onChange={(e) => setReminder(e.target.value)}
+                        style={{ width: '100%', boxSizing: 'border-box' }}
+                      >
                         <option value='none'>Sem lembrete</option>
                         <option value='5'>5 min antes</option>
                         <option value='10'>10 min antes</option>
@@ -1706,18 +1865,49 @@ export default function SmartCalendar({ data, save, completeTask }) {
                   </div>
                 )}
 
-                {recurrence !== 'none' && (eventType === 'task' || eventType === 'appointment') && (
-                  <div>
-                    <label style={{ display: 'block', fontWeight: 700, marginBottom: 7 }}>
-                      Repetir até (opcional)
-                    </label>
-                    <input type='date' value={recurrenceEnd} min={selectedDate} onChange={(e) => setRecurrenceEnd(e.target.value)} style={{ width: '100%', boxSizing: 'border-box' }} />
-                  </div>
-                )}
+                {recurrence !== 'none' &&
+                  (eventType === 'task' || eventType === 'appointment') && (
+                    <div>
+                      <label
+                        style={{
+                          display: 'block',
+                          fontWeight: 700,
+                          marginBottom: 7,
+                        }}
+                      >
+                        Repetir até (opcional)
+                      </label>
+                      <input
+                        type='date'
+                        value={recurrenceEnd}
+                        min={selectedDate}
+                        onChange={(e) => setRecurrenceEnd(e.target.value)}
+                        style={{ width: '100%', boxSizing: 'border-box' }}
+                      />
+                    </div>
+                  )}
 
                 <div>
-                  <label style={{ display: 'block', fontWeight: 700, marginBottom: 7 }}>Observações</label>
-                  <textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={3} placeholder='Detalhes, local, materiais ou observações...' style={{ width: '100%', boxSizing: 'border-box', resize: 'vertical' }} />
+                  <label
+                    style={{
+                      display: 'block',
+                      fontWeight: 700,
+                      marginBottom: 7,
+                    }}
+                  >
+                    Observações
+                  </label>
+                  <textarea
+                    value={notes}
+                    onChange={(e) => setNotes(e.target.value)}
+                    rows={3}
+                    placeholder='Detalhes, local, materiais ou observações...'
+                    style={{
+                      width: '100%',
+                      boxSizing: 'border-box',
+                      resize: 'vertical',
+                    }}
+                  />
                 </div>
 
                 {/* FINANCEIRO */}
@@ -1876,6 +2066,7 @@ export default function SmartCalendar({ data, save, completeTask }) {
                     {selectedDate && ` · ${selectedDate}`}
 
                     {time && ` · ${time}`}
+                    {endTime && `–${endTime}`}
 
                     {amount &&
                       Number(amount) > 0 &&
@@ -1889,6 +2080,7 @@ export default function SmartCalendar({ data, save, completeTask }) {
                   ========================= */}
 
               <div
+                className='calendar-event-footer'
                 style={{
                   display: 'flex',
 
@@ -1900,7 +2092,7 @@ export default function SmartCalendar({ data, save, completeTask }) {
 
                   borderTop: '1px solid var(--site-border, #ddd)',
 
-                  background: 'var(--site-card, #fff)',
+                  background: 'var(--site-card-bg, #1a1d2b)',
 
                   flexShrink: 0,
 

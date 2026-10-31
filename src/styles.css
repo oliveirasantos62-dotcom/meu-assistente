@@ -8253,3 +8253,124 @@ body.dark .process-node-label {
     transition: none !important;
   }
 }
+
+/* =========================================================
+   AGENDA — MODAL DE CRIAÇÃO/EDIÇÃO DE EVENTOS
+   ========================================================= */
+.calendar-event-overlay {
+  padding: 16px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.calendar-event-modal {
+  min-height: 0;
+  margin: auto;
+  background: var(--site-card-bg, #1a1d2b) !important;
+  color: var(--site-on-background, #f0f2f5) !important;
+}
+
+.calendar-event-header {
+  background: var(--site-card-bg, #1a1d2b);
+}
+
+.calendar-event-form {
+  min-height: 0;
+}
+
+.calendar-event-scroll {
+  min-height: 0;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: var(--site-border) transparent;
+}
+
+.calendar-event-scroll > div {
+  min-width: 0;
+}
+
+.calendar-time-fields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px 12px;
+  padding: 14px;
+  border: 1px solid var(--site-border);
+  border-radius: 14px;
+  background: var(--site-primary-soft);
+}
+
+.calendar-time-fields input {
+  margin: 0;
+  min-height: 46px;
+}
+
+.calendar-time-hint {
+  grid-column: 1 / -1;
+  margin: 0;
+  color: var(--site-text-muted);
+  font-size: 12px;
+}
+
+.calendar-event-footer {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+  padding: 14px 22px;
+  border-top: 1px solid var(--site-border);
+  background: var(--site-card-bg, #1a1d2b) !important;
+  box-shadow: 0 -8px 20px rgba(0, 0, 0, 0.08);
+}
+
+.calendar-event-footer button {
+  min-height: 44px;
+  width: auto;
+  margin: 0;
+  flex: 0 0 auto;
+}
+
+.calendar-event-footer button[type='submit'] {
+  min-width: 160px;
+}
+
+@media (max-width: 600px) {
+  .calendar-event-overlay {
+    align-items: flex-end !important;
+    padding: 8px;
+  }
+
+  .calendar-event-modal {
+    width: 100% !important;
+    max-width: none !important;
+    height: min(92dvh, 900px) !important;
+    max-height: 92dvh !important;
+    border-radius: 18px 18px 12px 12px !important;
+  }
+
+  .calendar-event-header {
+    padding: 16px !important;
+  }
+
+  .calendar-event-scroll {
+    padding: 16px !important;
+  }
+
+  .calendar-time-fields {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .calendar-event-footer {
+    padding: 12px 16px;
+    display: grid;
+    grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr);
+  }
+
+  .calendar-event-footer button,
+  .calendar-event-footer button[type='submit'] {
+    width: 100%;
+    min-width: 0;
+  }
+}
