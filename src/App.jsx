@@ -17,6 +17,7 @@ import Diario from './components/Diario';
 import Estudos from './components/Estudos';
 import Goals from './components/Goals';
 import HabitsPage from './components/HabitsPage';
+import Evolucao from './components/Evolucao';
 
 // Coleções e conquistas
 import ColecoesConquistas from './components/ColecoesConquistas';
@@ -83,7 +84,9 @@ export default function App() {
     };
   }, []);
 
-  // O hook recebe o usuário completo.
+  // =========================================
+  // DADOS DO APLICATIVO
+  // =========================================
   const appDataHook = useAppData(currentUser);
 
   const {
@@ -297,6 +300,9 @@ export default function App() {
       />
 
       <main className='main-content'>
+        {/* =========================================
+            CABEÇALHO PRINCIPAL
+        ========================================= */}
         <header className='main-header'>
           <div>
             <h1>
@@ -376,11 +382,7 @@ export default function App() {
             CALENDÁRIO
         ========================================= */}
         {activeSection === 'calendar' && (
-          <SmartCalendar
-            data={data}
-            save={save}
-            completeTask={completeTask}
-          />
+          <SmartCalendar data={data} save={save} completeTask={completeTask} />
         )}
 
         {/* =========================================
@@ -413,19 +415,15 @@ export default function App() {
         {/* =========================================
             PROCESSOS — EDITOR VISUAL
         ========================================= */}
-        {activeSection === 'processos' && (
-          <Processos data={data} save={save} />
-        )}
+        {activeSection === 'processos' && <Processos data={data} save={save} />}
 
         {/* =========================================
             PROJETOS
-            PÁGINA INDEPENDENTE
         ========================================= */}
         {activeSection === 'projects' && <ProjetosColaborativos />}
 
         {/* =========================================
             GRUPOS
-            PÁGINA INDEPENDENTE
         ========================================= */}
         {activeSection === 'groups' && <Grupos />}
 
@@ -435,6 +433,11 @@ export default function App() {
         {activeSection === 'profile' && (
           <Perfil currentUser={currentUser} setCurrentUser={setCurrentUser} />
         )}
+
+        {/* =========================================
+            EVOLUÇÃO & PROGRESSO
+        ========================================= */}
+        {activeSection === 'evolucao' && <Evolucao data={data} save={save} />}
 
         {/* =========================================
             COLEÇÕES E CONQUISTAS
