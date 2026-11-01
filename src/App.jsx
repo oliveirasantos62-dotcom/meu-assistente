@@ -147,7 +147,15 @@ export default function App() {
   // =========================================================
 
   const [focusOpen, setFocusOpen] = useState(false);
+
+  // ID da atividade selecionada.
+  // Pode ser tarefa ou hábito.
   const [focusTaskId, setFocusTaskId] = useState('');
+
+  // Tipo da atividade selecionada:
+  // "task" ou "habit"
+  const [focusItemType, setFocusItemType] = useState('');
+
   const [focusMinutes, setFocusMinutes] = useState(25);
   const [focusSeconds, setFocusSeconds] = useState(25 * 60);
   const [focusRunning, setFocusRunning] = useState(false);
@@ -186,13 +194,16 @@ export default function App() {
 
   function openFocusMode() {
     setFocusTaskId('');
+    setFocusItemType('');
+
     setFocusMinutes(25);
     setFocusSeconds(25 * 60);
+
     setFocusRunning(false);
     setFocusCompleted(false);
+
     setFocusOpen(true);
 
-    // Garante que a nova tela comece no topo.
     window.scrollTo({
       top: 0,
       behavior: 'instant',
@@ -207,8 +218,6 @@ export default function App() {
     setFocusRunning(false);
     setFocusOpen(false);
 
-    // Ao voltar, posiciona a página no topo.
-    // Isso evita que o navegador fique no final do conteúdo.
     window.requestAnimationFrame(() => {
       window.scrollTo({
         top: 0,
@@ -269,6 +278,8 @@ export default function App() {
 
     setFocusOpen(false);
     setFocusRunning(false);
+    setFocusTaskId('');
+    setFocusItemType('');
   }
 
   // =========================================================
@@ -357,9 +368,41 @@ export default function App() {
     ? completedTasks
     : [];
 
-  const focusTask = safePendingTasks.find(
-    (task) => String(task.id) === String(focusTaskId),
-  );
+  // =========================================================
+  // HÁBITOS PENDENTES
+  //
+  // Um hábito só aparece no Modo Foco se ainda não tiver
+  // sido concluído hoje.
+  // =========================================================
+
+  const safeHabits = Array.isArray(data?.habits) ? data.habits : [];
+
+  const pendingHabits = safeHabits.filter((habit) => {
+    const history =
+      habit.history && typeof habit.history === 'object' ? habit.history : {};
+
+    const hasToday = Object.prototype.hasOwnProperty.call(history, today);
+
+    const completedToday = hasToday
+      ? Boolean(history[today])
+      : Boolean(habit.done);
+
+    return !completedToday;
+  });
+
+  // =========================================================
+  // ATIVIDADE SELECIONADA NO MODO FOCO
+  // =========================================================
+
+  const focusTask =
+    focusItemType === 'task'
+      ? safePendingTasks.find((task) => String(task.id) === String(focusTaskId))
+      : null;
+
+  const focusHabit =
+    focusItemType === 'habit'
+      ? pendingHabits.find((habit) => String(habit.id) === String(focusTaskId))
+      : null;
 
   // =========================================================
   // DADOS DO ASSISTENTE
@@ -397,17 +440,13 @@ export default function App() {
 
   // =========================================================
   // MODO FOCO — TELA INDEPENDENTE
-  //
-  // IMPORTANTE:
-  // O foco é retornado ANTES do layout principal.
-  // Assim ele não fica dentro do <main> da página atual.
   // =========================================================
 
   if (focusOpen) {
     return (
       <div className='focus-page'>
         <div className='focus-page-inner'>
-          {/* HEADER DO MODO FOCO */}
+          {/* HEADER */}
 
           <header className='focus-page-header'>
             <div>
@@ -419,7 +458,7 @@ export default function App() {
                   : 'Concentre-se no que importa'}
               </h1>
 
-              <p>Elimine distrações e concentre-se em uma tarefa por vez.</p>
+              <p>Escolha uma tarefa ou hábito pendente e concentre-se nele.</p>
             </div>
 
             <button
@@ -431,7 +470,7 @@ export default function App() {
             </button>
           </header>
 
-          {/* CONTEÚDO PRINCIPAL */}
+          {/* CONTEÚDO */}
 
           <section className='focus-page-content'>
             {/* TIMER */}
@@ -468,34 +507,93 @@ export default function App() {
               </button>
             </div>
 
-            {/* TAREFA */}
+            {/* SELETOR DE ATIVIDADE */}
 
             <div className='focus-task-selector'>
-              <label htmlFor='focus-task'>Tarefa da sessão</label>
+              <label htmlFor='focus-item'>O que você quer focar?</label>
 
               <select
-                id='focus-task'
-                value={focusTaskId}
-                onChange={(event) => setFocusTaskId(event.target.value)}
-              >
-                <option value=''>Escolha uma tarefa</option>
+                id='focus-item'
+                value={
+                  focusItemType && focusTaskId
+                    ? `${focusItemType}:${focusTaskId}`
+                    : ''
+                }
+                onChange={(event) => {
+                  const value = event.target.value;
 
-                {safePendingTasks.map((task) => (
-                  <option key={task.id} value={task.id}>
-                    {task.name || task.title || 'Tarefa'}
-                  </option>
-                ))}
+                  if (!value) {
+                    setFocusItemType('');
+                    setFocusTaskId('');
+                    return;
+                  }
+
+                  const separatorIndex = value.indexOf(':');
+
+                  const type = value.slice(0, separatorIndex);
+
+                  const id = value.slice(separatorIndex + 1);
+
+                  setFocusItemType(type);
+                  setFocusTaskId(id);
+                }}
+              >
+                <option value=''>Escolha uma atividade</option>
+
+                {/* TAREFAS PENDENTES */}
+
+                {safePendingTasks.length > 0 && (
+                  <optgroup label='📋 Tarefas pendentes'>
+                    {safePendingTasks.map((task) => (
+                      <option key={`task:${task.id}`} value={`task:${task.id}`}>
+                        {task.name || task.title || 'Tarefa'}
+                      </option>
+                    ))}
+                  </optgroup>
+                )}
+
+                {/* HÁBITOS PENDENTES */}
+
+                {pendingHabits.length > 0 && (
+                  <optgroup label='🔥 Hábitos pendentes hoje'>
+                    {pendingHabits.map((habit) => (
+                      <option
+                        key={`habit:${habit.id}`}
+                        value={`habit:${habit.id}`}
+                      >
+                        {habit.name || habit.title || 'Hábito'}
+                      </option>
+                    ))}
+                  </optgroup>
+                )}
+
+                {/* NENHUMA ATIVIDADE */}
+
+                {safePendingTasks.length === 0 &&
+                  pendingHabits.length === 0 && (
+                    <option disabled>Nenhuma atividade pendente hoje</option>
+                  )}
               </select>
             </div>
 
-            {/* TAREFA SELECIONADA */}
+            {/* ATIVIDADE SELECIONADA */}
 
-            {focusTask && (
+            {(focusTask || focusHabit) && (
               <div className='focus-current-task'>
-                <span>Focando agora</span>
+                <span>
+                  {focusItemType === 'habit'
+                    ? '🔥 Focando neste hábito'
+                    : '📋 Focando nesta tarefa'}
+                </span>
 
                 <strong>
-                  {focusTask.name || focusTask.title || 'Tarefa selecionada'}
+                  {focusItemType === 'habit'
+                    ? focusHabit?.name ||
+                      focusHabit?.title ||
+                      'Hábito selecionado'
+                    : focusTask?.name ||
+                      focusTask?.title ||
+                      'Tarefa selecionada'}
                 </strong>
               </div>
             )}
@@ -564,7 +662,7 @@ export default function App() {
             </div>
           </div>
 
-          {/* AÇÃO MODO FOCO */}
+          {/* MODO FOCO */}
 
           <div className='main-header-actions'>
             <button
