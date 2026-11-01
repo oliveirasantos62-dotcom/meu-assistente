@@ -10,16 +10,25 @@ export default function PainelPrincipal({
   productivityScore = 0,
   bestHour,
   pendingTasks = [],
+  onToggleTask,
+  onToggleHabit,
 }) {
   const tasks = Array.isArray(data?.tasks) ? data.tasks : [];
+
   const habits = Array.isArray(data?.habits) ? data.habits : [];
+
   const calendarEvents = Array.isArray(data?.calendarEvents)
     ? data.calendarEvents
     : [];
 
+  const financeTransactions = Array.isArray(data?.finance?.transactions)
+    ? data.finance.transactions
+    : [];
+
   const [expandedSections, setExpandedSections] = useState({
-    habits: false,
     tasks: false,
+    habits: false,
+    finance: false,
     agenda: false,
   });
 
@@ -30,6 +39,41 @@ export default function PainelPrincipal({
     }));
   };
 
+  /*
+   * ============================================================
+   * DATA / DATA DE HOJE
+   * ============================================================
+   */
+
+  const todayString = useMemo(() => {
+    return new Date().toISOString().slice(0, 10);
+  }, []);
+
+  const formatCurrency = (value) => {
+    const number = Number(value) || 0;
+
+    return number.toLocaleString('pt-BR', {
+      style: 'currency',
+      currency: 'BRL',
+    });
+  };
+
+  const formatDate = (date) => {
+    if (!date) return '';
+
+    try {
+      return new Date(`${date}T00:00:00`).toLocaleDateString('pt-BR');
+    } catch {
+      return date;
+    }
+  };
+
+  /*
+   * ============================================================
+   * TAREFAS
+   * ============================================================
+   */
+
   const pendingTasksCount =
     pendingTasks.length > 0
       ? pendingTasks.length
@@ -38,14 +82,71 @@ export default function PainelPrincipal({
   const completedTasksCount = tasks.filter((task) => task.done).length;
 
   /*
-   * O formato antigo do app usava h.done diretamente.
-   * Mantemos compatibilidade com esse formato.
+   * Tarefas relacionadas especificamente a hoje.
    */
-  const habitsDoneCount = habits.filter((habit) => habit.done).length;
+  const todayTasks = useMemo(() => {
+    const result = tasks.filter((task) => {
+      if (!task) return false;
+
+      if (task.date === todayString || task.deadline === todayString) {
+        return true;
+      }
+
+      return calendarEvents.some(
+        (event) =>
+          event?.type === 'task' &&
+          (String(event?.taskId) === String(task?.id) ||
+            event?.name === task?.title ||
+            event?.name === task?.name),
+      );
+    });
+
+    /*
+     * Caso nenhuma tarefa tenha data específica,
+     * mostramos as tarefas pendentes.
+     */
+    if (result.length === 0) {
+      return tasks.filter((task) => !task.done);
+    }
+
+    return result;
+  }, [tasks, calendarEvents, todayString]);
+
+  /*
+   * ============================================================
+   * HÁBITOS
+   * ============================================================
+   */
+
+  const getHabitDoneToday = (habit) => {
+    /*
+     * Formato principal:
+     * habit.history["YYYY-MM-DD"]
+     */
+    if (
+      habit?.history &&
+      Object.prototype.hasOwnProperty.call(habit.history, todayString)
+    ) {
+      return Boolean(habit.history[todayString]);
+    }
+
+    /*
+     * Compatibilidade com formato antigo.
+     */
+    return Boolean(habit?.done);
+  };
+
+  const habitsDoneCount = habits.filter((habit) =>
+    getHabitDoneToday(habit),
+  ).length;
 
   const totalHabits = habits.length;
 
-  const todayString = new Date().toISOString().slice(0, 10);
+  /*
+   * ============================================================
+   * AGENDA
+   * ============================================================
+   */
 
   const todayEvents = useMemo(
     () =>
@@ -53,32 +154,105 @@ export default function PainelPrincipal({
         .filter((event) => event?.date === todayString)
         .sort((a, b) => {
           if (!a?.scheduledTime) return 1;
+
           if (!b?.scheduledTime) return -1;
+
           return String(a.scheduledTime).localeCompare(String(b.scheduledTime));
         }),
     [calendarEvents, todayString],
   );
 
-  const todayTasks = useMemo(
-    () =>
-      tasks.filter((task) => {
-        if (task?.date === todayString || task?.deadline === todayString) {
-          return true;
-        }
+  /*
+   * ============================================================
+   * FINANCEIRO — SOMENTE HOJE
+   * ============================================================
+   */
 
-        return todayEvents.some(
-          (event) =>
-            event?.type === 'task' &&
-            (event?.taskId === task?.id ||
-              event?.name === task?.title ||
-              event?.name === task?.name),
-        );
-      }),
-    [tasks, todayEvents, todayString],
+  const normalizeFinanceType = (transaction) => {
+    const type = String(
+      transaction?.type || transaction?.kind || transaction?.categoryType || '',
+    ).toLowerCase();
+
+    if (
+      [
+        'income',
+        'entrada',
+        'receita',
+        'receber',
+        'recebimento',
+        'credito',
+        'crédito',
+      ].includes(type)
+    ) {
+      return 'income';
+    }
+
+    return 'expense';
+  };
+
+  const todayFinanceTransactions = useMemo(() => {
+    return financeTransactions
+      .filter((transaction) => {
+        if (!transaction) return false;
+
+        return transaction.date === todayString;
+      })
+      .sort((a, b) => {
+        const timeA = a?.time || a?.scheduledTime || '';
+
+        const timeB = b?.time || b?.scheduledTime || '';
+
+        return String(timeA).localeCompare(String(timeB));
+      });
+  }, [financeTransactions, todayString]);
+
+  const todayIncomeTransactions = useMemo(
+    () =>
+      todayFinanceTransactions.filter(
+        (transaction) => normalizeFinanceType(transaction) === 'income',
+      ),
+    [todayFinanceTransactions],
   );
 
+  const todayExpenseTransactions = useMemo(
+    () =>
+      todayFinanceTransactions.filter(
+        (transaction) => normalizeFinanceType(transaction) === 'expense',
+      ),
+    [todayFinanceTransactions],
+  );
+
+  const todayIncomeTotal = useMemo(
+    () =>
+      todayIncomeTransactions.reduce(
+        (total, transaction) => total + (Number(transaction?.amount) || 0),
+        0,
+      ),
+    [todayIncomeTransactions],
+  );
+
+  const todayExpenseTotal = useMemo(
+    () =>
+      todayExpenseTransactions.reduce(
+        (total, transaction) => total + (Number(transaction?.amount) || 0),
+        0,
+      ),
+    [todayExpenseTransactions],
+  );
+
+  const todayFinanceCount =
+    todayIncomeTransactions.length + todayExpenseTransactions.length;
+
+  /*
+   * ============================================================
+   * HUMOR / ENERGIA / FOCO
+   * ============================================================
+   */
+
   const sleep = Number(daily?.sleep) || 0;
+
   const energy = Number(daily?.energy) || 0;
+
   const focus = Number(daily?.focus) || 0;
 
   const mood = daily?.mood || data?.mood || '';
@@ -95,14 +269,27 @@ export default function PainelPrincipal({
     return emojis[value] || '😐';
   };
 
+  /*
+   * ============================================================
+   * SAUDAÇÃO
+   * ============================================================
+   */
+
   const getGreeting = () => {
     const hour = new Date().getHours();
 
     if (hour < 12) return 'Bom dia';
+
     if (hour < 18) return 'Boa tarde';
 
     return 'Boa noite';
   };
+
+  /*
+   * ============================================================
+   * INSIGHT DO DIA
+   * ============================================================
+   */
 
   const getTodayInsight = () => {
     if (pendingTasksCount === 0 && totalHabits === 0) {
@@ -132,11 +319,88 @@ export default function PainelPrincipal({
     return 'Defina uma prioridade e avance nela antes de trocar de contexto.';
   };
 
+  /*
+   * ============================================================
+   * LABEL DO FINANCEIRO
+   * ============================================================
+   */
+
+  const getFinanceMainText = () => {
+    if (todayFinanceCount === 0) {
+      return 'Nenhuma movimentação financeira hoje';
+    }
+
+    if (
+      todayIncomeTransactions.length > 0 &&
+      todayExpenseTransactions.length === 0
+    ) {
+      return `${todayIncomeTransactions.length} ${
+        todayIncomeTransactions.length === 1 ? 'recebimento' : 'recebimentos'
+      } hoje`;
+    }
+
+    if (
+      todayExpenseTransactions.length > 0 &&
+      todayIncomeTransactions.length === 0
+    ) {
+      return `${todayExpenseTransactions.length} ${
+        todayExpenseTransactions.length === 1 ? 'pagamento' : 'pagamentos'
+      } hoje`;
+    }
+
+    return `${todayFinanceCount} movimentações hoje`;
+  };
+
+  /*
+   * ============================================================
+   * TOGGLES
+   * ============================================================
+   */
+
+  const handleTaskToggle = (task) => {
+    if (!task) return;
+
+    if (typeof onToggleTask === 'function') {
+      /*
+       * Importante:
+       * o App agora passa completeTask
+       * diretamente.
+       *
+       * Isso garante que:
+       * - XP seja atualizado
+       * - moedas sejam atualizadas
+       * - histórico seja atualizado
+       * - completedAt seja atualizado
+       * - banco seja sincronizado
+       */
+      onToggleTask(task.id);
+    }
+  };
+
+  const handleHabitToggle = (habit) => {
+    if (!habit) return;
+
+    if (typeof onToggleHabit === 'function') {
+      /*
+       * O useAppData controla a data atual
+       * automaticamente.
+       */
+      onToggleHabit(habit.id);
+    }
+  };
+
+  /*
+   * ============================================================
+   * RENDER
+   * ============================================================
+   */
+
   return (
     <div className='dashboard-page'>
-      {/* =====================================================
-          CABEÇALHO
+      {/* ======================================================
+          HEADER
       ====================================================== */}
+
       <section className='card dashboard-welcome'>
         <div>
           <span className='section-label'>PAINEL PRINCIPAL</span>
@@ -150,365 +414,666 @@ export default function PainelPrincipal({
 
         <div className='dashboard-completion'>
           <strong>{completion}%</strong>
+
           <span>do dia concluído</span>
         </div>
       </section>
 
-      {/* =====================================================
-          INDICADORES PRINCIPAIS
+      {/* ======================================================
+          MAIN STATS
       ====================================================== */}
+
       <section className='dashboard-stats'>
-        <div className='card dashboard-stat'>
+        {/* TAREFAS */}
+
+        <button
+          type='button'
+          className={`card dashboard-stat dashboard-stat-button ${
+            expandedSections.tasks ? 'dashboard-stat-active' : ''
+          }`}
+          onClick={() => toggleSection('tasks')}
+          aria-expanded={expandedSections.tasks}
+        >
           <span className='dashboard-stat-icon'>📋</span>
 
           <div>
             <strong>{pendingTasksCount}</strong>
+
             <span>tarefas pendentes</span>
           </div>
-        </div>
 
-        <div className='card dashboard-stat'>
+          <span className='dashboard-stat-chevron'>
+            {expandedSections.tasks ? '⌃' : '⌄'}
+          </span>
+        </button>
+
+        {/* HÁBITOS */}
+
+        <button
+          type='button'
+          className={`card dashboard-stat dashboard-stat-button ${
+            expandedSections.habits ? 'dashboard-stat-active' : ''
+          }`}
+          onClick={() => toggleSection('habits')}
+          aria-expanded={expandedSections.habits}
+        >
           <span className='dashboard-stat-icon'>🔥</span>
 
           <div>
             <strong>
               {habitsDoneCount}/{totalHabits}
             </strong>
+
             <span>hábitos hoje</span>
           </div>
-        </div>
+
+          <span className='dashboard-stat-chevron'>
+            {expandedSections.habits ? '⌃' : '⌄'}
+          </span>
+        </button>
+
+        {/* PRODUTIVIDADE */}
 
         <div className='card dashboard-stat'>
           <span className='dashboard-stat-icon'>📈</span>
 
           <div>
             <strong>{productivityScore}</strong>
+
             <span>produtividade</span>
           </div>
         </div>
+
+        {/* XP */}
 
         <div className='card dashboard-stat'>
           <span className='dashboard-stat-icon'>⭐</span>
 
           <div>
             <strong>{Number(data?.xp) || 0}</strong>
+
             <span>XP atual</span>
           </div>
         </div>
+
+        {/* FINANCEIRO */}
+
+        <button
+          type='button'
+          className={`card dashboard-stat dashboard-finance-stat dashboard-stat-button ${
+            expandedSections.finance ? 'dashboard-stat-active' : ''
+          }`}
+          onClick={() => toggleSection('finance')}
+          aria-expanded={expandedSections.finance}
+        >
+          <span className='dashboard-stat-icon'>💰</span>
+
+          <div className='dashboard-finance-stat-content'>
+            <strong>{getFinanceMainText()}</strong>
+
+            <span className='dashboard-finance-values'>
+              {todayIncomeTotal > 0 && (
+                <span className='dashboard-finance-income'>
+                  ↑ {formatCurrency(todayIncomeTotal)} a receber
+                </span>
+              )}
+
+              {todayExpenseTotal > 0 && (
+                <span className='dashboard-finance-expense'>
+                  ↓ {formatCurrency(todayExpenseTotal)} a pagar
+                </span>
+              )}
+
+              {todayFinanceCount === 0 && (
+                <span>Nenhum pagamento ou recebimento previsto</span>
+              )}
+            </span>
+          </div>
+
+          <span className='dashboard-stat-chevron'>
+            {expandedSections.finance ? '⌃' : '⌄'}
+          </span>
+        </button>
       </section>
 
-      {/* =====================================================
-          VISÃO RÁPIDA DO DIA
-          Tudo aparece dentro do próprio painel. Cada bloco pode
-          ser aberto/fechado sem navegar para outra página.
+      {/* ======================================================
+          TAREFAS EXPANDIDAS
       ====================================================== */}
+
+      {expandedSections.tasks && (
+        <section className='card dashboard-inline-section'>
+          <div className='dashboard-inline-header'>
+            <div>
+              <span className='section-label'>TAREFAS</span>
+
+              <h3>Tarefas de hoje</h3>
+
+              <p>
+                Marque uma tarefa aqui e o estado será atualizado também na
+                página de tarefas.
+              </p>
+            </div>
+
+            <button
+              type='button'
+              className='dashboard-collapse-button'
+              onClick={() => toggleSection('tasks')}
+            >
+              Ocultar
+            </button>
+          </div>
+
+          <div className='dashboard-inline-list'>
+            {todayTasks.length === 0 ? (
+              <div className='dashboard-empty-state'>
+                <span>🎯</span>
+
+                <div>
+                  <strong>Nenhuma tarefa para hoje</strong>
+
+                  <p>Seu dia está livre de tarefas pendentes.</p>
+                </div>
+              </div>
+            ) : (
+              todayTasks.map((task) => (
+                <div
+                  key={task.id}
+                  className={`dashboard-list-item ${
+                    task.done ? 'dashboard-list-item-done' : ''
+                  }`}
+                >
+                  <button
+                    type='button'
+                    className={`dashboard-check ${task.done ? 'checked' : ''}`}
+                    onClick={() => handleTaskToggle(task)}
+                    aria-label={
+                      task.done ? 'Reabrir tarefa' : 'Concluir tarefa'
+                    }
+                  >
+                    {task.done ? '✓' : ''}
+                  </button>
+
+                  <div className='dashboard-list-main'>
+                    <strong>
+                      {task.title || task.name || 'Tarefa sem nome'}
+                    </strong>
+
+                    {task.description && <span>{task.description}</span>}
+
+                    <div className='dashboard-list-meta'>
+                      {task.priority && <span>{task.priority}</span>}
+
+                      {task.deadline && (
+                        <span>📅 {formatDate(task.deadline)}</span>
+                      )}
+
+                      {task.xp && <span>⭐ {task.xp} XP</span>}
+                    </div>
+                  </div>
+
+                  {task.done && (
+                    <span className='dashboard-done-label'>Concluída</span>
+                  )}
+                </div>
+              ))
+            )}
+          </div>
+        </section>
+      )}
+
+      {/* ======================================================
+          HÁBITOS EXPANDIDOS
+      ====================================================== */}
+
+      {expandedSections.habits && (
+        <section className='card dashboard-inline-section'>
+          <div className='dashboard-inline-header'>
+            <div>
+              <span className='section-label'>HÁBITOS</span>
+
+              <h3>Hábitos de hoje</h3>
+
+              <p>Marque seus hábitos diretamente pelo painel.</p>
+            </div>
+
+            <button
+              type='button'
+              className='dashboard-collapse-button'
+              onClick={() => toggleSection('habits')}
+            >
+              Ocultar
+            </button>
+          </div>
+
+          <div className='dashboard-inline-list'>
+            {habits.length === 0 ? (
+              <div className='dashboard-empty-state'>
+                <span>🔥</span>
+
+                <div>
+                  <strong>Nenhum hábito cadastrado</strong>
+
+                  <p>Crie seus primeiros hábitos para acompanhar sua rotina.</p>
+                </div>
+              </div>
+            ) : (
+              habits.map((habit) => {
+                const done = getHabitDoneToday(habit);
+
+                return (
+                  <div
+                    key={habit.id}
+                    className={`dashboard-list-item ${
+                      done ? 'dashboard-list-item-done' : ''
+                    }`}
+                  >
+                    <button
+                      type='button'
+                      className={`dashboard-check ${done ? 'checked' : ''}`}
+                      onClick={() => handleHabitToggle(habit)}
+                      aria-label={done ? 'Desmarcar hábito' : 'Concluir hábito'}
+                    >
+                      {done ? '✓' : ''}
+                    </button>
+
+                    <div className='dashboard-list-main'>
+                      <strong>
+                        {habit.name || habit.title || 'Hábito sem nome'}
+                      </strong>
+
+                      {habit.description && <span>{habit.description}</span>}
+
+                      <div className='dashboard-list-meta'>
+                        {habit.frequency && <span>🔁 {habit.frequency}</span>}
+
+                        {habit.streak !== undefined && (
+                          <span>🔥 {habit.streak} dias</span>
+                        )}
+
+                        {habit.xp && <span>⭐ {habit.xp} XP</span>}
+                      </div>
+                    </div>
+
+                    {done && (
+                      <span className='dashboard-done-label'>Feito hoje</span>
+                    )}
+                  </div>
+                );
+              })
+            )}
+          </div>
+        </section>
+      )}
+
+      {/* ======================================================
+          FINANCEIRO EXPANDIDO
+      ====================================================== */}
+
+      {expandedSections.finance && (
+        <section className='card dashboard-inline-section dashboard-finance-section'>
+          <div className='dashboard-inline-header'>
+            <div>
+              <span className='section-label'>FINANCEIRO</span>
+
+              <h3>Movimentações de hoje</h3>
+
+              <p>
+                Aqui aparecem somente pagamentos e recebimentos previstos para
+                hoje.
+              </p>
+            </div>
+
+            <button
+              type='button'
+              className='dashboard-collapse-button'
+              onClick={() => toggleSection('finance')}
+            >
+              Ocultar
+            </button>
+          </div>
+
+          {/* RESUMO */}
+
+          <div className='dashboard-finance-summary'>
+            <div className='dashboard-finance-summary-card'>
+              <span>↑</span>
+
+              <div>
+                <small>A receber</small>
+
+                <strong className='dashboard-finance-income'>
+                  {formatCurrency(todayIncomeTotal)}
+                </strong>
+              </div>
+            </div>
+
+            <div className='dashboard-finance-summary-card'>
+              <span>↓</span>
+
+              <div>
+                <small>A pagar</small>
+
+                <strong className='dashboard-finance-expense'>
+                  {formatCurrency(todayExpenseTotal)}
+                </strong>
+              </div>
+            </div>
+          </div>
+
+          {/* LISTA */}
+
+          <div className='dashboard-inline-list'>
+            {todayFinanceTransactions.length === 0 ? (
+              <div className='dashboard-empty-state'>
+                <span>💰</span>
+
+                <div>
+                  <strong>Nenhuma movimentação hoje</strong>
+
+                  <p>
+                    Você não possui pagamentos ou recebimentos registrados para
+                    hoje.
+                  </p>
+                </div>
+              </div>
+            ) : (
+              todayFinanceTransactions.map((transaction) => {
+                const type = normalizeFinanceType(transaction);
+
+                const isIncome = type === 'income';
+
+                return (
+                  <div
+                    key={
+                      transaction.id ||
+                      `${transaction.date}-${transaction.description}-${transaction.amount}`
+                    }
+                    className='dashboard-list-item dashboard-finance-item'
+                  >
+                    <div
+                      className={`dashboard-finance-type-icon ${
+                        isIncome ? 'income' : 'expense'
+                      }`}
+                    >
+                      {isIncome ? '↑' : '↓'}
+                    </div>
+
+                    <div className='dashboard-list-main'>
+                      <strong>
+                        {transaction.description ||
+                          transaction.name ||
+                          transaction.title ||
+                          (isIncome ? 'Recebimento' : 'Pagamento')}
+                      </strong>
+
+                      <div className='dashboard-list-meta'>
+                        {transaction.category && (
+                          <span>{transaction.category}</span>
+                        )}
+
+                        {transaction.time && <span>🕐 {transaction.time}</span>}
+
+                        <span>{formatDate(transaction.date)}</span>
+                      </div>
+                    </div>
+
+                    <strong
+                      className={
+                        isIncome
+                          ? 'dashboard-finance-income'
+                          : 'dashboard-finance-expense'
+                      }
+                    >
+                      {isIncome ? '+' : '-'}
+                      {formatCurrency(transaction.amount)}
+                    </strong>
+                  </div>
+                );
+              })
+            )}
+          </div>
+        </section>
+      )}
+
+      {/* ======================================================
+          AGENDA
+      ====================================================== */}
+
       <section className='card dashboard-day-card'>
-        <div className='section-title dashboard-day-header'>
+        <div className='dashboard-inline-header'>
           <div>
             <span className='section-label'>VISÃO DO DIA</span>
-            <h2>📅 Seu dia</h2>
-            <p className='subtitle'>
-              Abra apenas o que você quer acompanhar agora.
-            </p>
+
+            <h3>Agenda de hoje</h3>
+
+            <p>Compromissos e eventos programados para hoje.</p>
           </div>
 
-          <span className='dashboard-day-date'>
-            {new Date().toLocaleDateString('pt-BR', {
-              weekday: 'long',
-              day: '2-digit',
-              month: 'short',
-            })}
-          </span>
+          <button
+            type='button'
+            className='dashboard-collapse-button'
+            onClick={() => toggleSection('agenda')}
+          >
+            {expandedSections.agenda ? 'Ocultar' : 'Mostrar'}
+          </button>
         </div>
 
-        <div className='dashboard-day-sections'>
-          <div className={`dashboard-day-section ${expandedSections.habits ? 'is-open' : ''}`}>
-            <button
-              type='button'
-              className='dashboard-day-toggle'
-              onClick={() => toggleSection('habits')}
-              aria-expanded={expandedSections.habits}
-            >
-              <span className='dashboard-day-toggle-main'>
-                <span className='dashboard-day-icon'>🔥</span>
-                <span>
-                  <strong>Hábitos de hoje</strong>
-                  <small>{habitsDoneCount}/{totalHabits} concluídos</small>
-                </span>
-              </span>
-              <span className='dashboard-day-toggle-action'>
-                {expandedSections.habits ? 'Esconder' : 'Mostrar'}
-                <span aria-hidden='true'>{expandedSections.habits ? '⌃' : '⌄'}</span>
-              </span>
-            </button>
+        {expandedSections.agenda && (
+          <div className='dashboard-inline-list'>
+            {todayEvents.length === 0 ? (
+              <div className='dashboard-empty-state'>
+                <span>📅</span>
 
-            {expandedSections.habits && (
-              <div className='dashboard-day-content'>
-                {habits.length > 0 ? (
-                  <div className='dashboard-day-list'>
-                    {habits.map((habit, index) => (
-                      <div className='dashboard-day-item' key={habit.id ?? `habit-${index}`}>
-                        <span className={`dashboard-day-check ${habit.done ? 'done' : ''}`}>
-                          {habit.done ? '✓' : '○'}
-                        </span>
-                        <div>
-                          <strong>{habit.name || habit.title || 'Hábito'}</strong>
-                          <small>{habit.done ? 'Concluído hoje' : 'Pendente hoje'}</small>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className='dashboard-empty'>Nenhum hábito cadastrado.</div>
-                )}
+                <div>
+                  <strong>Nenhum compromisso hoje</strong>
+
+                  <p>Sua agenda está livre neste momento.</p>
+                </div>
               </div>
+            ) : (
+              todayEvents.map((event) => (
+                <div
+                  key={
+                    event.id ||
+                    `${event.date}-${event.name}-${event.scheduledTime}`
+                  }
+                  className='dashboard-list-item'
+                >
+                  <div className='dashboard-event-time'>
+                    {event.scheduledTime || '—'}
+                  </div>
+
+                  <div className='dashboard-list-main'>
+                    <strong>{event.name || event.title || 'Evento'}</strong>
+
+                    {event.description && <span>{event.description}</span>}
+
+                    <div className='dashboard-list-meta'>
+                      {event.type && <span>{event.type}</span>}
+                    </div>
+                  </div>
+                </div>
+              ))
             )}
           </div>
-
-          <div className={`dashboard-day-section ${expandedSections.tasks ? 'is-open' : ''}`}>
-            <button
-              type='button'
-              className='dashboard-day-toggle'
-              onClick={() => toggleSection('tasks')}
-              aria-expanded={expandedSections.tasks}
-            >
-              <span className='dashboard-day-toggle-main'>
-                <span className='dashboard-day-icon'>📋</span>
-                <span>
-                  <strong>Tarefas de hoje</strong>
-                  <small>{todayTasks.length || pendingTasksCount} para acompanhar</small>
-                </span>
-              </span>
-              <span className='dashboard-day-toggle-action'>
-                {expandedSections.tasks ? 'Esconder' : 'Mostrar'}
-                <span aria-hidden='true'>{expandedSections.tasks ? '⌃' : '⌄'}</span>
-              </span>
-            </button>
-
-            {expandedSections.tasks && (
-              <div className='dashboard-day-content'>
-                {todayTasks.length > 0 ? (
-                  <div className='dashboard-day-list'>
-                    {todayTasks.map((task, index) => (
-                      <div className='dashboard-day-item' key={task.id ?? `task-${index}`}>
-                        <span className={`dashboard-day-check ${task.done ? 'done' : ''}`}>
-                          {task.done ? '✓' : '○'}
-                        </span>
-                        <div>
-                          <strong>{task.title || task.name || 'Tarefa'}</strong>
-                          <small>{task.done ? 'Concluída' : 'Pendente'}</small>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className='dashboard-empty'>Nenhuma tarefa específica para hoje.</div>
-                )}
-              </div>
-            )}
-          </div>
-
-          <div className={`dashboard-day-section ${expandedSections.agenda ? 'is-open' : ''}`}>
-            <button
-              type='button'
-              className='dashboard-day-toggle'
-              onClick={() => toggleSection('agenda')}
-              aria-expanded={expandedSections.agenda}
-            >
-              <span className='dashboard-day-toggle-main'>
-                <span className='dashboard-day-icon'>🗓️</span>
-                <span>
-                  <strong>Agenda de hoje</strong>
-                  <small>{todayEvents.length} eventos</small>
-                </span>
-              </span>
-              <span className='dashboard-day-toggle-action'>
-                {expandedSections.agenda ? 'Esconder' : 'Mostrar'}
-                <span aria-hidden='true'>{expandedSections.agenda ? '⌃' : '⌄'}</span>
-              </span>
-            </button>
-
-            {expandedSections.agenda && (
-              <div className='dashboard-day-content'>
-                {todayEvents.length > 0 ? (
-                  <div className='dashboard-day-list'>
-                    {todayEvents.map((event, index) => (
-                      <div className='dashboard-day-item' key={event.id ?? `event-${index}`}>
-                        <span className='dashboard-day-check'>
-                          {event.type === 'appointment' ? '📌' : event.type === 'habit' ? '🔥' : '•'}
-                        </span>
-                        <div>
-                          <strong>{event.name || event.title || 'Evento'}</strong>
-                          <small>
-                            {event.scheduledTime || 'Sem horário'}
-                            {event.duration ? ` · ${event.duration} min` : ''}
-                          </small>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className='dashboard-empty'>Nenhum evento agendado para hoje.</div>
-                )}
-              </div>
-            )}
-          </div>
-        </div>
+        )}
       </section>
 
-      {/* =====================================================
-          PRÓXIMO PASSO + INSIGHT
+      {/* ======================================================
+          NEXT STEP + INSIGHT
       ====================================================== */}
+
       <section className='dashboard-grid'>
-        <div className='card'>
-          <div className='section-title'>
-            <div>
-              <span className='section-label'>PRÓXIMO PASSO</span>
-              <h2>🎯 O que fazer agora?</h2>
-            </div>
+        <div className='card dashboard-next-step'>
+          <span className='section-label'>PRÓXIMO PASSO</span>
+
+          <h3>
+            {todayTasks.find((task) => !task.done)?.title ||
+              todayTasks.find((task) => !task.done)?.name ||
+              'Escolha uma prioridade'}
+          </h3>
+
+          <p>
+            Comece pela tarefa mais importante e evite trocar de contexto sem
+            necessidade.
+          </p>
+
+          <div className='dashboard-next-step-meta'>
+            <span>📋 {pendingTasksCount} pendentes</span>
+
+            <span>
+              🔥 {habitsDoneCount}/{totalHabits} hábitos
+            </span>
           </div>
-
-          {pendingTasksCount > 0 ? (
-            <div className='focus dashboard-next-step'>
-              <strong>
-                {pendingTasks[0]?.title ||
-                  pendingTasks[0]?.name ||
-                  tasks.find((task) => !task.done)?.title ||
-                  tasks.find((task) => !task.done)?.name ||
-                  'Escolha sua próxima tarefa'}
-              </strong>
-
-              <p className='subtitle'>
-                Comece por uma tarefa antes de trocar de contexto.
-              </p>
-            </div>
-          ) : (
-            <div className='focus dashboard-next-step'>
-              <strong>🎉 Nenhuma tarefa pendente</strong>
-
-              <p className='subtitle'>
-                Você pode planejar o próximo passo ou aproveitar o tempo livre.
-              </p>
-            </div>
-          )}
         </div>
 
-        <div className='card'>
-          <div className='section-title'>
-            <div>
-              <span className='section-label'>INSIGHT</span>
-              <h2>💡 Para hoje</h2>
-            </div>
-          </div>
+        <div className='card dashboard-insight'>
+          <span className='section-label'>INSIGHT DO DIA</span>
 
-          <div className='focus'>
-            <p className='subtitle'>{getTodayInsight()}</p>
-          </div>
+          <div className='dashboard-insight-icon'>💡</div>
+
+          <p>{getTodayInsight()}</p>
         </div>
       </section>
 
-      {/* =====================================================
-          PROGRESSO DE NÍVEL
+      {/* ======================================================
+          LEVEL / XP
       ====================================================== */}
-      <section className='card'>
-        <div className='section-title'>
+
+      <section className='card dashboard-level-card'>
+        <div className='dashboard-level-header'>
           <div>
-            <span className='section-label'>PROGRESSO</span>
-            <h2>⭐ Nível {level}</h2>
+            <span className='section-label'>PROGRESSÃO</span>
+
+            <h3>Nível {level}</h3>
           </div>
 
-          <strong>{Number(data?.xp) || 0} XP</strong>
+          <strong>
+            {nextXP > 0 ? `${nextXP} XP para o próximo nível` : 'Próximo nível'}
+          </strong>
         </div>
 
-        <div className='progress dashboard-progress'>
-          <span
+        <div className='dashboard-progress'>
+          <div
+            className='dashboard-progress-bar'
             style={{
-              width: `${Math.min(100, Math.max(0, progress))}%`,
+              width: `${Math.min(Math.max(Number(progress) || 0, 0), 100)}%`,
             }}
           />
         </div>
 
-        <small className='dashboard-muted'>
-          {nextXP > 0
-            ? `${nextXP} XP para o próximo nível`
-            : 'Continue completando atividades para evoluir.'}
-        </small>
+        <div className='dashboard-level-footer'>
+          <span>⭐ {Number(data?.xp) || 0} XP</span>
+
+          <span>{Math.round(Number(progress) || 0)}%</span>
+        </div>
       </section>
 
-      {/* =====================================================
-          RESUMO DO ESTADO ATUAL
+      {/* ======================================================
+          STATUS DO DIA
       ====================================================== */}
-      <section className='card'>
-        <div className='section-title'>
-          <div>
-            <span className='section-label'>COMO VOCÊ ESTÁ</span>
-            <h2>🧠 Resumo rápido</h2>
-          </div>
+
+      <section className='card dashboard-status-card'>
+        <div>
+          <span className='section-label'>STATUS DE HOJE</span>
+
+          <h3>Como você está?</h3>
         </div>
 
         <div className='dashboard-status-grid'>
-          <div className='dashboard-status'>
-            <span>😊 Humor</span>
-            <strong>
-              {mood ? `${getMoodEmoji(mood)} ${mood}` : 'Não registrado'}
-            </strong>
+          <div className='dashboard-status-item'>
+            <span>😴</span>
+
+            <div>
+              <small>Sono</small>
+
+              <strong>{sleep > 0 ? `${sleep}h` : 'Não informado'}</strong>
+            </div>
           </div>
 
-          <div className='dashboard-status'>
-            <span>😴 Sono</span>
-            <strong>{sleep > 0 ? `${sleep}h` : 'Não registrado'}</strong>
+          <div className='dashboard-status-item'>
+            <span>⚡</span>
+
+            <div>
+              <small>Energia</small>
+
+              <strong>{energy > 0 ? `${energy}/5` : 'Não informado'}</strong>
+            </div>
           </div>
 
-          <div className='dashboard-status'>
-            <span>⚡ Energia</span>
-            <strong>{energy > 0 ? `${energy}/5` : 'Não registrada'}</strong>
+          <div className='dashboard-status-item'>
+            <span>🎯</span>
+
+            <div>
+              <small>Foco</small>
+
+              <strong>{focus > 0 ? `${focus}/5` : 'Não informado'}</strong>
+            </div>
           </div>
 
-          <div className='dashboard-status'>
-            <span>🎯 Foco</span>
-            <strong>{focus > 0 ? `${focus}/5` : 'Não registrado'}</strong>
+          <div className='dashboard-status-item'>
+            <span>{getMoodEmoji(mood)}</span>
+
+            <div>
+              <small>Humor</small>
+
+              <strong>{mood || 'Não informado'}</strong>
+            </div>
           </div>
         </div>
       </section>
 
-      {/* =====================================================
-          PEQUENO RESUMO DO DESEMPENHO
-          Não substitui DataDashboard.
-          DataDashboard ficará responsável pela análise completa.
+      {/* ======================================================
+          PERFORMANCE
       ====================================================== */}
+
       <section className='dashboard-summary-grid'>
         <div className='card dashboard-summary-card'>
-          <span>✅</span>
+          <span>📋</span>
 
           <div>
+            <small>Tarefas concluídas</small>
+
             <strong>{completedTasksCount}</strong>
-            <small>tarefas concluídas</small>
           </div>
         </div>
 
         <div className='card dashboard-summary-card'>
-          <span>📊</span>
+          <span>🔥</span>
 
           <div>
-            <strong>{productivityScore}/100</strong>
-            <small>produtividade</small>
-          </div>
-        </div>
+            <small>Hábitos realizados</small>
 
-        <div className='card dashboard-summary-card'>
-          <span>🕐</span>
-
-          <div>
             <strong>
-              {bestHour
-                ? `${String(bestHour[0]).padStart(2, '0')}:00`
-                : '--:--'}
+              {habitsDoneCount}/{totalHabits}
             </strong>
+          </div>
+        </div>
 
-            <small>melhor horário</small>
+        <div className='card dashboard-summary-card'>
+          <span>⏰</span>
+
+          <div>
+            <small>Melhor horário</small>
+
+            <strong>{bestHour || '—'}</strong>
+          </div>
+        </div>
+
+        <div className='card dashboard-summary-card'>
+          <span>💰</span>
+
+          <div>
+            <small>Movimentações hoje</small>
+
+            <strong>{todayFinanceCount}</strong>
           </div>
         </div>
       </section>
+
+      {/* ======================================================
+          FOOTER
+      ====================================================== */}
 
       <p className='dashboard-footer-note'>
         💡 Para análises detalhadas, histórico e padrões de produtividade,

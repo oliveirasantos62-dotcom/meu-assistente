@@ -14,7 +14,6 @@ import {
  * Garante que os dados tenham uma estrutura válida,
  * mesmo quando vêm de uma versão antiga do aplicativo.
  */
-
 function normalizeAppData(rawData) {
   const source = rawData && typeof rawData === 'object' ? rawData : {};
 
@@ -22,11 +21,13 @@ function normalizeAppData(rawData) {
   // diretamente no calendário. Agora tarefas pertencem a data.tasks,
   // para que Calendário e Tarefas sempre usem a mesma entidade.
   const sourceTasks = Array.isArray(source.tasks) ? source.tasks : [];
+
   const sourceCalendarEvents = Array.isArray(source.calendarEvents)
     ? source.calendarEvents
     : [];
 
   const existingTaskIds = new Set(sourceTasks.map((task) => String(task.id)));
+
   const migratedCalendarTasks = sourceCalendarEvents
     .filter((event) => event?.type === 'task' && !event?.sourceTask)
     .filter((event) => !existingTaskIds.has(String(event.id)))
@@ -61,23 +62,27 @@ function normalizeAppData(rawData) {
       updatedAt: new Date().toISOString(),
     }));
 
-  const migratedTaskIds = new Set(migratedCalendarTasks.map((task) => String(task.id)));
+  const migratedTaskIds = new Set(
+    migratedCalendarTasks.map((task) => String(task.id)),
+  );
 
   return {
     ...emptyAppData,
     ...source,
 
     habits: Array.isArray(source.habits) ? source.habits : [],
+
     tasks: [...sourceTasks, ...migratedCalendarTasks].map((task) => ({
-          ...task,
-          observations: Array.isArray(task.observations)
-            ? task.observations
-            : [],
-        }))
-      ,
+      ...task,
+      observations: Array.isArray(task.observations) ? task.observations : [],
+    })),
+
     goals: Array.isArray(source.goals) ? source.goals : [],
+
     projects: Array.isArray(source.projects) ? source.projects : [],
+
     areas: Array.isArray(source.areas) ? source.areas : [],
+
     processes: Array.isArray(source.processes) ? source.processes : [],
 
     calendarEvents: sourceCalendarEvents.filter(
@@ -106,7 +111,7 @@ function normalizeAppData(rawData) {
       ? source.knowledgeItems
       : [],
 
-    // NOVO: dados da página Coleções & Conquistas
+    // Coleções & Conquistas
     collections: Array.isArray(source.collections) ? source.collections : [],
 
     errors: Array.isArray(source.errors) ? source.errors : [],
@@ -116,22 +121,27 @@ function normalizeAppData(rawData) {
       : [],
 
     xp: Number(source.xp) || 0,
+
     coins: Number(source.coins) || 0,
 
     finance: {
       ...(emptyAppData.finance || {}),
       ...(source.finance || {}),
+
       transactions: Array.isArray(source.finance?.transactions)
         ? source.finance.transactions
         : [],
+
       financialGoals: Array.isArray(source.finance?.financialGoals)
         ? source.finance.financialGoals
         : [],
+
       budgetsByCategory:
         source.finance?.budgetsByCategory &&
         typeof source.finance.budgetsByCategory === 'object'
           ? source.finance.budgetsByCategory
           : {},
+
       accounts: Array.isArray(source.finance?.accounts)
         ? source.finance.accounts
         : [],
@@ -146,17 +156,25 @@ function normalizeAppData(rawData) {
     targetAllocation:
       source.targetAllocation && typeof source.targetAllocation === 'object'
         ? source.targetAllocation
-        : { Ações: 60, FIIs: 20, 'Renda Fixa': 20, Cripto: 0 },
+        : {
+            Ações: 60,
+            FIIs: 20,
+            'Renda Fixa': 20,
+            Cripto: 0,
+          },
 
     gamification: {
       ...(emptyAppData.gamification || {}),
       ...(source.gamification || {}),
+
       missions: Array.isArray(source.gamification?.missions)
         ? source.gamification.missions
         : [],
+
       achievements: Array.isArray(source.gamification?.achievements)
         ? source.gamification.achievements
         : [],
+
       rewards: Array.isArray(source.gamification?.rewards)
         ? source.gamification.rewards
         : [],
@@ -165,9 +183,11 @@ function normalizeAppData(rawData) {
     assistant: {
       ...(emptyAppData.assistant || {}),
       ...(source.assistant || {}),
+
       history: Array.isArray(source.assistant?.history)
         ? source.assistant.history
         : [],
+
       notes: Array.isArray(source.assistant?.notes)
         ? source.assistant.notes
         : [],
@@ -201,6 +221,7 @@ function getUserInfo(user) {
 
 export function useAppData(user) {
   const { userId, storageKey } = getUserInfo(user);
+
   const backendUser = user?.authProvider === 'backend';
 
   const [data, setData] = useState(() =>
@@ -209,31 +230,49 @@ export function useAppData(user) {
 
   const [period, setPeriod] = useState('7');
 
-  // Dados de contas autenticadas são carregados e persistidos no TiDB pela API.
+  // Dados de contas autenticadas são carregados
+  // e persistidos no TiDB pela API.
   const [cloudReady, setCloudReady] = useState(!backendUser);
+
   const [loadedUserKey, setLoadedUserKey] = useState(null);
+
   const [syncError, setSyncError] = useState('');
-  const [syncStatus, setSyncStatus] = useState(backendUser ? 'loading' : 'local');
+
+  const [syncStatus, setSyncStatus] = useState(
+    backendUser ? 'loading' : 'local',
+  );
+
+  // =========================================
+  // CARREGAMENTO DOS DADOS
+  // =========================================
 
   useEffect(() => {
     let cancelled = false;
 
     if (!storageKey) {
       setData(normalizeAppData(null));
+
       setCloudReady(false);
       setLoadedUserKey(null);
       setSyncStatus('local');
       setSyncError('');
-      return () => { cancelled = true; };
+
+      return () => {
+        cancelled = true;
+      };
     }
 
     if (!backendUser || !userId) {
       setData(normalizeAppData(storageService.loadData(storageKey)));
+
       setCloudReady(true);
       setLoadedUserKey(null);
       setSyncStatus('local');
       setSyncError('');
-      return () => { cancelled = true; };
+
+      return () => {
+        cancelled = true;
+      };
     }
 
     setCloudReady(false);
@@ -249,34 +288,54 @@ export function useAppData(user) {
 
         if (remote?.exists && remote.appData) {
           const cloudData = normalizeAppData(remote.appData);
+
           setData(cloudData);
+
           storageService.saveData(storageKey, cloudData);
         } else {
-          // Migra automaticamente os dados locais antigos para o TiDB na primeira entrada.
+          // Migra automaticamente os dados
+          // locais antigos para o TiDB.
           await saveAppData(localData);
+
           if (cancelled) return;
+
           setData(localData);
         }
 
         setLoadedUserKey(storageKey);
+
         setCloudReady(true);
         setSyncStatus('synced');
       })
       .catch((error) => {
         if (cancelled) return;
+
         setData(localData);
-        setSyncError(error?.message || 'Não foi possível carregar os dados do TiDB.');
+
+        setSyncError(
+          error?.message || 'Não foi possível carregar os dados do TiDB.',
+        );
+
         setSyncStatus('error');
         setCloudReady(false);
       });
 
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [storageKey, userId, backendUser]);
 
+  // =========================================
+  // SINCRONIZAÇÃO
+  // =========================================
+
   useEffect(() => {
-    if (!storageKey || !data) return;
+    if (!storageKey || !data) {
+      return;
+    }
 
     const normalized = normalizeAppData(data);
+
     storageService.saveData(storageKey, normalized);
 
     if (!backendUser) {
@@ -285,55 +344,88 @@ export function useAppData(user) {
       return;
     }
 
-    // Impede gravações antes de concluir a carga/migração da conta atual.
-    if (loadedUserKey !== storageKey || !cloudReady) return;
+    // Impede gravações antes de concluir
+    // a carga/migração da conta atual.
+    if (loadedUserKey !== storageKey || !cloudReady) {
+      return;
+    }
 
     let cancelled = false;
+
     setSyncStatus('saving');
 
     saveAppData(normalized)
       .then(() => {
         if (cancelled) return;
+
         setSyncError('');
         setSyncStatus('synced');
       })
       .catch((error) => {
         if (cancelled) return;
-        setSyncError(error?.message || 'Não foi possível salvar os dados no TiDB.');
+
+        setSyncError(
+          error?.message || 'Não foi possível salvar os dados no TiDB.',
+        );
+
         setSyncStatus('error');
       });
 
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [data, storageKey, backendUser, loadedUserKey, cloudReady]);
 
-  /**
-   * Função principal usada pelas páginas.
-   * Exemplo: save(novoObjeto).
-   */
+  // =========================================
+  // SAVE
+  // =========================================
+
   const save = useCallback((nextData) => {
     setData(normalizeAppData(nextData));
   }, []);
 
   const safeData = data || normalizeAppData(null);
 
+  // =========================================
+  // DADOS DO DIA
+  // =========================================
+
   const today = getTodayDate();
+
   const history = safeData.history || {};
+
   const daily = history[today] || {};
+
+  // =========================================
+  // NÍVEL
+  // =========================================
 
   const levelInfo = useMemo(
     () => calculateLevelInfo(Number(safeData.xp) || 0),
     [safeData.xp],
   );
 
+  // =========================================
+  // PRODUTIVIDADE
+  // =========================================
+
   const productivityScore = useMemo(
     () => calculateProductivityScore(daily || {}),
     [daily],
   );
 
+  // =========================================
+  // MELHOR HORÁRIO
+  // =========================================
+
   const bestHour = useMemo(
     () => calculateBestHour(daily?.completionTimes || []),
     [daily],
   );
+
+  // =========================================
+  // TAREFAS
+  // =========================================
 
   const tasks = Array.isArray(safeData.tasks) ? safeData.tasks : [];
 
@@ -350,6 +442,10 @@ export function useAppData(user) {
   const completion = tasks.length
     ? Math.round((completedTasks.length / tasks.length) * 100)
     : 0;
+
+  // =========================================
+  // REGISTROS
+  // =========================================
 
   const records = useMemo(
     () => generatePeriodRecords(period, history),
@@ -387,60 +483,94 @@ export function useAppData(user) {
     (Number(daily?.energy) > 0 && Number(daily.energy) <= 2) ||
     (Number(daily?.focus) > 0 && Number(daily.focus) <= 2);
 
-  /**
-   * Alterna o status da tarefa. Ao reabrir, estorna a recompensa e
-   * corrige o histórico do dia em que ela havia sido concluída.
-   */
+  // =========================================
+  // CONCLUIR / REABRIR TAREFA
+  // =========================================
+
   const completeTask = useCallback(
     (id) => {
       const task = tasks.find((item) => String(item.id) === String(id));
+
       if (!task) return;
 
       const now = new Date();
+
       const taskXP = Math.max(0, Number(task.xp) || 0);
+
       const rewardCoins = Math.floor(taskXP / 10);
+
+      // -------------------------------------
+      // CONCLUIR
+      // -------------------------------------
 
       if (!task.done) {
         const timestamp = now.toISOString();
+
         const historyToday = history[today] || {};
+
         const updatedTasks = tasks.map((item) =>
           String(item.id) === String(id)
-            ? { ...item, done: true, completedAt: timestamp }
+            ? {
+                ...item,
+                done: true,
+                completedAt: timestamp,
+              }
             : item,
         );
 
         save({
           ...safeData,
+
           xp: (Number(safeData.xp) || 0) + taskXP,
+
           coins: (Number(safeData.coins) || 0) + rewardCoins,
+
           tasks: updatedTasks,
+
           history: {
             ...history,
+
             [today]: {
               ...historyToday,
+
               completed: (Number(historyToday.completed) || 0) + 1,
+
               xp: (Number(historyToday.xp) || 0) + taskXP,
+
               completionTimes: [
                 ...(Array.isArray(historyToday.completionTimes)
                   ? historyToday.completionTimes
                   : []),
+
                 timestamp,
               ],
             },
           },
         });
+
         return;
       }
 
+      // -------------------------------------
+      // REABRIR
+      // -------------------------------------
+
       const completedAt = task.completedAt || now.toISOString();
+
       const completedDate = completedAt.slice(0, 10);
+
       const dayHistory = history[completedDate] || {};
+
       const updatedHistory = {
         ...history,
+
         [completedDate]: {
           ...dayHistory,
+
           completed: Math.max(0, (Number(dayHistory.completed) || 0) - 1),
+
           xp: Math.max(0, (Number(dayHistory.xp) || 0) - taskXP),
+
           completionTimes: (Array.isArray(dayHistory.completionTimes)
             ? dayHistory.completionTimes
             : []
@@ -450,34 +580,111 @@ export function useAppData(user) {
 
       const updatedTasks = tasks.map((item) =>
         String(item.id) === String(id)
-          ? { ...item, done: false, completedAt: null }
+          ? {
+              ...item,
+              done: false,
+              completedAt: null,
+            }
           : item,
       );
 
       save({
         ...safeData,
+
         xp: Math.max(0, (Number(safeData.xp) || 0) - taskXP),
+
         coins: Math.max(0, (Number(safeData.coins) || 0) - rewardCoins),
+
         tasks: updatedTasks,
+
         history: updatedHistory,
       });
     },
     [tasks, history, today, safeData, save],
   );
 
+  // =========================================
+  // HÁBITOS
+  // =========================================
+
+  const habits = Array.isArray(safeData.habits) ? safeData.habits : [];
+
   /**
-   * Atualiza os indicadores do dia atual.
+   * Alterna o hábito para uma determinada data.
+   *
+   * Mantém:
+   * habit.history[data] = true/false
+   *
+   * e também atualiza:
+   * habit.done
+   *
+   * para manter compatibilidade com
+   * versões antigas do aplicativo.
    */
+  const toggleHabit = useCallback(
+    (habitId, date = today) => {
+      const currentHabits = Array.isArray(safeData.habits)
+        ? safeData.habits
+        : [];
+
+      const updatedHabits = currentHabits.map((habit) => {
+        if (String(habit.id) !== String(habitId)) {
+          return habit;
+        }
+
+        const history = {
+          ...(habit.history || {}),
+        };
+
+        const hasDate = Object.prototype.hasOwnProperty.call(history, date);
+
+        const currentDone = hasDate
+          ? Boolean(history[date])
+          : Boolean(habit.done);
+
+        const nextDone = !currentDone;
+
+        history[date] = nextDone;
+
+        return {
+          ...habit,
+
+          history,
+
+          // Compatibilidade
+          // com a estrutura antiga.
+          done: date === today ? nextDone : habit.done,
+
+          updatedAt: new Date().toISOString(),
+        };
+      });
+
+      save({
+        ...safeData,
+        habits: updatedHabits,
+      });
+    },
+    [safeData, today, save],
+  );
+
+  // =========================================
+  // HISTÓRICO
+  // =========================================
+
   const updateHistory = useCallback(
     (patch) => {
-      if (!patch || typeof patch !== 'object') return;
+      if (!patch || typeof patch !== 'object') {
+        return;
+      }
 
       const currentDay = history[today] || {};
 
       save({
         ...safeData,
+
         history: {
           ...history,
+
           [today]: {
             ...currentDay,
             ...patch,
@@ -488,12 +695,16 @@ export function useAppData(user) {
     [safeData, history, today, save],
   );
 
+  // =========================================
+  // RETORNO
+  // =========================================
+
   return {
     // Dados principais
     data: safeData,
     save,
 
-    // Estado da sincronização
+    // Sincronização
     cloudReady,
     syncError,
     syncStatus,
@@ -530,19 +741,24 @@ export function useAppData(user) {
 
     // Ações
     completeTask,
+    toggleHabit,
     updateHistory,
 
     // Diário e estudos
     diaryEntries: safeData.diaryEntries,
+
     studySessions: safeData.studySessions,
+
     knowledgeItems: safeData.knowledgeItems,
+
     errors: safeData.errors,
+
     weeklyReflections: safeData.weeklyReflections,
 
     // Financeiro
     transactions: safeData.finance?.transactions || [],
 
     // Hábitos
-    habits: safeData.habits || [],
+    habits,
   };
 }

@@ -43,9 +43,6 @@ import Grupos from './components/Grupos';
 import Processos from './components/Processos';
 
 export default function App() {
-  // =========================================
-  // USUÁRIO E SESSÃO DO BACKEND
-  // =========================================
   const [currentUser, setCurrentUser] = useState(null);
   const [checkingSession, setCheckingSession] = useState(true);
   const [authError, setAuthError] = useState('');
@@ -84,9 +81,6 @@ export default function App() {
     };
   }, []);
 
-  // =========================================
-  // DADOS DO APLICATIVO
-  // =========================================
   const appDataHook = useAppData(currentUser);
 
   const {
@@ -114,9 +108,6 @@ export default function App() {
     syncStatus,
   } = appDataHook;
 
-  // =========================================
-  // ESTADO DA INTERFACE
-  // =========================================
   const [activeSection, setActiveSection] = useState('dashboard');
 
   const [darkMode, setDarkMode] = useState(() => {
@@ -133,6 +124,7 @@ export default function App() {
   // =========================================
   // MODO FOCO
   // =========================================
+
   const [focusOpen, setFocusOpen] = useState(false);
   const [focusTaskId, setFocusTaskId] = useState('');
   const [focusMinutes, setFocusMinutes] = useState(25);
@@ -187,8 +179,9 @@ export default function App() {
   )}:${String(focusSeconds % 60).padStart(2, '0')}`;
 
   // =========================================
-  // MODO ESCURO
+  // TEMA
   // =========================================
+
   useEffect(() => {
     document.body.classList.toggle('dark', darkMode);
 
@@ -206,6 +199,7 @@ export default function App() {
   // =========================================
   // LOGOUT
   // =========================================
+
   function handleLogout() {
     clearSession();
 
@@ -216,8 +210,68 @@ export default function App() {
   }
 
   // =========================================
-  // AUTENTICAÇÃO
+  // AÇÕES DO PAINEL PRINCIPAL
   // =========================================
+
+  function handleDashboardToggleTask(taskId) {
+    const currentTasks = Array.isArray(data?.tasks) ? data.tasks : [];
+
+    const updatedTasks = currentTasks.map((task) => {
+      if (String(task.id) !== String(taskId)) {
+        return task;
+      }
+
+      return {
+        ...task,
+        done: !Boolean(task.done),
+      };
+    });
+
+    save({
+      ...data,
+      tasks: updatedTasks,
+    });
+  }
+
+  function handleDashboardToggleHabit(habitId) {
+    const currentHabits = Array.isArray(data?.habits) ? data.habits : [];
+
+    const today = new Date().toISOString().slice(0, 10);
+
+    const updatedHabits = currentHabits.map((habit) => {
+      if (String(habit.id) !== String(habitId)) {
+        return habit;
+      }
+
+      const history = {
+        ...(habit.history || {}),
+      };
+
+      const currentDone = Boolean(
+        Object.prototype.hasOwnProperty.call(history, today)
+          ? history[today]
+          : habit.done,
+      );
+
+      history[today] = !currentDone;
+
+      return {
+        ...habit,
+        history,
+        done: !currentDone,
+      };
+    });
+
+    save({
+      ...data,
+      habits: updatedHabits,
+    });
+  }
+
+  // =========================================
+  // LOADING / AUTENTICAÇÃO
+  // =========================================
+
   if (checkingSession) {
     return (
       <div className='auth-loading' role='status'>
@@ -241,8 +295,9 @@ export default function App() {
   }
 
   // =========================================
-  // DADOS AUXILIARES
+  // DADOS SEGUROS
   // =========================================
+
   const safeRecords = Array.isArray(records) ? records : [];
 
   const safePendingTasks = Array.isArray(pendingTasks) ? pendingTasks : [];
@@ -254,6 +309,10 @@ export default function App() {
   const safeCompletedTasks = Array.isArray(completedTasks)
     ? completedTasks
     : [];
+
+  // =========================================
+  // DADOS DO ASSISTENTE
+  // =========================================
 
   const assistantPriority = safePendingTasks.slice(0, 3);
 
@@ -286,8 +345,9 @@ export default function App() {
   });
 
   // =========================================
-  // RENDERIZAÇÃO
+  // INTERFACE
   // =========================================
+
   return (
     <div id='app' className='app-layout'>
       <Sidebar
@@ -300,63 +360,26 @@ export default function App() {
       />
 
       <main className='main-content'>
-        {/* =========================================
-            CABEÇALHO PRINCIPAL
-        ========================================= */}
         <header className='main-header'>
-          <div>
-            <h1>
-              Meu Assistente{' '}
-              <small
-                style={{
-                  fontSize: 13,
-                  color: 'var(--site-primary)',
-                }}
-              >
-                ({currentUser.email || 'Usuário'})
-              </small>
-            </h1>
+          <div className='main-header-left'>
+            <div>
+              <span className='main-header-eyebrow'>Meu Assistente</span>
 
-            <div className='subtitle'>{todayLabel}</div>
+              <h1>
+                {activeSection === 'dashboard' ? 'Visão geral' : activeSection}
+              </h1>
 
-            <div className='subtitle' role='status' aria-live='polite'>
-              {syncStatus === 'loading' && '☁️ Carregando dados...'}
-
-              {syncStatus === 'local' && '💾 Modo local'}
-
-              {syncStatus === 'synced' && '☁️ Dados sincronizados'}
-
-              {syncStatus === 'error' && '⚠️ Erro na sincronização'}
+              <p>{todayLabel}</p>
             </div>
-
-            {syncError && (
-              <p role='alert' className='auth-error'>
-                {syncError}
-              </p>
-            )}
-
-            {authError && (
-              <p role='alert' className='auth-error'>
-                {authError}
-              </p>
-            )}
           </div>
 
-          <div className='actions'>
-            <button type='button' className='ghost' onClick={openFocusMode}>
-              🎯 Modo foco
-            </button>
-
+          <div className='main-header-actions'>
             <button
               type='button'
-              className='ghost'
-              onClick={handleLogout}
-              style={{
-                color: 'var(--site-danger)',
-                borderColor: 'var(--site-danger)',
-              }}
+              className='header-focus-button'
+              onClick={openFocusMode}
             >
-              🚪 Sair
+              🎯 Modo foco
             </button>
           </div>
         </header>
@@ -364,6 +387,7 @@ export default function App() {
         {/* =========================================
             PAINEL PRINCIPAL
         ========================================= */}
+
         {activeSection === 'dashboard' && (
           <PainelPrincipal
             data={data}
@@ -375,12 +399,15 @@ export default function App() {
             productivityScore={productivityScore}
             bestHour={bestHour}
             pendingTasks={safePendingTasks}
+            onToggleTask={handleDashboardToggleTask}
+            onToggleHabit={handleDashboardToggleHabit}
           />
         )}
 
         {/* =========================================
             CALENDÁRIO
         ========================================= */}
+
         {activeSection === 'calendar' && (
           <SmartCalendar data={data} save={save} completeTask={completeTask} />
         )}
@@ -388,60 +415,71 @@ export default function App() {
         {/* =========================================
             DIÁRIO
         ========================================= */}
+
         {activeSection === 'diario' && <Diario data={data} save={save} />}
 
         {/* =========================================
             ESTUDOS
         ========================================= */}
+
         {activeSection === 'estudos' && <Estudos />}
 
         {/* =========================================
             OBJETIVOS
         ========================================= */}
+
         {activeSection === 'goals' && <Goals data={data} save={save} />}
 
         {/* =========================================
             HÁBITOS
         ========================================= */}
+
         {activeSection === 'habits' && <HabitsPage data={data} save={save} />}
 
         {/* =========================================
             TAREFAS
         ========================================= */}
+
         {activeSection === 'tasks' && (
           <Tasks data={data} save={save} completeTask={completeTask} />
         )}
 
         {/* =========================================
-            PROCESSOS — EDITOR VISUAL
+            PROCESSOS
         ========================================= */}
+
         {activeSection === 'processos' && <Processos data={data} save={save} />}
 
         {/* =========================================
             PROJETOS
         ========================================= */}
+
         {activeSection === 'projects' && <ProjetosColaborativos />}
 
         {/* =========================================
             GRUPOS
         ========================================= */}
+
         {activeSection === 'groups' && <Grupos />}
 
         {/* =========================================
-            MEU PERFIL
+            PERFIL
         ========================================= */}
+
         {activeSection === 'profile' && (
           <Perfil currentUser={currentUser} setCurrentUser={setCurrentUser} />
         )}
 
         {/* =========================================
-            EVOLUÇÃO & PROGRESSO
+            EVOLUÇÃO
         ========================================= */}
+
         {activeSection === 'evolucao' && <Evolucao data={data} save={save} />}
 
         {/* =========================================
-            COLEÇÕES E CONQUISTAS
+            COLEÇÕES / CONQUISTAS
         ========================================= */}
+
         {activeSection === 'collections' && (
           <ColecoesConquistas data={data} save={save} />
         )}
@@ -449,25 +487,21 @@ export default function App() {
         {/* =========================================
             CIÊNCIA DE DADOS
         ========================================= */}
+
         {activeSection === 'fase12' && (
           <>
             <DataDashboard
+              data={data}
+              records={safeRecords}
               period={period}
               setPeriod={setPeriod}
-              records={safeRecords}
+              daily={daily}
+              productivityScore={productivityScore}
+              bestHour={bestHour}
+              completion={completion}
+              moodAverage={moodAverage}
               totalXP={totalXP}
               totalDone={totalDone}
-              moodAverage={moodAverage}
-              spent={spent}
-              maxXP={Math.max(
-                1,
-                ...safeRecords.map((record) => Number(record.xp) || 0),
-              )}
-              maxDone={Math.max(
-                1,
-                ...safeRecords.map((record) => Number(record.completed) || 0),
-              )}
-              insights={insights}
             />
 
             <AdvancedDataScience data={data} />
@@ -477,11 +511,13 @@ export default function App() {
         {/* =========================================
             FINANÇAS
         ========================================= */}
+
         {activeSection === 'fase13' && <Finance data={data} save={save} />}
 
         {/* =========================================
             INVESTIMENTOS
         ========================================= */}
+
         {activeSection === 'investments' && (
           <Investments data={data} save={save} />
         )}
@@ -489,6 +525,7 @@ export default function App() {
         {/* =========================================
             GAMIFICAÇÃO
         ========================================= */}
+
         {activeSection === 'gamification' && (
           <Gamification
             data={data}
@@ -500,16 +537,19 @@ export default function App() {
         {/* =========================================
             CONEXÕES
         ========================================= */}
+
         {activeSection === 'connections' && <Connections />}
 
         {/* =========================================
             FOGUINHO
         ========================================= */}
+
         {activeSection === 'foguinho' && <Foguinho currentUser={currentUser} />}
 
         {/* =========================================
             ASSISTENTE
         ========================================= */}
+
         {activeSection === 'assistant' && (
           <Assistant
             data={data}
@@ -522,237 +562,118 @@ export default function App() {
         )}
 
         {/* =========================================
-            MODAL MODO FOCO
+            MODO FOCO
         ========================================= */}
+
         {focusOpen && (
           <div
-            role='presentation'
-            onMouseDown={(event) => {
-              if (event.target === event.currentTarget) {
-                closeFocusMode();
-              }
-            }}
-            style={{
-              position: 'fixed',
-              inset: 0,
-              zIndex: 9999,
-              display: 'grid',
-              placeItems: 'center',
-              padding: 16,
-              background: 'rgba(0, 0, 0, 0.72)',
-            }}
+            className='focus-modal-overlay'
+            role='dialog'
+            aria-modal='true'
+            aria-label='Modo foco'
           >
-            <section
-              role='dialog'
-              aria-modal='true'
-              aria-labelledby='focus-mode-title'
-              style={{
-                width: 'min(100%, 480px)',
-                padding: 28,
-                borderRadius: 20,
-                color: 'var(--site-text, #f8fafc)',
-                background: 'var(--site-card-bg, #172033)',
-                border: '1px solid var(--site-border, #334155)',
-                boxShadow: '0 24px 80px rgba(0,0,0,.35)',
-              }}
-            >
-              <div
-                style={{
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  gap: 12,
-                }}
-              >
+            <div className='focus-modal'>
+              <div className='focus-modal-header'>
                 <div>
-                  <div
-                    style={{
-                      fontSize: 13,
-                      color: 'var(--site-primary)',
-                      fontWeight: 800,
-                    }}
-                  >
-                    SESSÃO DE PRODUTIVIDADE
-                  </div>
+                  <span className='focus-eyebrow'>Modo foco</span>
 
-                  <h2
-                    id='focus-mode-title'
-                    style={{
-                      margin: '6px 0 4px',
-                    }}
-                  >
-                    🎯 Modo foco
+                  <h2>
+                    {focusCompleted
+                      ? 'Sessão concluída 🎉'
+                      : 'Concentre-se no que importa'}
                   </h2>
-
-                  <p
-                    className='subtitle'
-                    style={{
-                      margin: 0,
-                    }}
-                  >
-                    Uma tarefa por vez. Evite trocar de contexto.
-                  </p>
                 </div>
 
                 <button
                   type='button'
-                  className='ghost'
+                  className='focus-close-button'
                   onClick={closeFocusMode}
                   aria-label='Fechar modo foco'
                 >
-                  ✕
+                  ×
                 </button>
               </div>
 
-              <label
-                htmlFor='focus-task'
-                style={{
-                  display: 'block',
-                  marginTop: 22,
-                  marginBottom: 7,
-                  fontWeight: 700,
-                }}
-              >
-                O que você vai fazer?
-              </label>
+              <div className='focus-timer'>{formattedFocusTime}</div>
 
-              <select
-                id='focus-task'
-                value={focusTaskId}
-                disabled={focusRunning}
-                onChange={(event) => setFocusTaskId(event.target.value)}
-                style={{
-                  width: '100%',
-                  padding: '12px 14px',
-                  borderRadius: 10,
-                  color: 'var(--site-text, #f8fafc)',
-                  background: 'var(--site-background, #0f172a)',
-                  border: '1px solid var(--site-border, #334155)',
-                }}
-              >
-                <option value=''>Foco livre / estudo</option>
-
-                {safePendingTasks.map((task) => (
-                  <option key={task.id} value={String(task.id)}>
-                    {task.title ||
-                      task.name ||
-                      task.text ||
-                      'Tarefa sem título'}
-                  </option>
-                ))}
-              </select>
-
-              <div
-                style={{
-                  display: 'flex',
-                  justifyContent: 'center',
-                  margin: '28px 0 20px',
-                }}
-              >
-                <div
-                  aria-live='polite'
-                  style={{
-                    width: 210,
-                    height: 210,
-                    borderRadius: '50%',
-                    display: 'grid',
-                    placeItems: 'center',
-                    border: '8px solid var(--site-primary, #6366f1)',
-                    boxShadow:
-                      '0 0 0 8px color-mix(in srgb, var(--site-primary, #6366f1) 14%, transparent)',
-                    fontSize: 48,
-                    fontWeight: 800,
-                    fontVariantNumeric: 'tabular-nums',
-                  }}
-                >
-                  {formattedFocusTime}
-                </div>
-              </div>
-
-              <div
-                style={{
-                  display: 'flex',
-                  justifyContent: 'center',
-                  gap: 8,
-                  flexWrap: 'wrap',
-                }}
-              >
-                {[15, 25, 45, 60].map((minutes) => (
-                  <button
-                    key={minutes}
-                    type='button'
-                    className={focusMinutes === minutes ? 'primary' : 'ghost'}
-                    disabled={focusRunning}
-                    onClick={() => {
-                      setFocusMinutes(minutes);
-                      setFocusSeconds(minutes * 60);
-                      setFocusCompleted(false);
-                    }}
-                    style={{
-                      minWidth: 58,
-                    }}
-                  >
-                    {minutes} min
-                  </button>
-                ))}
-              </div>
-
-              {focusCompleted && (
-                <p
-                  role='status'
-                  style={{
-                    textAlign: 'center',
-                    color: 'var(--site-primary)',
-                    fontWeight: 800,
-                    marginTop: 18,
-                  }}
-                >
-                  🎉 Sessão concluída! Bom trabalho.
-                </p>
-              )}
-
-              <div
-                style={{
-                  display: 'flex',
-                  gap: 10,
-                  marginTop: 22,
-                }}
-              >
+              <div className='focus-controls'>
                 <button
                   type='button'
-                  className='primary'
                   onClick={() => {
-                    if (focusSeconds <= 0) {
+                    if (focusCompleted) {
                       resetFocusTimer();
+                    } else {
+                      setFocusRunning((current) => !current);
                     }
-
-                    setFocusCompleted(false);
-
-                    setFocusRunning((running) => !running);
                   }}
-                  style={{
-                    flex: 1,
-                    minHeight: 44,
-                  }}
+                  className='focus-primary-button'
                 >
-                  {focusRunning
-                    ? 'Pausar'
-                    : focusSeconds === 0
-                      ? 'Recomeçar'
-                      : 'Iniciar foco'}
+                  {focusCompleted
+                    ? '↻ Reiniciar'
+                    : focusRunning
+                      ? '⏸ Pausar'
+                      : '▶ Iniciar'}
                 </button>
 
                 <button
                   type='button'
-                  className='ghost'
                   onClick={resetFocusTimer}
-                  style={{
-                    minHeight: 44,
-                  }}
+                  className='focus-secondary-button'
                 >
                   Reiniciar
                 </button>
               </div>
-            </section>
+
+              <div className='focus-task-selector'>
+                <label htmlFor='focus-task'>Tarefa da sessão</label>
+
+                <select
+                  id='focus-task'
+                  value={focusTaskId}
+                  onChange={(event) => setFocusTaskId(event.target.value)}
+                >
+                  <option value=''>Escolha uma tarefa</option>
+
+                  {safePendingTasks.map((task) => (
+                    <option key={task.id} value={task.id}>
+                      {task.name || task.title || 'Tarefa'}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {focusTask && (
+                <div className='focus-current-task'>
+                  <span>Focando agora</span>
+
+                  <strong>
+                    {focusTask.name || focusTask.title || 'Tarefa selecionada'}
+                  </strong>
+                </div>
+              )}
+
+              <div className='focus-duration'>
+                <span>Duração</span>
+
+                <div className='focus-duration-buttons'>
+                  {[15, 25, 45, 60].map((minutes) => (
+                    <button
+                      key={minutes}
+                      type='button'
+                      className={focusMinutes === minutes ? 'active' : ''}
+                      onClick={() => {
+                        setFocusMinutes(minutes);
+                        setFocusRunning(false);
+                        setFocusCompleted(false);
+                        setFocusSeconds(minutes * 60);
+                      }}
+                    >
+                      {minutes} min
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
           </div>
         )}
       </main>
