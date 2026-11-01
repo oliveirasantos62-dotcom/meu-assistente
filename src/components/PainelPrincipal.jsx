@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo, useState } from 'react';
 
 export default function PainelPrincipal({
   data,
@@ -13,6 +13,22 @@ export default function PainelPrincipal({
 }) {
   const tasks = Array.isArray(data?.tasks) ? data.tasks : [];
   const habits = Array.isArray(data?.habits) ? data.habits : [];
+  const calendarEvents = Array.isArray(data?.calendarEvents)
+    ? data.calendarEvents
+    : [];
+
+  const [expandedSections, setExpandedSections] = useState({
+    habits: false,
+    tasks: false,
+    agenda: false,
+  });
+
+  const toggleSection = (section) => {
+    setExpandedSections((current) => ({
+      ...current,
+      [section]: !current[section],
+    }));
+  };
 
   const pendingTasksCount =
     pendingTasks.length > 0
@@ -28,6 +44,38 @@ export default function PainelPrincipal({
   const habitsDoneCount = habits.filter((habit) => habit.done).length;
 
   const totalHabits = habits.length;
+
+  const todayString = new Date().toISOString().slice(0, 10);
+
+  const todayEvents = useMemo(
+    () =>
+      calendarEvents
+        .filter((event) => event?.date === todayString)
+        .sort((a, b) => {
+          if (!a?.scheduledTime) return 1;
+          if (!b?.scheduledTime) return -1;
+          return String(a.scheduledTime).localeCompare(String(b.scheduledTime));
+        }),
+    [calendarEvents, todayString],
+  );
+
+  const todayTasks = useMemo(
+    () =>
+      tasks.filter((task) => {
+        if (task?.date === todayString || task?.deadline === todayString) {
+          return true;
+        }
+
+        return todayEvents.some(
+          (event) =>
+            event?.type === 'task' &&
+            (event?.taskId === task?.id ||
+              event?.name === task?.title ||
+              event?.name === task?.name),
+        );
+      }),
+    [tasks, todayEvents, todayString],
+  );
 
   const sleep = Number(daily?.sleep) || 0;
   const energy = Number(daily?.energy) || 0;
@@ -145,6 +193,165 @@ export default function PainelPrincipal({
           <div>
             <strong>{Number(data?.xp) || 0}</strong>
             <span>XP atual</span>
+          </div>
+        </div>
+      </section>
+
+      {/* =====================================================
+          VISÃO RÁPIDA DO DIA
+          Tudo aparece dentro do próprio painel. Cada bloco pode
+          ser aberto/fechado sem navegar para outra página.
+      ====================================================== */}
+      <section className='card dashboard-day-card'>
+        <div className='section-title dashboard-day-header'>
+          <div>
+            <span className='section-label'>VISÃO DO DIA</span>
+            <h2>📅 Seu dia</h2>
+            <p className='subtitle'>
+              Abra apenas o que você quer acompanhar agora.
+            </p>
+          </div>
+
+          <span className='dashboard-day-date'>
+            {new Date().toLocaleDateString('pt-BR', {
+              weekday: 'long',
+              day: '2-digit',
+              month: 'short',
+            })}
+          </span>
+        </div>
+
+        <div className='dashboard-day-sections'>
+          <div className={`dashboard-day-section ${expandedSections.habits ? 'is-open' : ''}`}>
+            <button
+              type='button'
+              className='dashboard-day-toggle'
+              onClick={() => toggleSection('habits')}
+              aria-expanded={expandedSections.habits}
+            >
+              <span className='dashboard-day-toggle-main'>
+                <span className='dashboard-day-icon'>🔥</span>
+                <span>
+                  <strong>Hábitos de hoje</strong>
+                  <small>{habitsDoneCount}/{totalHabits} concluídos</small>
+                </span>
+              </span>
+              <span className='dashboard-day-toggle-action'>
+                {expandedSections.habits ? 'Esconder' : 'Mostrar'}
+                <span aria-hidden='true'>{expandedSections.habits ? '⌃' : '⌄'}</span>
+              </span>
+            </button>
+
+            {expandedSections.habits && (
+              <div className='dashboard-day-content'>
+                {habits.length > 0 ? (
+                  <div className='dashboard-day-list'>
+                    {habits.map((habit, index) => (
+                      <div className='dashboard-day-item' key={habit.id ?? `habit-${index}`}>
+                        <span className={`dashboard-day-check ${habit.done ? 'done' : ''}`}>
+                          {habit.done ? '✓' : '○'}
+                        </span>
+                        <div>
+                          <strong>{habit.name || habit.title || 'Hábito'}</strong>
+                          <small>{habit.done ? 'Concluído hoje' : 'Pendente hoje'}</small>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className='dashboard-empty'>Nenhum hábito cadastrado.</div>
+                )}
+              </div>
+            )}
+          </div>
+
+          <div className={`dashboard-day-section ${expandedSections.tasks ? 'is-open' : ''}`}>
+            <button
+              type='button'
+              className='dashboard-day-toggle'
+              onClick={() => toggleSection('tasks')}
+              aria-expanded={expandedSections.tasks}
+            >
+              <span className='dashboard-day-toggle-main'>
+                <span className='dashboard-day-icon'>📋</span>
+                <span>
+                  <strong>Tarefas de hoje</strong>
+                  <small>{todayTasks.length || pendingTasksCount} para acompanhar</small>
+                </span>
+              </span>
+              <span className='dashboard-day-toggle-action'>
+                {expandedSections.tasks ? 'Esconder' : 'Mostrar'}
+                <span aria-hidden='true'>{expandedSections.tasks ? '⌃' : '⌄'}</span>
+              </span>
+            </button>
+
+            {expandedSections.tasks && (
+              <div className='dashboard-day-content'>
+                {todayTasks.length > 0 ? (
+                  <div className='dashboard-day-list'>
+                    {todayTasks.map((task, index) => (
+                      <div className='dashboard-day-item' key={task.id ?? `task-${index}`}>
+                        <span className={`dashboard-day-check ${task.done ? 'done' : ''}`}>
+                          {task.done ? '✓' : '○'}
+                        </span>
+                        <div>
+                          <strong>{task.title || task.name || 'Tarefa'}</strong>
+                          <small>{task.done ? 'Concluída' : 'Pendente'}</small>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className='dashboard-empty'>Nenhuma tarefa específica para hoje.</div>
+                )}
+              </div>
+            )}
+          </div>
+
+          <div className={`dashboard-day-section ${expandedSections.agenda ? 'is-open' : ''}`}>
+            <button
+              type='button'
+              className='dashboard-day-toggle'
+              onClick={() => toggleSection('agenda')}
+              aria-expanded={expandedSections.agenda}
+            >
+              <span className='dashboard-day-toggle-main'>
+                <span className='dashboard-day-icon'>🗓️</span>
+                <span>
+                  <strong>Agenda de hoje</strong>
+                  <small>{todayEvents.length} eventos</small>
+                </span>
+              </span>
+              <span className='dashboard-day-toggle-action'>
+                {expandedSections.agenda ? 'Esconder' : 'Mostrar'}
+                <span aria-hidden='true'>{expandedSections.agenda ? '⌃' : '⌄'}</span>
+              </span>
+            </button>
+
+            {expandedSections.agenda && (
+              <div className='dashboard-day-content'>
+                {todayEvents.length > 0 ? (
+                  <div className='dashboard-day-list'>
+                    {todayEvents.map((event, index) => (
+                      <div className='dashboard-day-item' key={event.id ?? `event-${index}`}>
+                        <span className='dashboard-day-check'>
+                          {event.type === 'appointment' ? '📌' : event.type === 'habit' ? '🔥' : '•'}
+                        </span>
+                        <div>
+                          <strong>{event.name || event.title || 'Evento'}</strong>
+                          <small>
+                            {event.scheduledTime || 'Sem horário'}
+                            {event.duration ? ` · ${event.duration} min` : ''}
+                          </small>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className='dashboard-empty'>Nenhum evento agendado para hoje.</div>
+                )}
+              </div>
+            )}
           </div>
         </div>
       </section>

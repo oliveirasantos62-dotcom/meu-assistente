@@ -516,7 +516,16 @@ export default function Sidebar({
             <div className='sidebar-search-setting'>
               <div className='sidebar-search-setting-info'>
                 <div className='sidebar-search-setting-icon'>
-                  🔎Pesquisa de páginas
+                  <span className='sidebar-search-setting-icon-symbol'>🔎</span>
+
+                  <div>
+                    <strong>Pesquisa de páginas</strong>
+                    <small>
+                      {showSearch
+                        ? 'A pesquisa aparece no menu'
+                        : 'A pesquisa está escondida'}
+                    </small>
+                  </div>
                 </div>
               </div>
 

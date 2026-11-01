@@ -9487,3 +9487,628 @@ body.dark .evolution-modal textarea {
     grid-template-columns: 1fr;
   }
 }
+
+/* =========================================================
+   VISÃO DO DIA — PAINEL PRINCIPAL
+   ========================================================= */
+.dashboard-day-card {
+  padding: 20px;
+}
+.dashboard-day-header {
+  align-items: flex-start;
+  margin-bottom: 16px;
+}
+.dashboard-day-header h2 {
+  margin-bottom: 4px;
+}
+.dashboard-day-date {
+  flex: 0 0 auto;
+  padding: 8px 11px;
+  border: 1px solid var(--site-border);
+  border-radius: 10px;
+  color: var(--site-text-muted);
+  background: var(--site-background);
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: capitalize;
+}
+.dashboard-day-sections {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.dashboard-day-section {
+  border: 1px solid var(--site-border);
+  border-radius: 15px;
+  overflow: hidden;
+  background: var(--site-background);
+  transition:
+    border-color 0.2s ease,
+    background 0.2s ease;
+}
+.dashboard-day-section.is-open {
+  border-color: color-mix(in srgb, var(--site-primary) 28%, var(--site-border));
+  background: color-mix(
+    in srgb,
+    var(--site-primary) 3%,
+    var(--site-background)
+  );
+}
+.dashboard-day-toggle {
+  width: 100%;
+  min-height: 64px;
+  padding: 12px 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  color: var(--site-on-background);
+  background: transparent;
+  text-align: left;
+}
+.dashboard-day-toggle:hover {
+  background: var(--site-primary-soft);
+}
+.dashboard-day-toggle-main {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.dashboard-day-icon {
+  width: 40px;
+  height: 40px;
+  flex: 0 0 40px;
+  display: grid;
+  place-items: center;
+  border-radius: 11px;
+  background: var(--site-card-bg);
+  border: 1px solid var(--site-border);
+  font-size: 18px;
+}
+.dashboard-day-toggle-main strong,
+.dashboard-day-toggle-main small {
+  display: block;
+}
+.dashboard-day-toggle-main strong {
+  font-size: 14px;
+}
+.dashboard-day-toggle-main small {
+  margin-top: 3px;
+  color: var(--site-text-muted);
+  font-size: 12px;
+  font-weight: 500;
+}
+.dashboard-day-toggle-action {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 0 0 auto;
+  color: var(--site-primary);
+  font-size: 12px;
+  font-weight: 800;
+}
+.dashboard-day-toggle-action span {
+  font-size: 18px;
+  line-height: 1;
+}
+.dashboard-day-content {
+  padding: 0 14px 14px;
+  animation: dashboard-day-open 0.18s ease;
+}
+.dashboard-day-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.dashboard-day-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  padding: 10px 11px;
+  border: 1px solid var(--site-border);
+  border-radius: 11px;
+  background: var(--site-card-bg);
+}
+.dashboard-day-check {
+  width: 30px;
+  height: 30px;
+  flex: 0 0 30px;
+  display: grid;
+  place-items: center;
+  border-radius: 9px;
+  background: var(--site-primary-soft);
+  color: var(--site-primary);
+  font-size: 15px;
+  font-weight: 900;
+}
+.dashboard-day-check.done {
+  color: var(--site-success);
+  background: color-mix(in srgb, var(--site-success) 12%, transparent);
+}
+.dashboard-day-item > div {
+  min-width: 0;
+}
+.dashboard-day-item strong,
+.dashboard-day-item small {
+  display: block;
+  overflow-wrap: anywhere;
+}
+.dashboard-day-item strong {
+  font-size: 13px;
+}
+.dashboard-day-item small {
+  margin-top: 2px;
+  color: var(--site-text-muted);
+  font-size: 11px;
+}
+.dashboard-empty {
+  padding: 13px;
+  border-radius: 11px;
+  color: var(--site-text-muted);
+  background: var(--site-card-bg);
+  border: 1px dashed var(--site-border);
+  font-size: 13px;
+}
+@keyframes dashboard-day-open {
+  from {
+    opacity: 0;
+    transform: translateY(-3px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .dashboard-day-content {
+    animation: none;
+  }
+}
+@media (max-width: 520px) {
+  .dashboard-day-header {
+    flex-direction: column;
+    gap: 10px;
+  }
+  .dashboard-day-date {
+    align-self: flex-start;
+  }
+  .dashboard-day-toggle {
+    padding: 11px;
+  }
+  .dashboard-day-toggle-action {
+    font-size: 0;
+  }
+  .dashboard-day-toggle-action span {
+    font-size: 20px;
+  }
+}
+/* =========================================================
+   PERSONALIZAÇÃO DO MENU — PESQUISA DE PÁGINAS
+   ========================================================= */
+
+.sidebar-search-setting {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+
+  margin: 16px 0 18px;
+  padding: 13px 15px;
+
+  border: 1px solid var(--site-border);
+  border-radius: 14px;
+
+  background: var(--site-card-bg);
+  color: var(--site-on-background);
+
+  box-sizing: border-box;
+}
+
+.sidebar-search-setting-info {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.sidebar-search-setting-icon {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+
+  min-width: 0;
+}
+
+.sidebar-search-setting-icon-symbol {
+  display: grid;
+  place-items: center;
+
+  flex: 0 0 34px;
+  width: 34px;
+  height: 34px;
+
+  border-radius: 10px;
+
+  background: var(--site-primary-soft);
+  color: var(--site-primary);
+
+  font-size: 16px;
+}
+
+.sidebar-search-setting-icon strong {
+  display: block;
+
+  color: var(--site-on-background);
+
+  font-size: 13px;
+  font-weight: 750;
+  line-height: 1.3;
+}
+
+.sidebar-search-setting-icon small {
+  display: block;
+
+  margin-top: 3px;
+
+  color: var(--site-text-muted);
+
+  font-size: 11px;
+  line-height: 1.35;
+}
+
+/* O interruptor fica no final, mas com espaço */
+.sidebar-search-setting .sidebar-switch-label {
+  flex: 0 0 auto;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  margin-left: auto;
+  padding-left: 12px;
+
+  cursor: pointer;
+}
+
+/* Mantém o input acessível sem aparecer */
+.sidebar-search-setting .sidebar-switch-label input {
+  position: absolute;
+
+  width: 1px;
+  height: 1px;
+
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* Interruptor */
+.sidebar-search-setting .sidebar-switch {
+  position: relative;
+
+  display: block;
+
+  width: 46px;
+  height: 26px;
+
+  flex: 0 0 46px;
+
+  border-radius: 999px;
+
+  background: var(--site-border);
+
+  transition:
+    background-color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.sidebar-search-setting .sidebar-switch > span {
+  position: absolute;
+
+  top: 3px;
+  left: 3px;
+
+  width: 20px;
+  height: 20px;
+
+  border-radius: 50%;
+
+  background: var(--site-on-background);
+
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.18);
+
+  transition:
+    transform 0.2s ease,
+    background-color 0.2s ease;
+}
+
+/* Ativado */
+.sidebar-search-setting .sidebar-switch-label input:checked + .sidebar-switch {
+  background: var(--site-primary);
+}
+
+.sidebar-search-setting
+  .sidebar-switch-label
+  input:checked
+  + .sidebar-switch
+  > span {
+  transform: translateX(20px);
+
+  background: #fff;
+}
+
+/* Foco acessível */
+.sidebar-search-setting
+  .sidebar-switch-label
+  input:focus-visible
+  + .sidebar-switch {
+  box-shadow: 0 0 0 3px var(--site-primary-soft);
+}
+
+/* =========================================================
+   OBJETIVOS — MODO CLARO
+   ========================================================= */
+
+:root:not(.dark) .goals-page {
+  --g-bg: #f5f7fb;
+  --g-panel: #ffffff;
+  --g-panel-2: #ffffff;
+
+  --g-line: #e2e6ef;
+
+  --g-text: #182033;
+  --g-muted: #687086;
+
+  --g-purple: #7055e8;
+  --g-purple-2: #5940c7;
+
+  color: var(--g-text);
+
+  background:
+    radial-gradient(
+      ellipse at 8% 0%,
+      rgba(112, 85, 232, 0.08),
+      transparent 34%
+    ),
+    radial-gradient(
+      ellipse at 100% 15%,
+      rgba(22, 106, 210, 0.05),
+      transparent 30%
+    ),
+    linear-gradient(145deg, #ffffff 0%, #f7f8fc 55%, #f1f4fa 100%);
+}
+
+/* Cabeçalho */
+:root:not(.dark) .goals-page .section-eyebrow {
+  color: #6751d8;
+}
+
+:root:not(.dark) .goals-header h2 {
+  color: #172033;
+}
+
+:root:not(.dark) .goals-header p {
+  color: #697286;
+}
+
+/* Cards de resumo */
+:root:not(.dark) .goal-summary-card {
+  border-color: #e1e5ed;
+
+  background: linear-gradient(145deg, #ffffff, #f6f7fb);
+
+  box-shadow: 0 8px 24px rgba(30, 41, 59, 0.06);
+}
+
+:root:not(.dark) .goal-summary-card:nth-child(2) {
+  background: linear-gradient(145deg, #f0faf8, #ffffff);
+}
+
+:root:not(.dark) .goal-summary-card:nth-child(3) {
+  background: linear-gradient(145deg, #f1f6ff, #ffffff);
+}
+
+:root:not(.dark) .goal-summary-card span {
+  color: #697286;
+}
+
+:root:not(.dark) .goal-summary-card strong {
+  color: #172033;
+}
+
+/* Abas */
+:root:not(.dark) .goals-tabs {
+  border-bottom-color: #e1e5ed;
+}
+
+:root:not(.dark) .goals-tabs button,
+:root:not(.dark) .goals-page .ghost {
+  color: #566078;
+
+  background: #ffffff;
+
+  border-color: #dfe4ed;
+}
+
+:root:not(.dark) .goals-tabs button:hover,
+:root:not(.dark) .goals-page .ghost:hover {
+  background: #f5f7fb;
+}
+
+:root:not(.dark) .goals-tabs button.active {
+  color: #ffffff;
+
+  background: linear-gradient(135deg, #8062eb, #6046d1);
+}
+
+/* Cards dos objetivos */
+:root:not(.dark) .goal-card {
+  border-color: #e1e5ed;
+
+  background: linear-gradient(150deg, #ffffff, #f8f9fc);
+
+  box-shadow: 0 10px 28px rgba(30, 41, 59, 0.07);
+}
+
+:root:not(.dark) .goal-card h3 {
+  color: #172033;
+}
+
+:root:not(.dark) .goal-description {
+  color: #697286;
+}
+
+:root:not(.dark) .goal-menu-button {
+  color: #566078;
+
+  background: #f5f7fb;
+
+  border-color: #e1e5ed;
+}
+
+:root:not(.dark) .goal-tag {
+  color: #5c49b8;
+
+  background: #f1efff;
+
+  border-color: #ddd7ff;
+}
+
+:root:not(.dark) .goal-meta > div {
+  background: #f5f7fb;
+}
+
+:root:not(.dark) .goal-meta span {
+  color: #737d91;
+}
+
+:root:not(.dark) .goal-meta strong {
+  color: #273147;
+}
+
+:root:not(.dark) .goal-next-step,
+:root:not(.dark) .goal-motivation {
+  background: #f5f2ff;
+
+  border-color: #e3dcff;
+}
+
+:root:not(.dark) .goal-next-step strong,
+:root:not(.dark) .goal-motivation p {
+  color: #34405a;
+}
+
+:root:not(.dark) .goal-next-step span,
+:root:not(.dark) .goal-motivation span {
+  color: #624bc4;
+}
+
+/* Microobjetivos dentro dos objetivos */
+:root:not(.dark) .goals-page .micro-goals {
+  background: #f7f8fc;
+
+  border-color: #e1e5ed;
+
+  color: #273147;
+}
+
+:root:not(.dark) .goals-page .micro-goals-head h4 {
+  color: #273147;
+}
+
+:root:not(.dark) .goals-page .micro-goals-head p,
+:root:not(.dark) .goals-page .micro-empty {
+  color: #697286;
+}
+
+:root:not(.dark) .goals-page .micro-item {
+  background: #ffffff;
+
+  border-color: #e1e5ed;
+}
+
+:root:not(.dark) .goals-page .micro-item-content strong {
+  color: #273147;
+}
+
+:root:not(.dark) .goals-page .micro-item-content p,
+:root:not(.dark) .goals-page .micro-dates {
+  color: #737d91;
+}
+
+:root:not(.dark) .goals-page .micro-form {
+  background: #f1f3f8;
+}
+
+:root:not(.dark) .goals-page .micro-form label {
+  color: #5f697d;
+}
+
+:root:not(.dark) .goals-page .micro-form input,
+:root:not(.dark) .goals-page .micro-form textarea {
+  color: #273147;
+
+  background: #ffffff;
+
+  border-color: #d9deea;
+}
+
+/* Modal de objetivo */
+:root:not(.dark) .goal-modal {
+  color: #273147;
+
+  background: linear-gradient(145deg, #ffffff, #f5f7fb);
+
+  border-color: #dfe4ed;
+
+  box-shadow: 0 25px 70px rgba(30, 41, 59, 0.22);
+}
+
+:root:not(.dark) .goal-modal-header h2 {
+  color: #172033;
+}
+
+:root:not(.dark) .goal-modal-header > button {
+  color: #4d5870;
+
+  background: #f1f3f7;
+
+  border-color: #dfe4ed;
+}
+
+:root:not(.dark) .goal-modal label,
+:root:not(.dark) .goal-modal label > span {
+  color: #4d5870;
+}
+
+:root:not(.dark) .goal-modal input,
+:root:not(.dark) .goal-modal select,
+:root:not(.dark) .goal-modal textarea {
+  color: #273147;
+
+  background: #ffffff;
+
+  border-color: #d9deea;
+}
+
+:root:not(.dark) .goal-modal select option {
+  background: #ffffff;
+  color: #273147;
+}
+
+:root:not(.dark) .milestone-editor {
+  background: #f5f7fb;
+  border-color: #e1e5ed;
+}
+
+:root:not(.dark) .goal-progress-panel {
+  background: rgba(255, 255, 255, 0.96);
+
+  border-color: #ddd7ff;
+
+  box-shadow: 0 12px 35px rgba(30, 41, 59, 0.12);
+}
+
+:root:not(.dark) .goal-progress-panel strong {
+  color: #273147;
+}
