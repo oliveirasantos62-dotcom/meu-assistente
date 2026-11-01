@@ -1731,3 +1731,283 @@ body.dark .goals-page .goal-card h3 {
 body.dark .goals-page .goal-description {
   color: #a9b3d0 !important;
 }
+
+/* =========================================================
+   TEMA ESCURO — NORMALIZAÇÃO COMPLETA
+   O App.jsx alterna a classe .dark no BODY.
+   Estas regras garantem que nenhum estilo do tema claro
+   ou cor fixa deixe textos e superfícies ilegíveis.
+   ========================================================= */
+
+body.dark .goals-page {
+  --g-bg: #090d1c;
+  --g-panel: rgba(17, 24, 48, 0.92);
+  --g-panel-2: rgba(22, 29, 58, 0.96);
+  --g-line: rgba(145, 160, 220, 0.18);
+  --g-text: #f5f6ff;
+  --g-muted: #a9b3d0;
+  --g-purple: #8055ff;
+  --g-purple-2: #5634d7;
+  color: var(--g-text) !important;
+  background:
+    radial-gradient(ellipse at 8% 0%, rgba(92, 51, 220, 0.18), transparent 34%),
+    radial-gradient(
+      ellipse at 100% 15%,
+      rgba(22, 106, 210, 0.12),
+      transparent 30%
+    ),
+    linear-gradient(145deg, #0c1021 0%, #090d1a 55%, #0d1023 100%) !important;
+}
+
+body.dark .goals-page .section-eyebrow,
+body.dark .goals-page .micro-kicker,
+body.dark .goals-page .goal-modal-header span {
+  color: #a996ff !important;
+}
+
+body.dark .goals-page .goals-header h2,
+body.dark .goals-page .goal-summary-card strong,
+body.dark .goals-page .goal-card h3,
+body.dark .goals-page .goal-progress-header strong,
+body.dark .goals-page .goal-meta strong,
+body.dark .goals-page .goal-next-step strong,
+body.dark .goals-page .goal-empty h3,
+body.dark .goals-page .goal-modal-header h2,
+body.dark .goals-page .goal-progress-panel strong,
+body.dark .goals-page .micro-goals-head h4,
+body.dark .goals-page .micro-item-content strong {
+  color: #f5f6ff !important;
+}
+
+body.dark .goals-page .goals-header p,
+body.dark .goals-page .goal-summary-card span,
+body.dark .goals-page .goal-description,
+body.dark .goals-page .goal-progress-header,
+body.dark .goals-page .goal-meta span,
+body.dark .goals-page .goal-milestone,
+body.dark .goals-page .goal-milestones small,
+body.dark .goals-page .goal-motivation p,
+body.dark .goals-page .micro-goals-head p,
+body.dark .goals-page .micro-item-content p,
+body.dark .goals-page .micro-empty,
+body.dark .goals-page .goal-progress-panel span {
+  color: #a9b3d0 !important;
+}
+
+body.dark .goals-page .goal-summary-card,
+body.dark .goals-page .goal-card {
+  color: #f5f6ff !important;
+  background: linear-gradient(
+    150deg,
+    rgba(22, 30, 58, 0.96),
+    rgba(12, 18, 37, 0.98)
+  ) !important;
+  border-color: rgba(145, 160, 220, 0.18) !important;
+}
+
+body.dark .goals-page .goal-summary-card:nth-child(2) {
+  background: linear-gradient(
+    145deg,
+    rgba(13, 75, 70, 0.52),
+    rgba(14, 21, 43, 0.94)
+  ) !important;
+}
+
+body.dark .goals-page .goal-summary-card:nth-child(3) {
+  background: linear-gradient(
+    145deg,
+    rgba(15, 65, 126, 0.5),
+    rgba(14, 21, 43, 0.94)
+  ) !important;
+}
+
+body.dark .goals-page .goal-alignment {
+  color: #f5f6ff !important;
+  background: linear-gradient(
+    110deg,
+    #322078 0%,
+    #242a83 56%,
+    #3156d6 100%
+  ) !important;
+  border-color: rgba(167, 143, 255, 0.28) !important;
+}
+
+body.dark .goals-page .goal-alignment span {
+  color: #d5ceff !important;
+}
+body.dark .goals-page .goal-alignment h3 {
+  color: #ffffff !important;
+}
+body.dark .goals-page .goal-alignment p {
+  color: #e1e3ff !important;
+}
+body.dark .goals-page .alignment-score {
+  color: #ffffff !important;
+  background: rgba(8, 12, 38, 0.3) !important;
+  border-color: rgba(255, 255, 255, 0.18) !important;
+}
+body.dark .goals-page .alignment-score strong {
+  color: #ffffff !important;
+}
+body.dark .goals-page .alignment-score span {
+  color: #d5ceff !important;
+}
+
+body.dark .goals-page .goals-tabs {
+  border-bottom-color: var(--g-line) !important;
+}
+
+body.dark .goals-page .goals-tabs button,
+body.dark .goals-page .ghost,
+body.dark .goals-page .goal-menu-button {
+  color: #cbd3ef !important;
+  background: rgba(23, 31, 59, 0.88) !important;
+  border-color: var(--g-line) !important;
+}
+
+body.dark .goals-page .goals-tabs button.active {
+  color: #ffffff !important;
+  background: linear-gradient(135deg, #8458ff, #5835d6) !important;
+}
+
+body.dark .goals-page .goal-tag {
+  color: #c8c1ff !important;
+  background: rgba(114, 82, 218, 0.14) !important;
+  border-color: rgba(156, 133, 255, 0.22) !important;
+}
+
+body.dark .goals-page .goal-meta > div,
+body.dark .goals-page .micro-item {
+  background: rgba(255, 255, 255, 0.045) !important;
+  border-color: var(--g-line) !important;
+}
+
+body.dark .goals-page .goal-next-step,
+body.dark .goals-page .goal-motivation {
+  color: #eef0ff !important;
+  background: rgba(119, 86, 226, 0.12) !important;
+  border-color: rgba(142, 119, 240, 0.18) !important;
+}
+
+body.dark .goals-page .goal-next-step span,
+body.dark .goals-page .goal-motivation span,
+body.dark .goals-page .goal-section-title {
+  color: #c4b6ff !important;
+}
+
+body.dark .goals-page .goal-milestones,
+body.dark .goals-page .goal-actions {
+  border-color: var(--g-line) !important;
+}
+
+body.dark .goals-page .goals-empty {
+  color: #f5f6ff !important;
+  background: linear-gradient(
+    145deg,
+    rgba(25, 32, 63, 0.82),
+    rgba(12, 18, 37, 0.9)
+  ) !important;
+  border-color: rgba(151, 161, 210, 0.25) !important;
+}
+
+body.dark .goals-page .goals-empty h3 {
+  color: #ffffff !important;
+}
+body.dark .goals-page .goals-empty p {
+  color: #a9b3d0 !important;
+}
+
+body.dark .goals-page .goal-modal {
+  color: #f5f6ff !important;
+  background: linear-gradient(145deg, #171e3c, #0c1228) !important;
+  border-color: rgba(157, 139, 255, 0.27) !important;
+}
+
+body.dark .goals-page .goal-modal label,
+body.dark .goals-page .goal-modal label > span,
+body.dark .goals-page .micro-form label {
+  color: #cbd3ed !important;
+}
+
+body.dark .goals-page .goal-modal input,
+body.dark .goals-page .goal-modal select,
+body.dark .goals-page .goal-modal textarea,
+body.dark .goals-page .micro-form input,
+body.dark .goals-page .micro-form textarea {
+  color: #f5f6ff !important;
+  background: rgba(5, 10, 26, 0.72) !important;
+  border-color: rgba(147, 161, 215, 0.24) !important;
+  color-scheme: dark;
+}
+
+body.dark .goals-page .goal-modal input::placeholder,
+body.dark .goals-page .goal-modal textarea::placeholder,
+body.dark .goals-page .micro-form input::placeholder,
+body.dark .goals-page .micro-form textarea::placeholder {
+  color: #8996bb !important;
+}
+
+body.dark .goals-page .goal-modal select option {
+  color: #f5f6ff !important;
+  background: #151c36 !important;
+}
+
+body.dark .goals-page .goal-modal-header > button,
+body.dark .goals-page .micro-cancel {
+  color: #f5f6ff !important;
+  background: rgba(255, 255, 255, 0.06) !important;
+  border-color: var(--g-line) !important;
+}
+
+body.dark .goals-page .milestone-editor,
+body.dark .goals-page .micro-goals {
+  color: #eef0ff !important;
+  background: rgba(5, 10, 26, 0.34) !important;
+  border-color: var(--g-line) !important;
+}
+
+body.dark .goals-page .micro-total {
+  color: #c2b3ff !important;
+}
+body.dark .goals-page .micro-dates {
+  color: #929fbe !important;
+}
+body.dark .goals-page .micro-dates .is-late,
+body.dark .goals-page .micro-dates b {
+  color: #ff9b91 !important;
+}
+body.dark .goals-page .micro-dates .is-soon {
+  color: #ffc16d !important;
+}
+
+body.dark .goals-page .micro-actions button,
+body.dark .goals-page .micro-add {
+  color: #c9bdff !important;
+  background: rgba(121, 88, 231, 0.14) !important;
+  border-color: rgba(145, 122, 239, 0.24) !important;
+}
+
+body.dark .goals-page .micro-save {
+  color: #ffffff !important;
+  background: linear-gradient(135deg, #8458ff, #5835d6) !important;
+}
+
+body.dark .goals-page .goal-progress-panel {
+  color: #f5f6ff !important;
+  background: rgba(18, 25, 51, 0.96) !important;
+  border-color: rgba(157, 139, 255, 0.25) !important;
+}
+
+body.dark .goals-page .goal-progress-panel > span {
+  color: #c6b8ff !important;
+}
+
+body.dark .goals-page .goal-progress-track,
+body.dark .goals-page .micro-progress {
+  background: rgba(148, 160, 206, 0.18) !important;
+}
+
+body.dark .goals-page button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
