@@ -43,6 +43,10 @@ import Grupos from './components/Grupos';
 import Processos from './components/Processos';
 
 export default function App() {
+  // =========================================================
+  // AUTENTICAÇÃO
+  // =========================================================
+
   const [currentUser, setCurrentUser] = useState(null);
   const [checkingSession, setCheckingSession] = useState(true);
   const [authError, setAuthError] = useState('');
@@ -81,6 +85,10 @@ export default function App() {
     };
   }, []);
 
+  // =========================================================
+  // DADOS PRINCIPAIS
+  // =========================================================
+
   const appDataHook = useAppData(currentUser);
 
   const {
@@ -88,6 +96,7 @@ export default function App() {
     save,
     period,
     setPeriod,
+    today,
     daily,
     levelInfo,
     productivityScore,
@@ -108,7 +117,15 @@ export default function App() {
     syncStatus,
   } = appDataHook;
 
+  // =========================================================
+  // NAVEGAÇÃO
+  // =========================================================
+
   const [activeSection, setActiveSection] = useState('dashboard');
+
+  // =========================================================
+  // TEMA
+  // =========================================================
 
   const [darkMode, setDarkMode] = useState(() => {
     try {
@@ -118,12 +135,16 @@ export default function App() {
     }
   });
 
+  // =========================================================
+  // ASSISTENTE
+  // =========================================================
+
   const [answer, setAnswer] = useState('');
   const [askText, setAskText] = useState('');
 
-  // =========================================
+  // =========================================================
   // MODO FOCO
-  // =========================================
+  // =========================================================
 
   const [focusOpen, setFocusOpen] = useState(false);
   const [focusTaskId, setFocusTaskId] = useState('');
@@ -131,6 +152,10 @@ export default function App() {
   const [focusSeconds, setFocusSeconds] = useState(25 * 60);
   const [focusRunning, setFocusRunning] = useState(false);
   const [focusCompleted, setFocusCompleted] = useState(false);
+
+  // =========================================================
+  // TIMER DO MODO FOCO
+  // =========================================================
 
   useEffect(() => {
     if (!focusRunning) {
@@ -141,8 +166,10 @@ export default function App() {
       setFocusSeconds((current) => {
         if (current <= 1) {
           window.clearInterval(timerId);
+
           setFocusRunning(false);
           setFocusCompleted(true);
+
           return 0;
         }
 
@@ -153,6 +180,10 @@ export default function App() {
     return () => window.clearInterval(timerId);
   }, [focusRunning]);
 
+  // =========================================================
+  // ABRIR MODO FOCO
+  // =========================================================
+
   function openFocusMode() {
     setFocusTaskId('');
     setFocusMinutes(25);
@@ -160,12 +191,35 @@ export default function App() {
     setFocusRunning(false);
     setFocusCompleted(false);
     setFocusOpen(true);
+
+    // Garante que a nova tela comece no topo.
+    window.scrollTo({
+      top: 0,
+      behavior: 'instant',
+    });
   }
+
+  // =========================================================
+  // FECHAR MODO FOCO
+  // =========================================================
 
   function closeFocusMode() {
     setFocusRunning(false);
     setFocusOpen(false);
+
+    // Ao voltar, posiciona a página no topo.
+    // Isso evita que o navegador fique no final do conteúdo.
+    window.requestAnimationFrame(() => {
+      window.scrollTo({
+        top: 0,
+        behavior: 'instant',
+      });
+    });
   }
+
+  // =========================================================
+  // RESET TIMER
+  // =========================================================
 
   function resetFocusTimer() {
     setFocusRunning(false);
@@ -173,14 +227,18 @@ export default function App() {
     setFocusSeconds(focusMinutes * 60);
   }
 
+  // =========================================================
+  // TEMPO FORMATADO
+  // =========================================================
+
   const formattedFocusTime = `${String(Math.floor(focusSeconds / 60)).padStart(
     2,
     '0',
   )}:${String(focusSeconds % 60).padStart(2, '0')}`;
 
-  // =========================================
+  // =========================================================
   // TEMA
-  // =========================================
+  // =========================================================
 
   useEffect(() => {
     document.body.classList.toggle('dark', darkMode);
@@ -196,47 +254,35 @@ export default function App() {
     };
   }, [darkMode]);
 
-  // =========================================
+  // =========================================================
   // LOGOUT
-  // =========================================
+  // =========================================================
 
   function handleLogout() {
     clearSession();
 
     setCurrentUser(null);
     setActiveSection('dashboard');
+
     setAnswer('');
     setAskText('');
+
+    setFocusOpen(false);
+    setFocusRunning(false);
   }
 
-  // =========================================
+  // =========================================================
   // AÇÕES DO PAINEL PRINCIPAL
-  // =========================================
+  // =========================================================
 
   function handleDashboardToggleTask(taskId) {
-    const currentTasks = Array.isArray(data?.tasks) ? data.tasks : [];
-
-    const updatedTasks = currentTasks.map((task) => {
-      if (String(task.id) !== String(taskId)) {
-        return task;
-      }
-
-      return {
-        ...task,
-        done: !Boolean(task.done),
-      };
-    });
-
-    save({
-      ...data,
-      tasks: updatedTasks,
-    });
+    completeTask(taskId);
   }
 
   function handleDashboardToggleHabit(habitId) {
     const currentHabits = Array.isArray(data?.habits) ? data.habits : [];
 
-    const today = new Date().toISOString().slice(0, 10);
+    const currentToday = today || new Date().toISOString().slice(0, 10);
 
     const updatedHabits = currentHabits.map((habit) => {
       if (String(habit.id) !== String(habitId)) {
@@ -247,18 +293,23 @@ export default function App() {
         ...(habit.history || {}),
       };
 
-      const currentDone = Boolean(
-        Object.prototype.hasOwnProperty.call(history, today)
-          ? history[today]
-          : habit.done,
+      const hasToday = Object.prototype.hasOwnProperty.call(
+        history,
+        currentToday,
       );
 
-      history[today] = !currentDone;
+      const currentDone = hasToday
+        ? Boolean(history[currentToday])
+        : Boolean(habit.done);
+
+      const nextDone = !currentDone;
+
+      history[currentToday] = nextDone;
 
       return {
         ...habit,
         history,
-        done: !currentDone,
+        done: nextDone,
       };
     });
 
@@ -268,9 +319,9 @@ export default function App() {
     });
   }
 
-  // =========================================
+  // =========================================================
   // LOADING / AUTENTICAÇÃO
-  // =========================================
+  // =========================================================
 
   if (checkingSession) {
     return (
@@ -294,25 +345,25 @@ export default function App() {
     );
   }
 
-  // =========================================
+  // =========================================================
   // DADOS SEGUROS
-  // =========================================
+  // =========================================================
 
   const safeRecords = Array.isArray(records) ? records : [];
 
   const safePendingTasks = Array.isArray(pendingTasks) ? pendingTasks : [];
 
-  const focusTask = safePendingTasks.find(
-    (task) => String(task.id) === String(focusTaskId),
-  );
-
   const safeCompletedTasks = Array.isArray(completedTasks)
     ? completedTasks
     : [];
 
-  // =========================================
+  const focusTask = safePendingTasks.find(
+    (task) => String(task.id) === String(focusTaskId),
+  );
+
+  // =========================================================
   // DADOS DO ASSISTENTE
-  // =========================================
+  // =========================================================
 
   const assistantPriority = safePendingTasks.slice(0, 3);
 
@@ -344,12 +395,148 @@ export default function App() {
     month: 'long',
   });
 
-  // =========================================
-  // INTERFACE
-  // =========================================
+  // =========================================================
+  // MODO FOCO — TELA INDEPENDENTE
+  //
+  // IMPORTANTE:
+  // O foco é retornado ANTES do layout principal.
+  // Assim ele não fica dentro do <main> da página atual.
+  // =========================================================
+
+  if (focusOpen) {
+    return (
+      <div className='focus-page'>
+        <div className='focus-page-inner'>
+          {/* HEADER DO MODO FOCO */}
+
+          <header className='focus-page-header'>
+            <div>
+              <span className='focus-eyebrow'>MODO FOCO</span>
+
+              <h1>
+                {focusCompleted
+                  ? 'Sessão concluída 🎉'
+                  : 'Concentre-se no que importa'}
+              </h1>
+
+              <p>Elimine distrações e concentre-se em uma tarefa por vez.</p>
+            </div>
+
+            <button
+              type='button'
+              className='focus-page-close'
+              onClick={closeFocusMode}
+            >
+              ← Voltar
+            </button>
+          </header>
+
+          {/* CONTEÚDO PRINCIPAL */}
+
+          <section className='focus-page-content'>
+            {/* TIMER */}
+
+            <div className='focus-timer'>{formattedFocusTime}</div>
+
+            {/* CONTROLES */}
+
+            <div className='focus-controls'>
+              <button
+                type='button'
+                className='focus-primary-button'
+                onClick={() => {
+                  if (focusCompleted) {
+                    resetFocusTimer();
+                  } else {
+                    setFocusRunning((current) => !current);
+                  }
+                }}
+              >
+                {focusCompleted
+                  ? '↻ Reiniciar'
+                  : focusRunning
+                    ? '⏸ Pausar'
+                    : '▶ Iniciar'}
+              </button>
+
+              <button
+                type='button'
+                className='focus-secondary-button'
+                onClick={resetFocusTimer}
+              >
+                Reiniciar
+              </button>
+            </div>
+
+            {/* TAREFA */}
+
+            <div className='focus-task-selector'>
+              <label htmlFor='focus-task'>Tarefa da sessão</label>
+
+              <select
+                id='focus-task'
+                value={focusTaskId}
+                onChange={(event) => setFocusTaskId(event.target.value)}
+              >
+                <option value=''>Escolha uma tarefa</option>
+
+                {safePendingTasks.map((task) => (
+                  <option key={task.id} value={task.id}>
+                    {task.name || task.title || 'Tarefa'}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* TAREFA SELECIONADA */}
+
+            {focusTask && (
+              <div className='focus-current-task'>
+                <span>Focando agora</span>
+
+                <strong>
+                  {focusTask.name || focusTask.title || 'Tarefa selecionada'}
+                </strong>
+              </div>
+            )}
+
+            {/* DURAÇÃO */}
+
+            <div className='focus-duration'>
+              <span>Duração</span>
+
+              <div className='focus-duration-buttons'>
+                {[15, 25, 45, 60].map((minutes) => (
+                  <button
+                    key={minutes}
+                    type='button'
+                    className={focusMinutes === minutes ? 'active' : ''}
+                    onClick={() => {
+                      setFocusMinutes(minutes);
+                      setFocusRunning(false);
+                      setFocusCompleted(false);
+                      setFocusSeconds(minutes * 60);
+                    }}
+                  >
+                    {minutes} min
+                  </button>
+                ))}
+              </div>
+            </div>
+          </section>
+        </div>
+      </div>
+    );
+  }
+
+  // =========================================================
+  // INTERFACE PRINCIPAL
+  // =========================================================
 
   return (
     <div id='app' className='app-layout'>
+      {/* SIDEBAR */}
+
       <Sidebar
         currentUser={currentUser}
         activeSection={activeSection}
@@ -359,7 +546,11 @@ export default function App() {
         onLogout={handleLogout}
       />
 
+      {/* CONTEÚDO */}
+
       <main className='main-content'>
+        {/* HEADER */}
+
         <header className='main-header'>
           <div className='main-header-left'>
             <div>
@@ -373,6 +564,8 @@ export default function App() {
             </div>
           </div>
 
+          {/* AÇÃO MODO FOCO */}
+
           <div className='main-header-actions'>
             <button
               type='button'
@@ -384,9 +577,9 @@ export default function App() {
           </div>
         </header>
 
-        {/* =========================================
+        {/* =====================================================
             PAINEL PRINCIPAL
-        ========================================= */}
+        ===================================================== */}
 
         {activeSection === 'dashboard' && (
           <PainelPrincipal
@@ -399,94 +592,95 @@ export default function App() {
             productivityScore={productivityScore}
             bestHour={bestHour}
             pendingTasks={safePendingTasks}
+            today={today}
             onToggleTask={handleDashboardToggleTask}
             onToggleHabit={handleDashboardToggleHabit}
           />
         )}
 
-        {/* =========================================
+        {/* =====================================================
             CALENDÁRIO
-        ========================================= */}
+        ===================================================== */}
 
         {activeSection === 'calendar' && (
           <SmartCalendar data={data} save={save} completeTask={completeTask} />
         )}
 
-        {/* =========================================
+        {/* =====================================================
             DIÁRIO
-        ========================================= */}
+        ===================================================== */}
 
         {activeSection === 'diario' && <Diario data={data} save={save} />}
 
-        {/* =========================================
+        {/* =====================================================
             ESTUDOS
-        ========================================= */}
+        ===================================================== */}
 
         {activeSection === 'estudos' && <Estudos />}
 
-        {/* =========================================
+        {/* =====================================================
             OBJETIVOS
-        ========================================= */}
+        ===================================================== */}
 
         {activeSection === 'goals' && <Goals data={data} save={save} />}
 
-        {/* =========================================
+        {/* =====================================================
             HÁBITOS
-        ========================================= */}
+        ===================================================== */}
 
         {activeSection === 'habits' && <HabitsPage data={data} save={save} />}
 
-        {/* =========================================
+        {/* =====================================================
             TAREFAS
-        ========================================= */}
+        ===================================================== */}
 
         {activeSection === 'tasks' && (
           <Tasks data={data} save={save} completeTask={completeTask} />
         )}
 
-        {/* =========================================
+        {/* =====================================================
             PROCESSOS
-        ========================================= */}
+        ===================================================== */}
 
         {activeSection === 'processos' && <Processos data={data} save={save} />}
 
-        {/* =========================================
+        {/* =====================================================
             PROJETOS
-        ========================================= */}
+        ===================================================== */}
 
         {activeSection === 'projects' && <ProjetosColaborativos />}
 
-        {/* =========================================
+        {/* =====================================================
             GRUPOS
-        ========================================= */}
+        ===================================================== */}
 
         {activeSection === 'groups' && <Grupos />}
 
-        {/* =========================================
+        {/* =====================================================
             PERFIL
-        ========================================= */}
+        ===================================================== */}
 
         {activeSection === 'profile' && (
           <Perfil currentUser={currentUser} setCurrentUser={setCurrentUser} />
         )}
 
-        {/* =========================================
+        {/* =====================================================
             EVOLUÇÃO
-        ========================================= */}
+        ===================================================== */}
 
         {activeSection === 'evolucao' && <Evolucao data={data} save={save} />}
 
-        {/* =========================================
+        {/* =====================================================
             COLEÇÕES / CONQUISTAS
-        ========================================= */}
+        ===================================================== */}
 
         {activeSection === 'collections' && (
           <ColecoesConquistas data={data} save={save} />
         )}
 
-        {/* =========================================
+        {/* =====================================================
             CIÊNCIA DE DADOS
-        ========================================= */}
+        ===================================================== */}
 
         {activeSection === 'fase12' && (
           <>
@@ -508,23 +702,23 @@ export default function App() {
           </>
         )}
 
-        {/* =========================================
+        {/* =====================================================
             FINANÇAS
-        ========================================= */}
+        ===================================================== */}
 
         {activeSection === 'fase13' && <Finance data={data} save={save} />}
 
-        {/* =========================================
+        {/* =====================================================
             INVESTIMENTOS
-        ========================================= */}
+        ===================================================== */}
 
         {activeSection === 'investments' && (
           <Investments data={data} save={save} />
         )}
 
-        {/* =========================================
+        {/* =====================================================
             GAMIFICAÇÃO
-        ========================================= */}
+        ===================================================== */}
 
         {activeSection === 'gamification' && (
           <Gamification
@@ -534,21 +728,21 @@ export default function App() {
           />
         )}
 
-        {/* =========================================
+        {/* =====================================================
             CONEXÕES
-        ========================================= */}
+        ===================================================== */}
 
         {activeSection === 'connections' && <Connections />}
 
-        {/* =========================================
+        {/* =====================================================
             FOGUINHO
-        ========================================= */}
+        ===================================================== */}
 
         {activeSection === 'foguinho' && <Foguinho currentUser={currentUser} />}
 
-        {/* =========================================
+        {/* =====================================================
             ASSISTENTE
-        ========================================= */}
+        ===================================================== */}
 
         {activeSection === 'assistant' && (
           <Assistant
@@ -559,122 +753,6 @@ export default function App() {
             overload={overload}
             save={save}
           />
-        )}
-
-        {/* =========================================
-            MODO FOCO
-        ========================================= */}
-
-        {focusOpen && (
-          <div
-            className='focus-modal-overlay'
-            role='dialog'
-            aria-modal='true'
-            aria-label='Modo foco'
-          >
-            <div className='focus-modal'>
-              <div className='focus-modal-header'>
-                <div>
-                  <span className='focus-eyebrow'>Modo foco</span>
-
-                  <h2>
-                    {focusCompleted
-                      ? 'Sessão concluída 🎉'
-                      : 'Concentre-se no que importa'}
-                  </h2>
-                </div>
-
-                <button
-                  type='button'
-                  className='focus-close-button'
-                  onClick={closeFocusMode}
-                  aria-label='Fechar modo foco'
-                >
-                  ×
-                </button>
-              </div>
-
-              <div className='focus-timer'>{formattedFocusTime}</div>
-
-              <div className='focus-controls'>
-                <button
-                  type='button'
-                  onClick={() => {
-                    if (focusCompleted) {
-                      resetFocusTimer();
-                    } else {
-                      setFocusRunning((current) => !current);
-                    }
-                  }}
-                  className='focus-primary-button'
-                >
-                  {focusCompleted
-                    ? '↻ Reiniciar'
-                    : focusRunning
-                      ? '⏸ Pausar'
-                      : '▶ Iniciar'}
-                </button>
-
-                <button
-                  type='button'
-                  onClick={resetFocusTimer}
-                  className='focus-secondary-button'
-                >
-                  Reiniciar
-                </button>
-              </div>
-
-              <div className='focus-task-selector'>
-                <label htmlFor='focus-task'>Tarefa da sessão</label>
-
-                <select
-                  id='focus-task'
-                  value={focusTaskId}
-                  onChange={(event) => setFocusTaskId(event.target.value)}
-                >
-                  <option value=''>Escolha uma tarefa</option>
-
-                  {safePendingTasks.map((task) => (
-                    <option key={task.id} value={task.id}>
-                      {task.name || task.title || 'Tarefa'}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              {focusTask && (
-                <div className='focus-current-task'>
-                  <span>Focando agora</span>
-
-                  <strong>
-                    {focusTask.name || focusTask.title || 'Tarefa selecionada'}
-                  </strong>
-                </div>
-              )}
-
-              <div className='focus-duration'>
-                <span>Duração</span>
-
-                <div className='focus-duration-buttons'>
-                  {[15, 25, 45, 60].map((minutes) => (
-                    <button
-                      key={minutes}
-                      type='button'
-                      className={focusMinutes === minutes ? 'active' : ''}
-                      onClick={() => {
-                        setFocusMinutes(minutes);
-                        setFocusRunning(false);
-                        setFocusCompleted(false);
-                        setFocusSeconds(minutes * 60);
-                      }}
-                    >
-                      {minutes} min
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </div>
         )}
       </main>
     </div>

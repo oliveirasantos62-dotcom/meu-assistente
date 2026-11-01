@@ -10862,3 +10862,444 @@ body.dark .evolution-modal textarea {
     margin-left: 50px;
   }
 }
+/* =========================================================
+   MODO FOCO — PÁGINA INDEPENDENTE
+========================================================= */
+
+.focus-page {
+  position: fixed;
+  inset: 0;
+  z-index: 99999;
+
+  width: 100vw;
+  height: 100vh;
+
+  overflow-y: auto;
+
+  background:
+    radial-gradient(circle at top, rgba(99, 102, 241, 0.16), transparent 38%),
+    var(--bg, #f7f8fc);
+
+  color: var(--text, #171a2b);
+}
+
+.focus-page-inner {
+  width: min(1100px, calc(100% - 40px));
+  min-height: 100%;
+  margin: 0 auto;
+
+  display: flex;
+  flex-direction: column;
+}
+
+.focus-page-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+
+  gap: 30px;
+
+  padding: 40px 0 30px;
+}
+
+.focus-page-header h1 {
+  margin: 8px 0 8px;
+
+  font-size: clamp(28px, 4vw, 44px);
+  font-weight: 850;
+  letter-spacing: -1.5px;
+}
+
+.focus-page-header p {
+  margin: 0;
+
+  color: #737b91;
+  font-size: 15px;
+}
+
+.focus-eyebrow {
+  display: inline-flex;
+
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 1.5px;
+
+  color: #6366f1;
+}
+
+.focus-page-close {
+  flex-shrink: 0;
+
+  border: 1px solid rgba(99, 102, 241, 0.2);
+  background: rgba(255, 255, 255, 0.8);
+
+  color: #4f46e5;
+
+  padding: 11px 18px;
+  border-radius: 12px;
+
+  font-weight: 750;
+  cursor: pointer;
+
+  transition:
+    transform 0.2s ease,
+    background 0.2s ease;
+}
+
+.focus-page-close:hover {
+  transform: translateY(-2px);
+  background: #ffffff;
+}
+
+.focus-page-content {
+  flex: 1;
+
+  width: min(700px, 100%);
+  margin: 20px auto 60px;
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+
+  padding: 50px 30px;
+
+  border-radius: 32px;
+
+  background: rgba(255, 255, 255, 0.82);
+
+  border: 1px solid rgba(99, 102, 241, 0.12);
+
+  box-shadow:
+    0 25px 80px rgba(30, 35, 80, 0.12),
+    0 4px 20px rgba(30, 35, 80, 0.06);
+
+  backdrop-filter: blur(20px);
+}
+
+.focus-page-content .focus-timer {
+  margin: 10px 0 30px;
+
+  font-size: clamp(80px, 15vw, 150px);
+  line-height: 1;
+
+  font-weight: 850;
+  letter-spacing: -5px;
+
+  font-variant-numeric: tabular-nums;
+
+  color: #171a2b;
+}
+
+.focus-page-content .focus-controls {
+  display: flex;
+  gap: 12px;
+
+  margin-bottom: 35px;
+}
+
+.focus-page-content .focus-primary-button,
+.focus-page-content .focus-secondary-button {
+  border: 0;
+
+  min-width: 140px;
+
+  padding: 13px 22px;
+
+  border-radius: 13px;
+
+  font-weight: 800;
+  cursor: pointer;
+
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.focus-page-content .focus-primary-button {
+  background: #6366f1;
+  color: white;
+
+  box-shadow: 0 10px 25px rgba(99, 102, 241, 0.25);
+}
+
+.focus-page-content .focus-primary-button:hover {
+  transform: translateY(-2px);
+
+  box-shadow: 0 14px 30px rgba(99, 102, 241, 0.32);
+}
+
+.focus-page-content .focus-secondary-button {
+  background: #eef0f7;
+  color: #4b5563;
+}
+
+.focus-page-content .focus-secondary-button:hover {
+  transform: translateY(-2px);
+}
+
+.focus-page-content .focus-task-selector {
+  width: 100%;
+  max-width: 500px;
+
+  margin-bottom: 20px;
+}
+
+.focus-page-content .focus-task-selector label {
+  display: block;
+
+  margin-bottom: 8px;
+
+  font-size: 13px;
+  font-weight: 800;
+
+  color: #596174;
+}
+
+.focus-page-content .focus-task-selector select {
+  width: 100%;
+
+  padding: 14px 16px;
+
+  border: 1px solid #dfe3ee;
+  border-radius: 13px;
+
+  background: white;
+
+  color: #202438;
+
+  font-size: 14px;
+  font-weight: 600;
+
+  outline: none;
+}
+
+.focus-page-content .focus-task-selector select:focus {
+  border-color: #6366f1;
+
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+}
+
+.focus-page-content .focus-current-task {
+  width: 100%;
+  max-width: 500px;
+
+  margin-bottom: 25px;
+
+  padding: 15px 18px;
+
+  border-radius: 14px;
+
+  background: rgba(99, 102, 241, 0.08);
+
+  border: 1px solid rgba(99, 102, 241, 0.12);
+}
+
+.focus-page-content .focus-current-task span {
+  display: block;
+
+  margin-bottom: 5px;
+
+  font-size: 11px;
+  font-weight: 800;
+
+  color: #6366f1;
+
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+}
+
+.focus-page-content .focus-current-task strong {
+  display: block;
+
+  color: #252a40;
+}
+
+.focus-page-content .focus-duration {
+  width: 100%;
+  max-width: 500px;
+
+  margin-top: 10px;
+}
+
+.focus-page-content .focus-duration > span {
+  display: block;
+
+  margin-bottom: 10px;
+
+  font-size: 13px;
+  font-weight: 800;
+
+  color: #596174;
+}
+
+.focus-duration-buttons {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+}
+
+.focus-duration-buttons button {
+  padding: 11px 8px;
+
+  border: 1px solid #dfe3ee;
+  border-radius: 11px;
+
+  background: white;
+
+  color: #5c6477;
+
+  font-weight: 750;
+
+  cursor: pointer;
+
+  transition: all 0.2s ease;
+}
+
+.focus-duration-buttons button:hover {
+  border-color: #6366f1;
+  color: #6366f1;
+}
+
+.focus-duration-buttons button.active {
+  border-color: #6366f1;
+
+  background: #6366f1;
+
+  color: white;
+
+  box-shadow: 0 7px 18px rgba(99, 102, 241, 0.2);
+}
+
+/* =========================================================
+   MODO ESCURO
+========================================================= */
+
+body.dark .focus-page {
+  background:
+    radial-gradient(circle at top, rgba(99, 102, 241, 0.18), transparent 40%),
+    #080b16;
+
+  color: #f5f7ff;
+}
+
+body.dark .focus-page-header p {
+  color: #929bb5;
+}
+
+body.dark .focus-page-close {
+  background: rgba(255, 255, 255, 0.05);
+
+  border-color: rgba(255, 255, 255, 0.1);
+
+  color: #a5a8ff;
+}
+
+body.dark .focus-page-close:hover {
+  background: rgba(255, 255, 255, 0.09);
+}
+
+body.dark .focus-page-content {
+  background: rgba(18, 23, 40, 0.88);
+
+  border-color: rgba(255, 255, 255, 0.08);
+
+  box-shadow:
+    0 30px 90px rgba(0, 0, 0, 0.4),
+    0 5px 25px rgba(0, 0, 0, 0.25);
+}
+
+body.dark .focus-page-content .focus-timer {
+  color: #ffffff;
+}
+
+body.dark .focus-page-content .focus-secondary-button {
+  background: #252b3d;
+  color: #dce1f2;
+}
+
+body.dark .focus-page-content .focus-task-selector label,
+body.dark .focus-page-content .focus-duration > span {
+  color: #9ca7c1;
+}
+
+body.dark .focus-page-content .focus-task-selector select {
+  background: #111625;
+
+  border-color: #2b3348;
+
+  color: #f1f4ff;
+}
+
+body.dark .focus-page-content .focus-current-task {
+  background: rgba(99, 102, 241, 0.12);
+
+  border-color: rgba(99, 102, 241, 0.2);
+}
+
+body.dark .focus-page-content .focus-current-task strong {
+  color: #f1f4ff;
+}
+
+body.dark .focus-duration-buttons button {
+  background: #111625;
+
+  border-color: #2b3348;
+
+  color: #aeb7cf;
+}
+
+body.dark .focus-duration-buttons button:hover {
+  border-color: #6366f1;
+  color: #a5a8ff;
+}
+
+body.dark .focus-duration-buttons button.active {
+  background: #6366f1;
+  color: white;
+}
+
+/* =========================================================
+   RESPONSIVO
+========================================================= */
+
+@media (max-width: 700px) {
+  .focus-page-inner {
+    width: min(100% - 24px, 1100px);
+  }
+
+  .focus-page-header {
+    padding: 24px 0 20px;
+
+    flex-direction: column;
+  }
+
+  .focus-page-close {
+    width: 100%;
+  }
+
+  .focus-page-content {
+    padding: 35px 18px;
+
+    border-radius: 24px;
+  }
+
+  .focus-page-content .focus-timer {
+    font-size: 76px;
+    letter-spacing: -3px;
+  }
+
+  .focus-page-content .focus-controls {
+    width: 100%;
+  }
+
+  .focus-page-content .focus-primary-button,
+  .focus-page-content .focus-secondary-button {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .focus-duration-buttons {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}

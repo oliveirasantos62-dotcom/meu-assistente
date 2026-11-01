@@ -2011,3 +2011,31 @@ body.dark .goals-page button:disabled {
   opacity: 0.55;
   cursor: not-allowed;
 }
+/* Destaque do percentual em GoalProgress */
+.goals-page .goal-progress .goal-progress-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 38px;
+}
+
+.goals-page .goal-progress .goal-progress-header strong {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 58px;
+  padding: 6px 12px;
+  border-radius: 10px;
+  font-size: 1.5rem !important;
+  line-height: 1.2;
+  font-weight: 900 !important;
+  color: #ffffff !important;
+  background: #6650c8;
+  opacity: 1 !important;
+  visibility: visible !important;
+}
+
+.goals-page .goal-progress .goal-progress-track {
+  height: 12px;
+  margin-top: 8px;
+}
