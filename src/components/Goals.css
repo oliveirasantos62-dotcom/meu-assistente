@@ -1663,3 +1663,71 @@ body:not(.dark) .goals-page .micro-save {
     grid-template-columns: 1fr;
   }
 }
+/* =========================================================
+   CORREÇÃO — TEMA ESCURO
+   Garante que Direção Atual e % dos objetivos fiquem visíveis
+   ========================================================= */
+
+body.dark .goals-page .goal-alignment {
+  color: #f5f6ff;
+}
+
+body.dark .goals-page .goal-alignment span {
+  color: #d5ceff !important;
+}
+
+body.dark .goals-page .goal-alignment h3 {
+  color: #ffffff !important;
+}
+
+body.dark .goals-page .goal-alignment p {
+  color: #e1e3ff !important;
+}
+
+body.dark .goals-page .alignment-score {
+  color: #ffffff;
+  background: rgba(8, 12, 38, 0.25);
+  border-color: rgba(255, 255, 255, 0.18);
+}
+
+body.dark .goals-page .alignment-score strong {
+  color: #ffffff !important;
+}
+
+body.dark .goals-page .alignment-score span {
+  color: #d5ceff !important;
+}
+
+/* =========================================================
+   PORCENTAGEM DO PROGRESSO
+   ========================================================= */
+
+body.dark .goals-page .goal-progress-header {
+  color: #a9b3d0 !important;
+}
+
+body.dark .goals-page .goal-progress-header strong {
+  color: #ffffff !important;
+  font-weight: 800;
+  opacity: 1;
+  visibility: visible;
+}
+
+/* Texto dos metadados */
+body.dark .goals-page .goal-meta span {
+  color: #8996bb !important;
+}
+
+body.dark .goals-page .goal-meta strong {
+  color: #e8ebff !important;
+}
+
+/* Título do objetivo */
+body.dark .goals-page .goal-card h3 {
+  color: #ffffff !important;
+}
+
+/* Descrição */
+body.dark .goals-page .goal-description {
+  color: #a9b3d0 !important;
+}
