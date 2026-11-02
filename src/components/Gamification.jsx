@@ -2,20 +2,31 @@ import React from 'react';
 import Shop from './Shop';
 
 export default function Gamification({ data = {}, completedTasks = [], save }) {
+  const resetGamification = () => {
+    const confirmed = window.confirm(
+      'Reiniciar a gamificação? Isso zerará XP, moedas, sequência, missões, conquistas e recompensas da gamificação. Suas tarefas, hábitos, estudos, objetivos e demais dados não serão apagados.'
+    );
+    if (!confirmed) return;
+
+    save({
+      ...data,
+      xp: 0,
+      coins: 0,
+      gamification: {
+        missions: [],
+        achievements: [],
+        rewards: [],
+        streak: 0,
+      },
+    });
+  };
   const xp = Number(data.xp || 0);
   const coins = Number(data.coins || 0);
   const level = Math.floor(xp / 100) + 1;
   const xpIntoLevel = xp % 100;
   const streak = calculateStreak(data);
 
-  const achievements = [
-    [completedTasks.length >= 1, '🌱', 'Primeiro passo', '1 tarefa'],
-    [completedTasks.length >= 5, '⚡', 'Ritmo', '5 tarefas'],
-    [completedTasks.length >= 10, '🚀', 'Imparável', '10 tarefas'],
-    [streak >= 3, '🔥', 'Consistência', '3 dias'],
-    [xp >= 1500, '⭐', 'Colecionador', '1.500 XP'],
-    [coins >= 500, '🪙', 'Economista', '500 moedas'],
-  ];
+
 
   const tasks = Array.isArray(data.tasks) ? data.tasks : [];
   const goals = Array.isArray(data.goals) ? data.goals : [];
@@ -26,6 +37,28 @@ export default function Gamification({ data = {}, completedTasks = [], save }) {
   const completedTasksCount = tasks.filter((task) => task.done).length;
   const habitCompletions = habits.reduce((total, habit) => total + Object.values(habit.history || {}).filter(Boolean).length, 0);
   const studyMinutes = studySessions.reduce((total, session) => total + Math.max(0, Number(session.minutes) || 0), 0);
+
+  const studySessionsCount = studySessions.length;
+  const diaryEntries = Array.isArray(data.diaryEntries) ? data.diaryEntries.length : 0;
+  const collections = Array.isArray(data.collections) ? data.collections.length : 0;
+
+  // Conquistas são geradas por linhas infinitas. Quando o último marco é atingido,
+  // o próximo cresce automaticamente, sem precisar cadastrar milhares de badges.
+  const achievementFamilies = [
+    { icon: '⚡', name: 'Imparável', metric: completedTasksCount, label: 'tarefas concluídas', targets: [1, 5, 10, 25, 50, 100, 250, 500, 1000, 2500], growth: 2.5 },
+    { icon: '🔥', name: 'Consistência', metric: streak, label: 'dias de sequência', targets: [1, 3, 7, 14, 30, 60, 100, 180, 365], growth: 2 },
+    { icon: '⭐', name: 'Colecionador de XP', metric: xp, label: 'XP acumulado', targets: [100, 500, 1500, 5000, 10000, 25000, 50000, 100000], growth: 2.5 },
+    { icon: '🪙', name: 'Economista', metric: coins, label: 'moedas acumuladas', targets: [100, 500, 1000, 2500, 5000, 10000, 25000, 50000], growth: 2.5 },
+    { icon: '📚', name: 'Mestre dos Estudos', metric: studySessionsCount, label: 'sessões de estudo', targets: [1, 5, 10, 25, 50, 100, 250, 500, 1000], growth: 2.5 },
+    { icon: '🎯', name: 'Conquistador', metric: completedGoals.length, label: 'objetivos concluídos', targets: [1, 3, 5, 10, 25, 50, 100, 250, 500], growth: 2.5 },
+    { icon: '💪', name: 'Construtor de Hábitos', metric: habitCompletions, label: 'hábitos cumpridos', targets: [1, 7, 30, 100, 365, 500, 1000, 2500], growth: 2.5 },
+    { icon: '📝', name: 'Cronista', metric: diaryEntries, label: 'registros no diário', targets: [1, 7, 30, 100, 365, 500, 1000, 2500], growth: 2.5 },
+    { icon: '🗂️', name: 'Colecionador', metric: collections, label: 'itens em coleções', targets: [1, 5, 10, 25, 50, 100, 250, 500, 1000], growth: 2.5 },
+  ];
+
+  const achievements = buildInfiniteAchievements(achievementFamilies);
+  const unlockedAchievements = achievements.filter((achievement) => achievement.unlocked).length;
+
 
   const rank = getRank(level);
   const attributes = [
@@ -64,11 +97,10 @@ export default function Gamification({ data = {}, completedTasks = [], save }) {
       ].filter(Boolean),
     };
   });
-  const nextMilestone = xp < 1500
-    ? `${1500 - xp} XP para desbloquear Colecionador.`
-    : coins < 500
-      ? `${500 - coins} moedas para desbloquear Economista.`
-      : 'Você já alcançou os principais marcos básicos!';
+  const nextAchievement = achievements.find((achievement) => !achievement.unlocked);
+  const nextMilestone = nextAchievement
+    ? `${Math.max(0, nextAchievement.target - nextAchievement.metric).toLocaleString('pt-BR')} ${nextAchievement.label} para ${nextAchievement.name}.`
+    : 'Você alcançou todos os marcos exibidos. A próxima conquista é gerada automaticamente.';
 
   return (
     <main className="gamification-page">
@@ -80,9 +112,14 @@ export default function Gamification({ data = {}, completedTasks = [], save }) {
           <h1>🎮 Gamificação</h1>
           <p>Acompanhe sua evolução, desbloqueie conquistas e use suas moedas na loja.</p>
         </div>
-        <div className="level-badge">
-          <span>🏆</span>
-          <div><small>NÍVEL ATUAL</small><strong>{level}</strong></div>
+        <div className="gamification-actions">
+          <div className="level-badge">
+            <span>🏆</span>
+            <div><small>NÍVEL ATUAL</small><strong>{level}</strong></div>
+          </div>
+          <button type="button" className="reset-gamification-btn" onClick={resetGamification} title="Zerar o progresso da gamificação">
+            ↻ Reiniciar gamificação
+          </button>
         </div>
       </header>
 
@@ -152,14 +189,17 @@ export default function Gamification({ data = {}, completedTasks = [], save }) {
       <section className="gami-panel">
         <div className="section-heading">
           <div><span className="section-icon">🎖️</span><div><h2>Conquistas</h2><p>Marcos para reconhecer seu esforço e consistência.</p></div></div>
-          <span className="achievement-count">{achievements.filter(([unlocked]) => unlocked).length}/{achievements.length} desbloqueadas</span>
+          <span className="achievement-count">{unlockedAchievements} desbloqueadas · linhas infinitas</span>
         </div>
         <div className="achievement-grid">
-          {achievements.map(([unlocked, icon, name, goal]) => (
-            <article className={`achievement ${unlocked ? 'unlocked' : 'locked'}`} key={name}>
-              <span className="achievement-icon">{unlocked ? icon : '🔒'}</span>
-              <div><strong>{name}</strong><p>{unlocked ? 'Conquista desbloqueada!' : `Meta: ${goal}`}</p></div>
-              <span className={`achievement-status ${unlocked ? 'status-unlocked' : ''}`}>{unlocked ? 'Obtida' : 'Bloqueada'}</span>
+          {achievements.map((achievement) => (
+            <article className={`achievement ${achievement.unlocked ? 'unlocked' : 'locked'}`} key={achievement.id}>
+              <span className="achievement-icon">{achievement.unlocked ? achievement.icon : '🔒'}</span>
+              <div>
+                <strong>{achievement.name}</strong>
+                <p>{achievement.unlocked ? `${achievement.metric.toLocaleString('pt-BR')} / ${achievement.target.toLocaleString('pt-BR')} ${achievement.label}` : `Meta: ${achievement.target.toLocaleString('pt-BR')} ${achievement.label}`}</p>
+              </div>
+              <span className={`achievement-status ${achievement.unlocked ? 'status-unlocked' : ''}`}>{achievement.unlocked ? 'Obtida' : 'Bloqueada'}</span>
             </article>
           ))}
         </div>
@@ -247,6 +287,53 @@ export default function Gamification({ data = {}, completedTasks = [], save }) {
       </section>
     </main>
   );
+}
+
+function buildInfiniteAchievements(families) {
+  const result = [];
+
+  families.forEach((family) => {
+    const targets = [...family.targets];
+    let guard = 0;
+    while (targets[targets.length - 1] <= family.metric && guard < 100) {
+      const next = Math.ceil(targets[targets.length - 1] * family.growth);
+      targets.push(Math.max(next, targets[targets.length - 1] + 1));
+      guard += 1;
+    }
+
+    // Mostra o histórico recente da linha + os próximos marcos, mantendo a interface leve.
+    const unlockedIndexes = targets.reduce((last, target, index) => (family.metric >= target ? index : last), -1);
+    const start = Math.max(0, unlockedIndexes - 1);
+    const end = Math.min(targets.length, Math.max(start + 4, unlockedIndexes + 3));
+
+    targets.slice(start, end).forEach((target, offset) => {
+      const index = start + offset;
+      result.push({
+        id: `${family.name}-${target}`,
+        icon: family.icon,
+        name: index > 0 ? `${family.name} ${toRoman(index + 1)}` : family.name,
+        target,
+        metric: family.metric,
+        label: family.label,
+        unlocked: family.metric >= target,
+      });
+    });
+  });
+
+  return result;
+}
+
+function toRoman(number) {
+  const values = [[10, 'X'], [9, 'IX'], [5, 'V'], [4, 'IV'], [1, 'I']];
+  let value = number;
+  let output = '';
+  values.forEach(([unit, symbol]) => {
+    while (value >= unit) {
+      output += symbol;
+      value -= unit;
+    }
+  });
+  return output;
 }
 
 function getRank(level) {
@@ -340,13 +427,25 @@ const styles = `
 .shop-panel .shop-notification{padding:10px 14px;border-radius:10px;background:rgba(109,93,252,.12);color:var(--site-primary,#6655e8);font-weight:600;margin-bottom:14px}
 .shop-panel .shop-form{display:grid;grid-template-columns:2fr 1fr auto;gap:8px;margin-top:10px}
 @media(max-width:850px){.gami-stats{grid-template-columns:repeat(2,minmax(0,1fr))}}
-@media(max-width:600px){.gamification-page{padding:14px}.gamification-header{align-items:flex-start;flex-direction:column}.level-badge{width:100%}.gami-panel{padding:16px}.achievement-grid{grid-template-columns:1fr}.achievement-status{display:none}.section-heading{align-items:flex-start}.section-heading>strong,.achievement-count{white-space:normal;text-align:right}.difficulty-row{gap:7px;flex-wrap:wrap}.difficulty-task{flex-basis:100%}.shop-panel .shop-form{grid-template-columns:1fr}.shop-panel .task{align-items:flex-start}.shop-panel .task>div{width:100%}}
+
+.gamification-actions{display:flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:flex-end}
+.reset-gamification-btn{border:1px solid rgba(220,70,70,.28);background:transparent;color:#c53f4b;border-radius:12px;padding:10px 13px;font-weight:700;cursor:pointer;transition:.2s}
+.reset-gamification-btn:hover{background:rgba(220,70,70,.08);transform:translateY(-1px)}
+body.dark .reset-gamification-btn{color:#ff8d98;border-color:rgba(255,141,152,.32)}
+body.dark .reset-gamification-btn:hover{background:rgba(255,141,152,.1)}
+@media(max-width:600px){.gamification-page{padding:14px}.gamification-header{align-items:flex-start;flex-direction:column}.gamification-actions{width:100%;justify-content:stretch}.gamification-actions .level-badge{flex:1}.reset-gamification-btn{flex:1}.level-badge{width:100%}.gami-panel{padding:16px}.achievement-grid{grid-template-columns:1fr}.achievement-status{display:none}.section-heading{align-items:flex-start}.section-heading>strong,.achievement-count{white-space:normal;text-align:right}.difficulty-row{gap:7px;flex-wrap:wrap}.difficulty-task{flex-basis:100%}.shop-panel .shop-form{grid-template-columns:1fr}.shop-panel .task{align-items:flex-start}.shop-panel .task>div{width:100%}}
 .rpg-sheet{background:linear-gradient(135deg,rgba(118,103,232,.09),rgba(54,201,232,.06));}
 .rpg-rank{font-weight:900;color:#8d7cff;background:rgba(118,103,232,.12);border:1px solid rgba(118,103,232,.25);padding:8px 12px;border-radius:999px;white-space:nowrap}
 .attribute-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
 .attribute-card,.skill-card{border:1px solid var(--border,#e9eaf2);background:var(--surface,#f8f8fc);border-radius:16px;padding:15px}
 .attribute-top,.skill-card-top{display:flex;align-items:center;gap:10px}.attribute-top>div,.skill-card-top>div{flex:1;min-width:0}.attribute-top strong,.attribute-top small,.skill-card-top strong,.skill-card-top small{display:block}.attribute-top small,.skill-card-top small{font-size:.72rem;color:var(--muted,#777d91);margin-top:2px}.attribute-top>b,.skill-card-top>b{font-size:.78rem;white-space:nowrap}.attribute-icon,.skill-icon{display:grid;place-items:center;width:40px;height:40px;border-radius:12px;background:#292541;font-size:1.25rem;flex-shrink:0}.attribute-track,.skill-track{height:7px;background:var(--border,#e9eaf2);border-radius:999px;overflow:hidden;margin-top:12px}.attribute-track span,.skill-track span{display:block;height:100%;background:linear-gradient(90deg,#7667e8,#36c9e8);border-radius:inherit}.attribute-source,.skill-card>small{display:block;color:var(--muted,#777d91);font-size:.72rem;margin-top:8px}.skill-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.rpg-rule-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}.rpg-rule-grid>div{padding:14px;border:1px solid var(--border,#e9eaf2);border-radius:15px;background:var(--surface,#f8f8fc)}.rpg-rule-grid span{font-size:1.4rem;display:block;margin-bottom:8px}.rpg-rule-grid strong,.rpg-rule-grid small{display:block}.rpg-rule-grid small{color:var(--muted,#777d91);font-size:.75rem;margin-top:4px;line-height:1.4}
 @media(max-width:850px){.attribute-grid,.skill-grid{grid-template-columns:1fr}.rpg-rule-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
+.gamification-actions{display:flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:flex-end}
+.reset-gamification-btn{border:1px solid rgba(220,70,70,.28);background:transparent;color:#c53f4b;border-radius:12px;padding:10px 13px;font-weight:700;cursor:pointer;transition:.2s}
+.reset-gamification-btn:hover{background:rgba(220,70,70,.08);transform:translateY(-1px)}
+body.dark .reset-gamification-btn{color:#ff8d98;border-color:rgba(255,141,152,.32)}
+body.dark .reset-gamification-btn:hover{background:rgba(255,141,152,.1)}
 @media(max-width:600px){.rpg-rule-grid{grid-template-columns:1fr}.rpg-rank{white-space:normal;text-align:center}}
 
 /* Tema escuro: remove superfícies claras sem alterar a estrutura ou as ações */
