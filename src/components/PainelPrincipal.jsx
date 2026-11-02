@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { showModuleReferences } from '../utils/moduleVisibility';
+import { canReference } from '../utils/moduleReferences';
 
 export default function PainelPrincipal({
   data,
@@ -22,10 +22,14 @@ export default function PainelPrincipal({
     ? data.calendarEvents
     : [];
 
-  const showFinanceReferences = showModuleReferences(data, 'finance');
-  const financeTransactions = showFinanceReferences && Array.isArray(data?.finance?.transactions)
+  const financeTransactions = Array.isArray(data?.finance?.transactions)
     ? data.finance.transactions
     : [];
+
+  const showTasks = canReference(data, 'tasks');
+  const showHabits = canReference(data, 'habits');
+  const showFinance = canReference(data, 'finance');
+  const showCalendar = canReference(data, 'calendar');
 
   const [expandedSections, setExpandedSections] = useState({
     tasks: false,
@@ -427,7 +431,7 @@ export default function PainelPrincipal({
 
       <section className='dashboard-stats'>
         {/* TAREFAS */}
-
+        {showTasks && (
         <button
           type='button'
           className={`card dashboard-stat dashboard-stat-button ${
@@ -448,9 +452,10 @@ export default function PainelPrincipal({
             {expandedSections.tasks ? '⌃' : '⌄'}
           </span>
         </button>
+        )}
 
         {/* HÁBITOS */}
-
+        {showHabits && (
         <button
           type='button'
           className={`card dashboard-stat dashboard-stat-button ${
@@ -473,6 +478,7 @@ export default function PainelPrincipal({
             {expandedSections.habits ? '⌃' : '⌄'}
           </span>
         </button>
+        )}
 
         {/* PRODUTIVIDADE */}
 
@@ -499,8 +505,7 @@ export default function PainelPrincipal({
         </div>
 
         {/* FINANCEIRO */}
-
-        {showFinanceReferences && (
+        {showFinance && (
         <button
           type='button'
           className={`card dashboard-stat dashboard-finance-stat dashboard-stat-button ${
@@ -544,7 +549,7 @@ export default function PainelPrincipal({
           TAREFAS EXPANDIDAS
       ====================================================== */}
 
-      {expandedSections.tasks && (
+      {showTasks && expandedSections.tasks && (
         <section className='card dashboard-inline-section'>
           <div className='dashboard-inline-header'>
             <div>
@@ -629,7 +634,7 @@ export default function PainelPrincipal({
           HÁBITOS EXPANDIDOS
       ====================================================== */}
 
-      {expandedSections.habits && (
+      {showHabits && expandedSections.habits && (
         <section className='card dashboard-inline-section'>
           <div className='dashboard-inline-header'>
             <div>
@@ -713,7 +718,7 @@ export default function PainelPrincipal({
           FINANCEIRO EXPANDIDO
       ====================================================== */}
 
-      {showFinanceReferences && expandedSections.finance && (
+      {showFinance && expandedSections.finance && (
         <section className='card dashboard-inline-section dashboard-finance-section'>
           <div className='dashboard-inline-header'>
             <div>
@@ -843,6 +848,7 @@ export default function PainelPrincipal({
           AGENDA
       ====================================================== */}
 
+      {showCalendar && (
       <section className='card dashboard-day-card'>
         <div className='dashboard-inline-header'>
           <div>
@@ -902,6 +908,7 @@ export default function PainelPrincipal({
           </div>
         )}
       </section>
+      )}
 
       {/* ======================================================
           NEXT STEP + INSIGHT
@@ -1064,17 +1071,15 @@ export default function PainelPrincipal({
           </div>
         </div>
 
-        {showFinanceReferences && (
-          <div className='card dashboard-summary-card'>
-            <span>💰</span>
+        <div className='card dashboard-summary-card'>
+          <span>💰</span>
 
-            <div>
-              <small>Movimentações hoje</small>
+          <div>
+            <small>Movimentações hoje</small>
 
-              <strong>{todayFinanceCount}</strong>
-            </div>
+            <strong>{todayFinanceCount}</strong>
           </div>
-        )}
+        </div>
       </section>
 
       {/* ======================================================

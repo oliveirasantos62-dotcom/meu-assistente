@@ -2,10 +2,48 @@ import React, { useMemo, useState } from 'react';
 import { collectTagUsage, getTagIds } from '../utils/analytics';
 
 const uid = () => `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+
 const TYPES = [
-  ['tasks', 'Tarefas'], ['habits', 'Hábitos'], ['goals', 'Objetivos'],
-  ['projects', 'Projetos'], ['studySessions', 'Estudos'], ['collections', 'Coleções'],
+  ['tasks', 'Tarefas'],
+  ['habits', 'Hábitos'],
+  ['goals', 'Objetivos'],
+  ['projects', 'Projetos'],
+  ['diaryEntries', 'Diário'],
+  ['studySessions', 'Sessões de estudo'],
+  ['knowledgeItems', 'Conhecimentos'],
+  ['errors', 'Banco de erros'],
+  ['weeklyReflections', 'Reflexões'],
+  ['studyCycles', 'Ciclo de estudos'],
+  ['calendarEvents', 'Calendário'],
+  ['processes', 'Processos'],
+  ['areas', 'Áreas'],
+  ['collections', 'Coleções'],
+  ['financeTransactions', 'Financeiro'],
+  ['investments', 'Investimentos'],
 ];
+
+function itemName(item) {
+  return item?.name || item?.title || item?.titulo || item?.subject || item?.description || 'Item';
+}
+
+function getSourceItems(data, key) {
+  if (key === 'collections') return (data.collections || []).flatMap((collection) => collection.itens || []);
+  if (key === 'financeTransactions') return data.finance?.transactions || [];
+  return data[key] || [];
+}
+
+function updateSourceItems(data, key, updater) {
+  if (key === 'collections') {
+    return {
+      ...data,
+      collections: (data.collections || []).map((collection) => ({ ...collection, itens: updater(collection.itens) })),
+    };
+  }
+  if (key === 'financeTransactions') {
+    return { ...data, finance: { ...(data.finance || {}), transactions: updater(data.finance?.transactions) } };
+  }
+  return { ...data, [key]: updater(data[key]) };
+}
 
 export default function TagsManager({ data, save }) {
   const tags = Array.isArray(data?.tags) ? data.tags : [];
@@ -13,60 +51,274 @@ export default function TagsManager({ data, save }) {
   const [name, setName] = useState('');
   const [color, setColor] = useState('#6366f1');
   const [search, setSearch] = useState('');
+  const [sourceFilter, setSourceFilter] = useState('all');
+
   const usage = useMemo(() => collectTagUsage(data), [data]);
-  const visible = tags.filter((t) => (t.name || '').toLowerCase().includes(search.toLowerCase()));
   const tag = tags.find((t) => String(t.id) === String(selected));
 
-  function createTag(e) {
-    e.preventDefault();
+  const visible = useMemo(() => {
+    const query = search.trim().toLowerCase();
+    return [...tags]
+      .filter((t) => !query || String(t.name || '').toLowerCase().includes(query))
+      .filter((t) => {
+        if (sourceFilter === 'all') return true;
+        return usage.get(t.id)?.sources?.has(sourceFilter);
+      })
+      .sort((a, b) => {
+        const countDiff = (usage.get(b.id)?.count || 0) - (usage.get(a.id)?.count || 0);
+        if (countDiff) return countDiff;
+        return String(a.name || '').localeCompare(String(b.name || ''), 'pt-BR');
+      });
+  }, [tags, search, sourceFilter, usage]);
+
+  const associations = useMemo(() => {
+    if (!tag) return [];
+
+    return TYPES.flatMap(([key, label]) => {
+      const items = getSourceItems(data, key);
+
+      return items
+        .filter((item) => getTagIds(item).map(String).includes(String(tag.id)))
+        .map((item) => ({
+          key,
+          label,
+          id: item.id,
+          name: itemName(item),
+        }));
+    });
+  }, [data, tag]);
+
+  function createTag(event) {
+    event.preventDefault();
     const clean = name.trim().replace(/^#/, '');
-    if (!clean || tags.some((t) => t.name.toLowerCase() === clean.toLowerCase())) return;
-    const next = { id: uid(), name: clean, color, createdAt: new Date().toISOString() };
+    if (!clean) return;
+
+    if (tags.some((t) => String(t.name || '').toLowerCase() === clean.toLowerCase())) {
+      return;
+    }
+
+    const next = {
+      id: uid(),
+      name: clean,
+      color,
+      createdAt: new Date().toISOString(),
+    };
+
     save({ ...data, tags: [...tags, next] });
-    setName(''); setSelected(next.id);
+    setName('');
+    setSelected(next.id);
+  }
+
+  function countIn(key, currentTag) {
+    return getSourceItems(data, key).filter((item) =>
+      getTagIds(item).map(String).includes(String(currentTag.id)),
+    ).length;
   }
 
   function removeTag() {
     if (!tag) return;
-    const affected = TYPES.reduce((sum, [key]) => sum + countIn(key, tag), 0);
-    const mode = affected && window.confirm(`A tag #${tag.name} está associada a ${affected} item(ns). OK = remover somente a tag; Cancelar = manter a tag.`);
-    if (affected && mode === false) return;
-    const clean = (items) => (items || []).map((item) => ({ ...item, tags: getTagIds(item).filter((id) => id !== String(tag.id)) }));
-    const collections = (data.collections || []).map((c) => ({ ...c, itens: (c.itens || []).map((item) => ({ ...item, tags: getTagIds(item).filter((id) => id !== String(tag.id)) })) }));
-    save({ ...data, tags: tags.filter((t) => String(t.id) !== String(tag.id)), tasks: clean(data.tasks), habits: clean(data.habits), goals: clean(data.goals), projects: clean(data.projects), studySessions: clean(data.studySessions), collections });
-    setSelected('');
-  }
 
-  function countIn(key, currentTag) {
-    if (key === 'collections') return (data.collections || []).reduce((n, c) => n + (c.itens || []).filter((i) => getTagIds(i).includes(String(currentTag.id))).length, 0);
-    return (data[key] || []).filter((item) => getTagIds(item).includes(String(currentTag.id))).length;
+    const affected = TYPES.reduce((sum, [key]) => sum + countIn(key, tag), 0);
+    const keepItems = window.confirm(
+      affected
+        ? `Excluir #${tag.name}?\n\nOK = excluir somente a tag e manter todos os itens.\nCancelar = abrir a confirmação para excluir também os itens associados.`
+        : `Excluir a tag #${tag.name}?`,
+    );
+
+    if (affected && !keepItems) {
+      const destructive = window.confirm(
+        `ATENÇÃO: isso excluirá ${affected} item(ns) associados à tag #${tag.name}.\n\nDeseja realmente continuar?`,
+      );
+      if (!destructive) return;
+    }
+
+    const tagId = String(tag.id);
+    const cleanItems = (items) => (items || []).filter((item) => {
+      if (keepItems) return true;
+      return !getTagIds(item).map(String).includes(tagId);
+    }).map((item) => ({
+      ...item,
+      tags: getTagIds(item).map(String).filter((id) => id !== tagId),
+    }));
+
+    let next = {
+      ...data,
+      tags: tags.filter((item) => String(item.id) !== tagId),
+    };
+
+    TYPES.forEach(([key]) => {
+      next = updateSourceItems(next, key, (items) => (items || []).filter((item) => {
+        if (keepItems) return true;
+        return !getTagIds(item).map(String).includes(tagId);
+      }).map((item) => ({
+        ...item,
+        tags: getTagIds(item).map(String).filter((id) => id !== tagId),
+      })));
+    });
+
+    save(next);
+    setSelected('');
   }
 
   function toggleAssociation(key, itemId) {
     if (!tag) return;
+    const tagId = String(tag.id);
+
     const updateItems = (items) => (items || []).map((item) => {
       if (String(item.id) !== String(itemId)) return item;
-      const ids = getTagIds(item);
-      const next = ids.includes(String(tag.id)) ? ids.filter((id) => id !== String(tag.id)) : [...ids, String(tag.id)];
-      return { ...item, tags: next };
+      const ids = getTagIds(item).map(String);
+      const next = ids.includes(tagId)
+        ? ids.filter((id) => id !== tagId)
+        : [...ids, tagId];
+      return { ...item, tags: Array.from(new Set(next)) };
     });
-    if (key === 'collections') {
-      save({ ...data, collections: (data.collections || []).map((c) => ({ ...c, itens: updateItems(c.itens) })) });
-    } else save({ ...data, [key]: updateItems(data[key]) });
+
+    save(updateSourceItems(data, key, updateItems));
   }
 
-  const associations = tag ? TYPES.flatMap(([key, label]) => {
-    const items = key === 'collections' ? (data.collections || []).flatMap((c) => c.itens || []) : (data[key] || []);
-    return items.filter((i) => getTagIds(i).includes(String(tag.id))).map((i) => ({ key, label, id: i.id, name: i.name || i.title || i.titulo || i.subject || 'Item' }));
-  }) : [];
+  const selectedUsage = tag ? usage.get(tag.id) : null;
 
-  return <section className='central-page'>
-    <div className='page-hero'><div><span className='eyebrow'>ESTRUTURA CENTRAL</span><h2>🏷 Tags</h2><p>Conecte tarefas, hábitos, objetivos, estudos, projetos e coleções com uma única referência.</p></div><div className='metric-pill'>{tags.length} tags</div></div>
-    <div className='central-grid two'>
-      <div className='card'><h3>Nova tag</h3><form className='form-grid' onSubmit={createTag}><label>Nome<input value={name} onChange={e => setName(e.target.value)} placeholder='#Concurso' /></label><label>Cor<input type='color' value={color} onChange={e => setColor(e.target.value)} /></label><div><button className='primary-button' type='submit'>Criar tag</button></div></form><input className='central-search' value={search} onChange={e => setSearch(e.target.value)} placeholder='Pesquisar tags...' />
-        <div className='tag-list'>{visible.map(t => <button key={t.id} className={`tag-chip ${selected === t.id ? 'active' : ''}`} onClick={() => setSelected(t.id)}><span style={{ background: t.color }} />#{t.name}<b>{usage.get(t.id)?.count || 0}</b></button>)}</div>
+  return (
+    <section className='central-page'>
+      <div className='page-hero'>
+        <div>
+          <span className='eyebrow'>ESTRUTURA CENTRAL</span>
+          <h2>🏷 Tags</h2>
+          <p>
+            Use tags como conexões reutilizáveis entre tarefas, hábitos, objetivos, diário, estudos, projetos, finanças,
+            calendário, coleções e outros registros.
+          </p>
+        </div>
+        <div className='metric-pill'>{tags.length} tags</div>
       </div>
-      <div className='card'>{tag ? <><div className='detail-head'><div><span className='tag-chip active'><span style={{ background: tag.color }} />#{tag.name}</span><h3>Histórico e conexões</h3></div><button className='danger-button' onClick={removeTag}>Excluir tag</button></div><div className='stats-row'><div><small>Usos</small><strong>{usage.get(tag.id)?.count || 0}</strong></div><div><small>Tipos</small><strong>{usage.get(tag.id)?.sources?.size || 0}</strong></div><div><small>Última utilização</small><strong>{usage.get(tag.id)?.lastUsed ? new Date(usage.get(tag.id).lastUsed).toLocaleDateString('pt-BR') : '—'}</strong></div></div><h4>Itens associados</h4><div className='association-list'>{associations.length ? associations.map(a => <div key={`${a.key}-${a.id}`} className='association-item'><span>{a.label}</span><strong>{a.name}</strong><button onClick={() => toggleAssociation(a.key, a.id)}>Desassociar</button></div>) : <p className='empty-state'>Nenhuma associação ainda. Abra uma entidade pelo botão de edição abaixo.</p>}</div></> : <div className='empty-state'><div className='empty-icon'>🔗</div><h3>Selecione uma tag</h3><p>Veja o histórico, as conexões e os itens relacionados.</p></div>}</div>
-    </div>
-  </section>;
+
+      <div className='central-grid two'>
+        <div className='card'>
+          <h3>Nova tag</h3>
+          <form className='form-grid' onSubmit={createTag}>
+            <label>
+              Nome
+              <input
+                value={name}
+                onChange={(event) => setName(event.target.value)}
+                placeholder='#Concurso'
+                maxLength={50}
+              />
+            </label>
+            <label>
+              Cor
+              <input
+                type='color'
+                value={color}
+                onChange={(event) => setColor(event.target.value)}
+              />
+            </label>
+            <div>
+              <button className='primary-button' type='submit'>
+                Criar tag
+              </button>
+            </div>
+          </form>
+
+          <input
+            className='central-search'
+            value={search}
+            onChange={(event) => setSearch(event.target.value)}
+            placeholder='Pesquisar tags...'
+          />
+
+          <select
+            className='central-search'
+            value={sourceFilter}
+            onChange={(event) => setSourceFilter(event.target.value)}
+            aria-label='Filtrar tags por tipo de aplicação'
+          >
+            <option value='all'>Todas as aplicações</option>
+            {TYPES.map(([key, label]) => (
+              <option key={key} value={label}>{label}</option>
+            ))}
+          </select>
+
+          <div className='tag-list'>
+            {visible.map((item) => (
+              <button
+                key={item.id}
+                type='button'
+                className={`tag-chip ${String(selected) === String(item.id) ? 'active' : ''}`}
+                onClick={() => setSelected(item.id)}
+              >
+                <span style={{ background: item.color }} />
+                #{item.name}
+                <b>{usage.get(item.id)?.count || 0}</b>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className='card'>
+          {tag ? (
+            <>
+              <div className='detail-head'>
+                <div>
+                  <span className='tag-chip active'>
+                    <span style={{ background: tag.color }} />#{tag.name}
+                  </span>
+                  <h3>Aplicações e conexões</h3>
+                </div>
+                <button className='danger-button' onClick={removeTag} type='button'>
+                  Excluir tag
+                </button>
+              </div>
+
+              <div className='stats-row'>
+                <div><small>Usos</small><strong>{selectedUsage?.count || 0}</strong></div>
+                <div><small>Tipos</small><strong>{selectedUsage?.sources?.size || 0}</strong></div>
+                <div><small>Última utilização</small><strong>{selectedUsage?.lastUsed ? new Date(selectedUsage.lastUsed).toLocaleDateString('pt-BR') : '—'}</strong></div>
+              </div>
+
+              <div className='tag-application-summary'>
+                {TYPES.map(([key, label]) => (
+                  <div key={key}>
+                    <span>{label}</span>
+                    <strong>{countIn(key, tag)}</strong>
+                  </div>
+                ))}
+              </div>
+
+              <h4>Itens associados</h4>
+              <div className='association-list'>
+                {associations.length ? (
+                  associations.map((association) => (
+                    <div
+                      key={`${association.key}-${association.id}`}
+                      className='association-item'
+                    >
+                      <span>{association.label}</span>
+                      <strong>{association.name}</strong>
+                      <button
+                        type='button'
+                        onClick={() => toggleAssociation(association.key, association.id)}
+                      >
+                        Desassociar
+                      </button>
+                    </div>
+                  ))
+                ) : (
+                  <p className='empty-state'>
+                    Nenhuma aplicação ainda. Você pode aplicar esta tag diretamente ao criar ou editar uma tarefa.
+                  </p>
+                )}
+              </div>
+            </>
+          ) : (
+            <div className='empty-state'>
+              <div className='empty-icon'>🔗</div>
+              <h3>Selecione uma tag</h3>
+              <p>Veja onde ela é usada, quantas vezes aparece e quais itens estão conectados.</p>
+            </div>
+          )}
+        </div>
+      </div>
+    </section>
+  );
 }

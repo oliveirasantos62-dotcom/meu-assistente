@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import TagPicker from './TagPicker';
 
 const EVENT_TYPES = {
   task: {
@@ -167,6 +168,7 @@ export default function SmartCalendar({ data, save, completeTask }) {
   const [notes, setNotes] = useState('');
 
   const [reminder, setReminder] = useState('none');
+  const [eventTags, setEventTags] = useState([]);
 
   const [message, setMessage] = useState('');
 
@@ -708,6 +710,7 @@ export default function SmartCalendar({ data, save, completeTask }) {
     setNotes('');
     setReminder('none');
     setEventType('task');
+    setEventTags([]);
     setEditingEvent(null);
   };
 
@@ -769,6 +772,7 @@ export default function SmartCalendar({ data, save, completeTask }) {
     setReminder(sourceEvent.reminder || 'none');
 
     setEventType(sourceEvent.type || 'task');
+    setEventTags(Array.isArray(sourceEvent.tags) ? sourceEvent.tags.map(String) : []);
 
     setSelectedDate(event.date || sourceEvent.date || selectedDate);
 
@@ -837,6 +841,7 @@ export default function SmartCalendar({ data, save, completeTask }) {
       reminder: requiresTime ? reminder : 'none',
 
       done: editingEvent?.done || false,
+      tags: Array.from(new Set(eventTags.map(String))),
     };
 
     /*
@@ -891,6 +896,8 @@ export default function SmartCalendar({ data, save, completeTask }) {
               recurrence,
 
               recurrenceEnd: recurrenceEnd || '',
+
+              tags: Array.from(new Set(eventTags.map(String))),
 
               updatedAt: new Date().toISOString(),
             }

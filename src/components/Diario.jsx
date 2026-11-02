@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import PersonalData from './PersonalData';
+import TagPicker from './TagPicker';
 
 const MENU_ITEMS = [
   {
@@ -224,6 +225,7 @@ function getInitialDiary() {
     learned: '',
     improveTomorrow: '',
     notes: '',
+    tags: [],
   };
 }
 
@@ -240,6 +242,7 @@ function getInitialStudy() {
     observations: '',
     learned: '',
     notMastered: '',
+    tags: [],
   };
 }
 
@@ -250,7 +253,7 @@ function getInitialKnowledge() {
     explanation: '',
     example: '',
     doubt: '',
-    tags: '',
+    tags: [],
     addToReview: true,
   };
 }
@@ -264,6 +267,7 @@ function getInitialError() {
     type: 'Falta de conhecimento',
     discipline: '',
     subject: '',
+    tags: [],
   };
 }
 
@@ -276,6 +280,7 @@ function getInitialReflection() {
     continue: '',
     stop: '',
     priority: '',
+    tags: [],
   };
 }
 
@@ -389,6 +394,7 @@ export default function Diario({ data, save }) {
       date: today,
       ...diaryForm,
       updatedAt: new Date().toISOString(),
+      tags: Array.from(new Set((diaryForm.tags || []).map(String))),
     };
 
     const updatedEntries = todayDiary
@@ -433,6 +439,7 @@ export default function Diario({ data, save }) {
       observations: studyForm.observations.trim(),
       learned: studyForm.learned.trim(),
       notMastered: studyForm.notMastered.trim(),
+      tags: Array.from(new Set((studyForm.tags || []).map(String))),
     };
 
     save({
@@ -466,10 +473,7 @@ export default function Diario({ data, save }) {
       explanation: knowledgeForm.explanation.trim(),
       example: knowledgeForm.example.trim(),
       doubt: knowledgeForm.doubt.trim(),
-      tags: knowledgeForm.tags
-        .split(',')
-        .map((tag) => tag.trim())
-        .filter(Boolean),
+      tags: Array.from(new Set((knowledgeForm.tags || []).map(String))),
       mastery: 0,
       lastReview: null,
       nextReview: knowledgeForm.addToReview ? today : null,
@@ -512,6 +516,7 @@ export default function Diario({ data, save }) {
       discipline: errorForm.discipline.trim(),
       subject: errorForm.subject.trim(),
       resolved: false,
+      tags: Array.from(new Set((errorForm.tags || []).map(String))),
     };
 
     save({
@@ -602,6 +607,7 @@ export default function Diario({ data, save }) {
       date: today,
       weekStart,
       ...reflectionForm,
+      tags: Array.from(new Set((reflectionForm.tags || []).map(String))),
       createdAt: new Date().toISOString(),
     };
 
@@ -831,6 +837,7 @@ export default function Diario({ data, save }) {
             />
           </div>
 
+          <TagPicker data={data} save={save} value={diaryForm.tags || []} onChange={(value) => updateDiaryField('tags', value)} />
           <button className='primary diary-save-button'>
             💾 {todayDiary ? 'Atualizar diário' : 'Salvar diário'}
           </button>
@@ -1007,6 +1014,7 @@ export default function Diario({ data, save }) {
             />
           </div>
 
+          <TagPicker data={data} save={save} value={studyForm.tags || []} onChange={(value) => setStudyForm((prev) => ({ ...prev, tags: value }))} />
           <button className='primary'>📚 Registrar sessão • +40 XP</button>
         </div>
       </form>
@@ -1240,6 +1248,7 @@ export default function Diario({ data, save }) {
             />
           </div>
 
+          <TagPicker data={data} save={save} value={errorForm.tags || []} onChange={(value) => setErrorForm((prev) => ({ ...prev, tags: value }))} />
           <button className='primary'>❌ Registrar erro</button>
         </div>
       </form>
@@ -1345,17 +1354,7 @@ export default function Diario({ data, save }) {
               placeholder='Ex.: Matemática'
             />
 
-            <Field
-              label='Tags'
-              value={knowledgeForm.tags}
-              onChange={(value) =>
-                setKnowledgeForm((prev) => ({
-                  ...prev,
-                  tags: value,
-                }))
-              }
-              placeholder='geometria, triângulo, fórmula'
-            />
+            <TagPicker data={data} save={save} value={knowledgeForm.tags || []} onChange={(value) => setKnowledgeForm((prev) => ({ ...prev, tags: value }))} />
           </div>
 
           <div className='diary-fields'>
@@ -1857,6 +1856,7 @@ export default function Diario({ data, save }) {
             />
           </div>
 
+          <TagPicker data={data} save={save} value={reflectionForm.tags || []} onChange={(value) => setReflectionForm((prev) => ({ ...prev, tags: value }))} />
           <button className='primary'>🔎 Salvar reflexão</button>
         </div>
       </form>

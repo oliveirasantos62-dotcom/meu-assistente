@@ -1,4 +1,5 @@
 import React, { useMemo, useState } from 'react';
+import { getTagIds } from '../utils/analytics';
 
 const EMPTY_FORM = {
   name: '',
@@ -9,6 +10,7 @@ const EMPTY_FORM = {
   xp: 40,
   projectId: '',
   areaId: '',
+  tags: [],
 };
 
 const EMPTY_AREA = {
@@ -45,6 +47,7 @@ export default function Tasks({ data, save, completeTask }) {
   const [tab, setTab] = useState('tasks');
   const [filter, setFilter] = useState('all');
   const [areaFilter, setAreaFilter] = useState('all');
+  const [tagFilter, setTagFilter] = useState('all');
   const [search, setSearch] = useState('');
 
   const [showForm, setShowForm] = useState(false);
@@ -56,10 +59,12 @@ export default function Tasks({ data, save, completeTask }) {
   const [form, setForm] = useState(EMPTY_FORM);
   const [areaForm, setAreaForm] = useState(EMPTY_AREA);
   const [observationDrafts, setObservationDrafts] = useState({});
+  const [newTagName, setNewTagName] = useState('');
 
   const tasksList = Array.isArray(data?.tasks) ? data.tasks : [];
   const projectsList = Array.isArray(data?.projects) ? data.projects : [];
   const areasList = Array.isArray(data?.areas) ? data.areas : [];
+  const tagsList = Array.isArray(data?.tags) ? data.tags : [];
 
   // Localiza a área de uma tarefa.
   // Também reconhece tarefas antigas que guardavam o nome em "area".
@@ -79,6 +84,10 @@ export default function Tasks({ data, save, completeTask }) {
     const query = search.trim().toLocaleLowerCase('pt-BR');
 
     return tasksList.filter((task) => {
+      const taskTagNames = getTagIds(task)
+        .map((tagId) => tagsList.find((tag) => String(tag.id) === String(tagId))?.name || '')
+        .join(' ');
+
       const matchesSearch =
         !query ||
         String(task.name || '')
@@ -86,7 +95,8 @@ export default function Tasks({ data, save, completeTask }) {
           .includes(query) ||
         String(task.description || '')
           .toLocaleLowerCase('pt-BR')
-          .includes(query);
+          .includes(query) ||
+        taskTagNames.toLocaleLowerCase('pt-BR').includes(query);
 
       const matchesFilter =
         filter === 'all' ||
@@ -105,13 +115,60 @@ export default function Tasks({ data, save, completeTask }) {
           ? !taskArea
           : String(taskArea?.id) === String(areaFilter));
 
-      return matchesSearch && matchesFilter && matchesArea;
+      const taskTagIds = getTagIds(task).map(String);
+      const matchesTag =
+        tagFilter === 'all' || taskTagIds.includes(String(tagFilter));
+
+      return matchesSearch && matchesFilter && matchesArea && matchesTag;
     });
-  }, [tasksList, search, filter, areaFilter, areasList]);
+  }, [tasksList, search, filter, areaFilter, tagFilter, areasList, tagsList]);
 
   const updateForm = (field, value) => {
     setForm((prev) => ({ ...prev, [field]: value }));
   };
+
+  const toggleFormTag = (tagId) => {
+    const id = String(tagId);
+    setForm((prev) => {
+      const current = Array.isArray(prev.tags) ? prev.tags.map(String) : [];
+      return {
+        ...prev,
+        tags: current.includes(id)
+          ? current.filter((item) => item !== id)
+          : [...current, id],
+      };
+    });
+  };
+
+  const createTagFromTask = () => {
+    const clean = newTagName.trim().replace(/^#/, '');
+    if (!clean) return;
+
+    const existing = tagsList.find(
+      (tag) => String(tag.name || '').trim().toLowerCase() === clean.toLowerCase(),
+    );
+
+    if (existing) {
+      toggleFormTag(existing.id);
+      setNewTagName('');
+      return;
+    }
+
+    const tag = {
+      id: createId(),
+      name: clean,
+      color: '#6366f1',
+      createdAt: new Date().toISOString(),
+    };
+
+    save({ ...data, tags: [...tagsList, tag] });
+    setForm((prev) => ({
+      ...prev,
+      tags: [...(Array.isArray(prev.tags) ? prev.tags.map(String) : []), String(tag.id)],
+    }));
+    setNewTagName('');
+  };
+
 
   // =====================================
   // TAREFAS
@@ -120,6 +177,7 @@ export default function Tasks({ data, save, completeTask }) {
   const openCreate = () => {
     setEditingId(null);
     setForm({ ...EMPTY_FORM });
+    setNewTagName('');
     setShowForm(true);
   };
 
@@ -134,11 +192,11 @@ export default function Tasks({ data, save, completeTask }) {
       xp: Number(task.xp ?? 40),
       projectId: task.projectId == null ? '' : String(task.projectId),
       areaId: taskArea ? String(taskArea.id) : '',
+      tags: getTagIds(task).map(String),
     });
 
-    // Não reutiliza a categoria antiga no formulário.
-    delete task.tag;
 
+    setNewTagName('');
     setShowForm(true);
   };
 
@@ -156,6 +214,7 @@ export default function Tasks({ data, save, completeTask }) {
       xp: Math.min(10000, Math.max(0, Number(form.xp) || 0)),
       projectId: form.projectId === '' ? null : form.projectId,
       areaId: form.areaId === '' ? null : form.areaId,
+      tags: Array.from(new Set((Array.isArray(form.tags) ? form.tags : []).map(String).filter(Boolean))),
       updatedAt: new Date().toISOString(),
     };
 
@@ -163,15 +222,10 @@ export default function Tasks({ data, save, completeTask }) {
       ? tasksList.map((task) => {
           if (task.id !== editingId) return task;
 
-          const updatedTask = {
+          return {
             ...task,
             ...taskData,
           };
-
-          // Remove a categoria antiga ao salvar a tarefa.
-          delete updatedTask.tag;
-
-          return updatedTask;
         })
       : [
           ...tasksList,
@@ -543,6 +597,23 @@ export default function Tasks({ data, save, completeTask }) {
                 ))}
               </select>
             </div>
+
+            <div className='filter-field'>
+              <label htmlFor='task-tag-filter'>Tags</label>
+              <select
+                id='task-tag-filter'
+                value={tagFilter}
+                onChange={(e) => setTagFilter(e.target.value)}
+                aria-label='Filtrar por tag'
+              >
+                <option value='all'>Todas as tags</option>
+                {tagsList.map((tag) => (
+                  <option key={tag.id} value={String(tag.id)}>
+                    #{tag.name}
+                  </option>
+                ))}
+              </select>
+            </div>
           </div>
 
           <div className='tasks-list'>
@@ -627,6 +698,23 @@ export default function Tasks({ data, save, completeTask }) {
                       {project && (
                         <span className='tag'>🚀 {project.name}</span>
                       )}
+
+                      {getTagIds(task).map((tagId) => {
+                        const taskTag = tagsList.find((item) => String(item.id) === String(tagId));
+                        if (!taskTag) return null;
+                        return (
+                          <button
+                            type='button'
+                            key={String(tagId)}
+                            className='task-tag-chip'
+                            style={{ '--tag-color': taskTag.color || '#6366f1' }}
+                            onClick={() => setTagFilter(String(tagId))}
+                            title={`Filtrar por #${taskTag.name}`}
+                          >
+                            #{taskTag.name}
+                          </button>
+                        );
+                      })}
                     </div>
                   </div>
 
@@ -988,6 +1076,54 @@ export default function Tasks({ data, save, completeTask }) {
                   ))}
                 </select>
               </label>
+            </div>
+
+            <div className='task-tags-field'>
+              <div className='task-tags-heading'>
+                <span>🏷️ Tags</span>
+                <small>Use tags para conectar a tarefa a estudos, objetivos, hábitos, projetos e relatórios.</small>
+              </div>
+
+              {tagsList.length ? (
+                <div className='task-tag-picker'>
+                  {tagsList.map((tag) => {
+                    const active = (form.tags || []).map(String).includes(String(tag.id));
+                    return (
+                      <button
+                        type='button'
+                        key={tag.id}
+                        className={`task-tag-option ${active ? 'active' : ''}`}
+                        style={{ '--tag-color': tag.color || '#6366f1' }}
+                        onClick={() => toggleFormTag(tag.id)}
+                        aria-pressed={active}
+                      >
+                        <span className='task-tag-dot' />
+                        #{tag.name}
+                        {active && <b>✓</b>}
+                      </button>
+                    );
+                  })}
+                </div>
+              ) : (
+                <p className='subtitle'>Nenhuma tag criada ainda.</p>
+              )}
+
+              <div className='task-tag-create'>
+                <input
+                  value={newTagName}
+                  onChange={(e) => setNewTagName(e.target.value)}
+                  placeholder='Nova tag, ex.: #Concurso'
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      createTagFromTask();
+                    }
+                  }}
+                />
+                <button type='button' className='ghost' onClick={createTagFromTask}>
+                  + Criar tag
+                </button>
+              </div>
             </div>
 
             {areasList.length === 0 && (

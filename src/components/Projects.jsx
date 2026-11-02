@@ -1,4 +1,5 @@
 import React, { useMemo, useState } from 'react';
+import TagPicker from './TagPicker';
 
 const EMPTY_PROJECT = {
   name: '',
@@ -8,6 +9,7 @@ const EMPTY_PROJECT = {
   stageIndex: 1,
   totalStages: 3,
   status: 'Em andamento',
+  tags: [],
 };
 
 const PRIORITIES = ['Baixa', 'Média', 'Alta'];
@@ -52,6 +54,7 @@ export default function Projects({ data, save }) {
       description: form.description.trim(),
       totalStages,
       stageIndex: Math.min(totalStages, Math.max(1, Number(form.stageIndex) || 1)),
+      tags: Array.from(new Set((form.tags || []).map(String))),
       updatedAt: new Date().toISOString(),
     };
 

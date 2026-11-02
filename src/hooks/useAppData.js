@@ -66,24 +66,97 @@ function normalizeAppData(rawData) {
     migratedCalendarTasks.map((task) => String(task.id)),
   );
 
+  // Migra a antiga propriedade singular `tag` das tarefas para o sistema
+  // central de tags. Assim, tarefas antigas continuam conectadas aos
+  // relatórios, filtros e demais entidades sem duplicar informação.
+  const normalizedTags = Array.isArray(source.tags)
+    ? source.tags.map((tag) => ({
+        ...tag,
+        id: String(tag.id),
+        name: String(tag.name || '').replace(/^#/, '').trim(),
+      })).filter((tag) => tag.name)
+    : [];
+
+  const legacyTagIds = new Map(
+    normalizedTags.map((tag) => [tag.name.toLowerCase(), String(tag.id)]),
+  );
+
+  const tasksWithNormalizedTags = [...sourceTasks, ...migratedCalendarTasks].map((task) => {
+    const existing = Array.isArray(task.tags)
+      ? task.tags.map((tag) => (typeof tag === 'object' ? tag.id : String(tag))).filter(Boolean)
+      : [];
+
+    const legacyName = String(task.tag || '').replace(/^#/, '').trim();
+    if (legacyName) {
+      let tagId = legacyTagIds.get(legacyName.toLowerCase());
+      if (!tagId) {
+        tagId = `legacy-tag-${legacyName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || Date.now()}`;
+        const newTag = {
+          id: tagId,
+          name: legacyName,
+          color: '#6366f1',
+          createdAt: new Date().toISOString(),
+        };
+        normalizedTags.push(newTag);
+        legacyTagIds.set(legacyName.toLowerCase(), tagId);
+      }
+      if (!existing.includes(tagId)) existing.push(tagId);
+    }
+
+    const normalizedTask = { ...task, tags: Array.from(new Set(existing.map(String))) };
+    delete normalizedTask.tag;
+    return normalizedTask;
+  });
+
+  const normalizeEntityTags = (item) => ({
+    ...item,
+    tags: Array.from(new Set((Array.isArray(item?.tags) ? item.tags : []).map((tag) => typeof tag === 'object' ? tag.id : tag).map(String).filter(Boolean))),
+  });
+
+  const normalizeCollectionTags = (collection) => ({
+    ...normalizeEntityTags(collection),
+    itens: Array.isArray(collection?.itens) ? collection.itens.map(normalizeEntityTags) : [],
+  });
+
+  const normalizedCollections = Array.isArray(source.collections)
+    ? source.collections.map(normalizeCollectionTags)
+    : [];
+
+  const normalizedFinance = {
+    ...(emptyAppData.finance || {}),
+    ...(source.finance || {}),
+    transactions: Array.isArray(source.finance?.transactions)
+      ? source.finance.transactions.map(normalizeEntityTags)
+      : [],
+    financialGoals: Array.isArray(source.finance?.financialGoals)
+      ? source.finance.financialGoals.map(normalizeEntityTags)
+      : [],
+    budgetsByCategory: source.finance?.budgetsByCategory && typeof source.finance.budgetsByCategory === 'object'
+      ? source.finance.budgetsByCategory
+      : {},
+    accounts: Array.isArray(source.finance?.accounts)
+      ? source.finance.accounts.map(normalizeEntityTags)
+      : [],
+  };
+
   return {
     ...emptyAppData,
     ...source,
 
-    habits: Array.isArray(source.habits) ? source.habits : [],
+    habits: Array.isArray(source.habits) ? source.habits.map(normalizeEntityTags) : [],
 
-    tasks: [...sourceTasks, ...migratedCalendarTasks].map((task) => ({
+    tasks: tasksWithNormalizedTags.map((task) => ({
       ...task,
       observations: Array.isArray(task.observations) ? task.observations : [],
     })),
 
-    goals: Array.isArray(source.goals) ? source.goals : [],
+    goals: Array.isArray(source.goals) ? source.goals.map(normalizeEntityTags) : [],
 
-    projects: Array.isArray(source.projects) ? source.projects : [],
+    projects: Array.isArray(source.projects) ? source.projects.map(normalizeEntityTags) : [],
 
-    areas: Array.isArray(source.areas) ? source.areas : [],
+    areas: Array.isArray(source.areas) ? source.areas.map(normalizeEntityTags) : [],
 
-    processes: Array.isArray(source.processes) ? source.processes : [],
+    processes: Array.isArray(source.processes) ? source.processes.map(normalizeEntityTags) : [],
 
     calendarEvents: sourceCalendarEvents.filter(
       (event) =>
@@ -92,7 +165,7 @@ function normalizeAppData(rawData) {
           !event?.sourceTask &&
           migratedTaskIds.has(String(event.id))
         ),
-    ),
+    ).map(normalizeEntityTags),
 
     history:
       source.history &&
@@ -101,57 +174,35 @@ function normalizeAppData(rawData) {
         ? source.history
         : {},
 
-    diaryEntries: Array.isArray(source.diaryEntries) ? source.diaryEntries : [],
+    diaryEntries: Array.isArray(source.diaryEntries) ? source.diaryEntries.map(normalizeEntityTags) : [],
 
     studySessions: Array.isArray(source.studySessions)
-      ? source.studySessions
+      ? source.studySessions.map(normalizeEntityTags)
       : [],
 
     knowledgeItems: Array.isArray(source.knowledgeItems)
-      ? source.knowledgeItems
+      ? source.knowledgeItems.map(normalizeEntityTags)
       : [],
 
     // Coleções & Conquistas
-    collections: Array.isArray(source.collections) ? source.collections : [],
+    collections: normalizedCollections,
 
-    tags: Array.isArray(source.tags) ? source.tags : [],
+    tags: normalizedTags,
 
-    studyCycles: Array.isArray(source.studyCycles) ? source.studyCycles : [],
+    studyCycles: Array.isArray(source.studyCycles) ? source.studyCycles.map(normalizeEntityTags) : [],
 
-    errors: Array.isArray(source.errors) ? source.errors : [],
+    errors: Array.isArray(source.errors) ? source.errors.map(normalizeEntityTags) : [],
 
     weeklyReflections: Array.isArray(source.weeklyReflections)
-      ? source.weeklyReflections
+      ? source.weeklyReflections.map(normalizeEntityTags)
       : [],
 
     xp: Number(source.xp) || 0,
 
     coins: Number(source.coins) || 0,
 
-    finance: {
-      ...(emptyAppData.finance || {}),
-      ...(source.finance || {}),
-
-      transactions: Array.isArray(source.finance?.transactions)
-        ? source.finance.transactions
-        : [],
-
-      financialGoals: Array.isArray(source.finance?.financialGoals)
-        ? source.finance.financialGoals
-        : [],
-
-      budgetsByCategory:
-        source.finance?.budgetsByCategory &&
-        typeof source.finance.budgetsByCategory === 'object'
-          ? source.finance.budgetsByCategory
-          : {},
-
-      accounts: Array.isArray(source.finance?.accounts)
-        ? source.finance.accounts
-        : [],
-    },
-
-    investments: Array.isArray(source.investments) ? source.investments : [],
+    finance: normalizedFinance,
+    investments: Array.isArray(source.investments) ? source.investments.map(normalizeEntityTags) : [],
 
     portfolioHistory: Array.isArray(source.portfolioHistory)
       ? source.portfolioHistory

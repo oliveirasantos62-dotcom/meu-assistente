@@ -174,6 +174,7 @@ function normalizeData(data) {
   }
 
   if (!isObject(merged.settings.modules)) merged.settings.modules = {};
+  if (!isObject(merged.settings.moduleReferences)) merged.settings.moduleReferences = {};
   if (!isObject(merged.settings.assistant)) merged.settings.assistant = { webResearch: false };
 
   if (!Array.isArray(merged.calendarEvents)) {

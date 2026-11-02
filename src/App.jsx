@@ -43,6 +43,7 @@ import Connections from './components/Connections';
 import Foguinho from './components/Foguinho';
 import Grupos from './components/Grupos';
 import Processos from './components/Processos';
+import { getReferenceData } from './utils/moduleReferences';
 
 export default function App() {
   // =========================================================
@@ -118,6 +119,13 @@ export default function App() {
     syncError,
     syncStatus,
   } = appDataHook;
+
+  // Dados filtrados apenas para telas agregadoras. Cada página continua
+  // usando seus dados completos; referências bloqueadas não aparecem fora dela.
+  const referenceData = getReferenceData(data);
+  const referencePendingTasks = Array.isArray(referenceData?.tasks)
+    ? referenceData.tasks.filter((task) => !task.done)
+    : [];
 
   // =========================================================
   // NAVEGAÇÃO
@@ -685,7 +693,7 @@ export default function App() {
 
         {activeSection === 'dashboard' && (
           <PainelPrincipal
-            data={data}
+            data={referenceData}
             completion={completion}
             level={levelInfo?.level ?? 1}
             nextXP={levelInfo?.nextXP ?? 0}
@@ -693,7 +701,7 @@ export default function App() {
             daily={daily}
             productivityScore={productivityScore}
             bestHour={bestHour}
-            pendingTasks={safePendingTasks}
+            pendingTasks={referencePendingTasks}
             today={today}
             onToggleTask={handleDashboardToggleTask}
             onToggleHabit={handleDashboardToggleHabit}
@@ -705,7 +713,7 @@ export default function App() {
         ===================================================== */}
 
         {activeSection === 'calendar' && (
-          <SmartCalendar data={data} save={save} completeTask={completeTask} />
+          <SmartCalendar data={referenceData} save={save} completeTask={completeTask} />
         )}
 
         {/* =====================================================
@@ -719,7 +727,6 @@ export default function App() {
         ===================================================== */}
 
         {activeSection === 'estudos' && <Estudos data={data} save={save} />}
-
 
         {/* =====================================================
             OBJETIVOS
@@ -788,7 +795,7 @@ export default function App() {
         {activeSection === 'fase12' && (
           <>
             <DataDashboard
-              data={data}
+              data={referenceData}
               records={safeRecords}
               period={period}
               setPeriod={setPeriod}
@@ -805,10 +812,9 @@ export default function App() {
           </>
         )}
 
-        {activeSection === 'reports' && <Reports data={data} />}
+        {activeSection === 'reports' && <Reports data={referenceData} />}
 
         {activeSection === 'tags' && <TagsManager data={data} save={save} />}
-
 
         {/* =====================================================
             FINANÇAS
@@ -854,8 +860,8 @@ export default function App() {
 
         {activeSection === 'assistant' && (
           <Assistant
-            data={data}
-            pendingTasks={safePendingTasks}
+            data={referenceData}
+            pendingTasks={referencePendingTasks}
             assistantPriority={assistantPriority}
             assistantAdvice={assistantAdvice}
             overload={overload}

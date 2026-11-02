@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import TagPicker from './TagPicker';
 
 const novaCategoria = {
   nome: '',
@@ -10,6 +11,7 @@ const novaCategoria = {
   usarImagem: true,
   usarDescricao: true,
   usarData: true,
+  tags: [],
 };
 
 const novoItem = {
@@ -19,6 +21,7 @@ const novoItem = {
   data: '',
   status: 'a-fazer',
   avaliacao: '',
+  tags: [],
 };
 
 function idNovo() {
@@ -823,6 +826,8 @@ export default function ColecoesConquistas({ data, save }) {
                   </select>
                 </label>
               )}
+
+              <TagPicker data={data} save={save} value={formItem.tags || []} onChange={(value) => setFormItem({ ...formItem, tags: value })} />
 
               <div className='cc-modal-rodape'>
                 <button

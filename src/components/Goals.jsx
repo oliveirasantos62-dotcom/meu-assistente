@@ -1,4 +1,5 @@
 import React, { useMemo, useState } from 'react';
+import TagPicker from './TagPicker';
 
 const today = () => {
   const date = new Date();
@@ -45,6 +46,7 @@ const initialForm = {
   targetDate: '',
   motivation: '',
   nextStep: '',
+  tags: [],
 };
 
 const categoryOptions = [
@@ -226,6 +228,7 @@ export default function Goals({ data, save }) {
       startDate: goal.startDate || today(),
       targetDate: goal.targetDate || '',
       motivation: goal.motivation || '',
+      tags: Array.isArray(goal.tags) ? goal.tags.map(String) : [],
       nextStep:
         tasksList.find((task) => String(task.id) === String(goal.nextStepTaskId))?.name ||
         goal.nextStep ||
@@ -320,6 +323,7 @@ export default function Goals({ data, save }) {
       startDate: form.startDate || today(),
       targetDate: form.targetDate || '',
       motivation: form.motivation.trim(),
+      tags: Array.from(new Set((form.tags || []).map(String))),
       // Mantém o campo antigo para compatibilidade com dados já salvos.
       nextStep: nextStepTitle,
       nextStepTaskId,
@@ -1115,6 +1119,8 @@ export default function Goals({ data, save }) {
                   rows={3}
                 />
               </label>
+
+              <TagPicker data={data} save={save} value={form.tags || []} onChange={(value) => updateForm('tags', value)} />
 
               <label>
                 <span>💡 Por que isso importa?</span>

@@ -242,7 +242,7 @@ export default function Grupos() {
   }
 
   return (
-    <section className='page-section'>
+    <section className='page-section groups-page'>
       <div className='section-heading'>
         <div>
           <span className='eyebrow'>FASE 6 · SOCIAL</span>

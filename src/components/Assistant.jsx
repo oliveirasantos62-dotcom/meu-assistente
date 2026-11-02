@@ -1,5 +1,4 @@
 import React, { useMemo, useState } from 'react';
-import { showModuleReferences } from '../utils/moduleVisibility';
 
 export default function Assistant({
   data = {},
@@ -22,8 +21,6 @@ export default function Assistant({
 
   const today = getTodayKey();
   const completedToday = Number(data.history?.[today]?.completed || 0);
-  const showFinanceReferences = showModuleReferences(data, 'finance');
-  const showInvestmentReferences = showModuleReferences(data, 'investments');
 
   const financialStats = useMemo(() => {
     const transactions = Array.isArray(data.finance?.transactions)
@@ -150,12 +147,6 @@ export default function Assistant({
       question: 'Como estão meus investimentos?',
     },
   ];
-
-  const visibleSuggestions = suggestions.filter((item) => {
-    if (item.question?.toLowerCase().includes('finanças')) return showFinanceReferences;
-    if (item.question?.toLowerCase().includes('investimentos')) return showInvestmentReferences;
-    return true;
-  });
 
   function respond(title, text) {
     setAnswerTitle(title);
@@ -427,7 +418,7 @@ export default function Assistant({
           </div>
 
           <div className='quick-prompts'>
-            {visibleSuggestions.map((item) => (
+            {suggestions.map((item) => (
               <button
                 type='button'
                 key={item.label}
@@ -559,20 +550,16 @@ export default function Assistant({
       </div>
 
       <section className='assistant-integrated-summary'>
-        {showFinanceReferences && (
-          <div>
-            <span>💰</span>
-            <strong>Finanças</strong>
-            <small>{formatMoney(financialStats.balance)} de saldo no mês</small>
-          </div>
-        )}
-        {showInvestmentReferences && (
-          <div>
-            <span>📈</span>
-            <strong>Investimentos</strong>
-            <small>{formatMoney(investmentStats.current)} em carteira</small>
-          </div>
-        )}
+        <div>
+          <span>💰</span>
+          <strong>Finanças</strong>
+          <small>{formatMoney(financialStats.balance)} de saldo no mês</small>
+        </div>
+        <div>
+          <span>📈</span>
+          <strong>Investimentos</strong>
+          <small>{formatMoney(investmentStats.current)} em carteira</small>
+        </div>
         <div>
           <span>🔥</span>
           <strong>Hoje</strong>

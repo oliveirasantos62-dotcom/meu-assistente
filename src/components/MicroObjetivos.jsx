@@ -1,4 +1,5 @@
 import React, { useMemo, useState } from 'react';
+import TagPicker from './TagPicker';
 
 const localToday = () => {
   const d = new Date();
@@ -14,16 +15,16 @@ const daysLeft = (value) => {
 };
 
 /** Microobjetivos vinculados a um objetivo principal. */
-export default function MicroObjetivos({ milestones = [], onChange, compact = false }) {
+export default function MicroObjetivos({ milestones = [], onChange, compact = false, data, save }) {
   const items = Array.isArray(milestones) ? milestones : [];
   const [editingId, setEditingId] = useState(null);
   const [showForm, setShowForm] = useState(false);
-  const [form, setForm] = useState({ title: '', description: '', startDate: localToday(), dueDate: '' });
+  const [form, setForm] = useState({ title: '', description: '', startDate: localToday(), dueDate: '', tags: [] });
   const completed = useMemo(() => items.filter((item) => item.completed).length, [items]);
   const progress = items.length ? Math.round((completed / items.length) * 100) : 0;
 
   const reset = () => {
-    setForm({ title: '', description: '', startDate: localToday(), dueDate: '' });
+    setForm({ title: '', description: '', startDate: localToday(), dueDate: '', tags: [] });
     setEditingId(null);
     setShowForm(false);
   };
@@ -40,7 +41,7 @@ export default function MicroObjetivos({ milestones = [], onChange, compact = fa
   };
   const edit = (item) => {
     setEditingId(item.id);
-    setForm({ title: item.title || '', description: item.description || '', startDate: item.startDate || '', dueDate: item.dueDate || item.targetDate || '' });
+    setForm({ title: item.title || '', description: item.description || '', startDate: item.startDate || '', dueDate: item.dueDate || item.targetDate || '', tags: Array.isArray(item.tags) ? item.tags.map(String) : [] });
     setShowForm(true);
   };
   const toggle = (id) => onChange(items.map((item) => item.id === id ? { ...item, completed: !item.completed, completedAt: !item.completed ? new Date().toISOString() : null } : item));
@@ -75,9 +76,10 @@ export default function MicroObjetivos({ milestones = [], onChange, compact = fa
       {showForm ? <form className="micro-form" onSubmit={submit}>
         <label>Nome do microobjetivo<input autoFocus value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} placeholder="Ex.: concluir o primeiro módulo" required /></label>
         <label>Descrição (opcional)<textarea rows="2" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} placeholder="O que precisa ser feito?" /></label>
+        <TagPicker data={data} save={save || (() => {})} value={form.tags || []} onChange={(value) => setForm({ ...form, tags: value })} />
         <div className="micro-date-fields"><label>Data de início<input type="date" value={form.startDate} onChange={(e) => setForm({ ...form, startDate: e.target.value })} /></label><label>Prazo final<input type="date" value={form.dueDate} min={form.startDate || undefined} onChange={(e) => setForm({ ...form, dueDate: e.target.value })} /></label></div>
         <div className="micro-form-actions"><button type="button" className="micro-cancel" onClick={reset}>Cancelar</button><button type="submit" className="micro-save">{editingId ? 'Salvar alterações' : 'Adicionar microobjetivo'}</button></div>
-      </form> : <button type="button" className="micro-add" onClick={() => { setEditingId(null); setForm({ title: '', description: '', startDate: localToday(), dueDate: '' }); setShowForm(true); }}>＋ Adicionar microobjetivo</button>}
+      </form> : <button type="button" className="micro-add" onClick={() => { setEditingId(null); setForm({ title: '', description: '', startDate: localToday(), dueDate: '', tags: [] }); setShowForm(true); }}>＋ Adicionar microobjetivo</button>}
     </section>
   );
 }

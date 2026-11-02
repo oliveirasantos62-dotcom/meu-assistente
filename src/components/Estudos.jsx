@@ -529,14 +529,6 @@ export default function Estudos({ data: appData, save: saveAppData }) {
       </div>
 
       {/* =====================================================
-          CICLO DE ESTUDOS
-      ====================================================== */}
-
-      {tab === 'cycle' && (
-        <StudyCycle data={appData} save={saveAppData} />
-      )}
-
-      {/* =====================================================
           VISÃO GERAL
       ====================================================== */}
 
@@ -810,6 +802,12 @@ export default function Estudos({ data: appData, save: saveAppData }) {
           </div>
         </>
       )}
+
+      {/* =====================================================
+          CICLO DE ESTUDOS
+      ====================================================== */}
+
+      {tab === 'cycle' && <StudyCycle data={data} save={save} />}
 
       {/* =====================================================
           SESSÕES

@@ -1,4 +1,5 @@
 import React, { useMemo, useState } from 'react';
+import TagPicker from './TagPicker';
 
 const EXPENSE_CATEGORIES = [
   'Moradia',
@@ -96,6 +97,7 @@ export default function FinanceSystem({ data, save }) {
   const [date, setDate] = useState(getCurrentDate());
   const [paymentMethod, setPaymentMethod] = useState('Pix');
   const [fixed, setFixed] = useState(false);
+  const [transactionTags, setTransactionTags] = useState([]);
 
   const [monthlyBudget, setMonthlyBudget] = useState(
     finance.monthlyBudget ? String(finance.monthlyBudget) : '',
@@ -233,6 +235,7 @@ export default function FinanceSystem({ data, save }) {
     setDate(getCurrentDate());
     setPaymentMethod('Pix');
     setFixed(false);
+    setTransactionTags([]);
     setEditingId(null);
   };
 
@@ -270,6 +273,7 @@ export default function FinanceSystem({ data, save }) {
               date,
               paymentMethod,
               fixed,
+              tags: Array.from(new Set(transactionTags.map(String))),
             }
           : transaction,
       );
@@ -295,6 +299,7 @@ export default function FinanceSystem({ data, save }) {
       date,
       paymentMethod,
       fixed,
+      tags: Array.from(new Set(transactionTags.map(String))),
       paid: true,
       createdAt: new Date().toISOString(),
     };
@@ -325,6 +330,7 @@ export default function FinanceSystem({ data, save }) {
     setDate(transaction.date);
     setPaymentMethod(transaction.paymentMethod);
     setFixed(transaction.fixed);
+    setTransactionTags(Array.isArray(transaction.tags) ? transaction.tags.map(String) : []);
 
     setMessage('');
     setError('');
@@ -799,6 +805,8 @@ export default function FinanceSystem({ data, save }) {
             </label>
           )}
         </div>
+
+        <TagPicker data={data} save={save} value={transactionTags} onChange={setTransactionTags} compact />
 
         <button className='primary investment-submit' onClick={handleSubmit}>
           {editingId ? '💾 Salvar alteração' : '➕ Registrar transação'}

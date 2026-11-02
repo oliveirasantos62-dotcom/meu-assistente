@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import TagPicker from './TagPicker';
 
 const pad = (value) => String(value).padStart(2, '0');
 
@@ -10,6 +11,7 @@ const formatDate = (date) => {
 
 export default function Habits({ data, save }) {
   const [habitName, setHabitName] = useState('');
+  const [habitTags, setHabitTags] = useState([]);
   const habits = data.habits || [];
 
   const todayStr = formatDate(new Date());
@@ -24,6 +26,7 @@ export default function Habits({ data, save }) {
       streak: 0,
       bestStreak: 0,
       xp: 30,
+      tags: habitTags.map(String),
       history: {}, // Registo de dias concluídos { '2026-10-29': true }
     };
 
@@ -32,6 +35,7 @@ export default function Habits({ data, save }) {
       habits: [...habits, newHabit],
     });
     setHabitName('');
+    setHabitTags([]);
   };
 
   const toggleTodayHabit = (id) => {
@@ -110,6 +114,7 @@ export default function Habits({ data, save }) {
         <button type='submit' className='primary' style={{ height: 42 }}>
           Criar Hábito
         </button>
+        <TagPicker data={data} save={save} value={habitTags} onChange={setHabitTags} compact />
       </form>
 
       <div style={{ display: 'grid', gap: 12 }}>
