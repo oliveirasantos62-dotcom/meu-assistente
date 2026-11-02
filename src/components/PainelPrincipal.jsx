@@ -1,4 +1,5 @@
 import React, { useMemo, useState } from 'react';
+import { showModuleReferences } from '../utils/moduleVisibility';
 
 export default function PainelPrincipal({
   data,
@@ -21,7 +22,8 @@ export default function PainelPrincipal({
     ? data.calendarEvents
     : [];
 
-  const financeTransactions = Array.isArray(data?.finance?.transactions)
+  const showFinanceReferences = showModuleReferences(data, 'finance');
+  const financeTransactions = showFinanceReferences && Array.isArray(data?.finance?.transactions)
     ? data.finance.transactions
     : [];
 
@@ -498,6 +500,7 @@ export default function PainelPrincipal({
 
         {/* FINANCEIRO */}
 
+        {showFinanceReferences && (
         <button
           type='button'
           className={`card dashboard-stat dashboard-finance-stat dashboard-stat-button ${
@@ -534,6 +537,7 @@ export default function PainelPrincipal({
             {expandedSections.finance ? '⌃' : '⌄'}
           </span>
         </button>
+        )}
       </section>
 
       {/* ======================================================
@@ -709,7 +713,7 @@ export default function PainelPrincipal({
           FINANCEIRO EXPANDIDO
       ====================================================== */}
 
-      {expandedSections.finance && (
+      {showFinanceReferences && expandedSections.finance && (
         <section className='card dashboard-inline-section dashboard-finance-section'>
           <div className='dashboard-inline-header'>
             <div>
@@ -1060,15 +1064,17 @@ export default function PainelPrincipal({
           </div>
         </div>
 
-        <div className='card dashboard-summary-card'>
-          <span>💰</span>
+        {showFinanceReferences && (
+          <div className='card dashboard-summary-card'>
+            <span>💰</span>
 
-          <div>
-            <small>Movimentações hoje</small>
+            <div>
+              <small>Movimentações hoje</small>
 
-            <strong>{todayFinanceCount}</strong>
+              <strong>{todayFinanceCount}</strong>
+            </div>
           </div>
-        </div>
+        )}
       </section>
 
       {/* ======================================================

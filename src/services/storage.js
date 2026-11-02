@@ -75,6 +75,7 @@ export const emptyAppData = {
   studyCycles: [],
   settings: {
     modules: {},
+    moduleReferences: {},
     assistant: { webResearch: false },
   },
 };
@@ -169,7 +170,7 @@ function normalizeData(data) {
   }
 
   if (!isObject(merged.settings)) {
-    merged.settings = { modules: {}, assistant: { webResearch: false } };
+    merged.settings = { modules: {}, moduleReferences: {}, assistant: { webResearch: false } };
   }
 
   if (!isObject(merged.settings.modules)) merged.settings.modules = {};

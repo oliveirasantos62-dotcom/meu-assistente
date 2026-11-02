@@ -201,9 +201,10 @@ function normalizeAppData(rawData) {
       source.settings && typeof source.settings === 'object'
         ? {
             modules: source.settings.modules && typeof source.settings.modules === 'object' ? source.settings.modules : {},
+            moduleReferences: source.settings.moduleReferences && typeof source.settings.moduleReferences === 'object' ? source.settings.moduleReferences : {},
             assistant: source.settings.assistant && typeof source.settings.assistant === 'object' ? source.settings.assistant : { webResearch: false },
           }
-        : { modules: {}, assistant: { webResearch: false } },
+        : { modules: {}, moduleReferences: {}, assistant: { webResearch: false } },
   };
 }
 
