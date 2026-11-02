@@ -144,8 +144,13 @@ export default function App() {
   };
 
   const todayDashboardTasks = dashboardTasks.filter((task) => {
-    if (!task || task.cancelled || task.canceled) return false;
-    return isSameDay(task.date) || isSameDay(task.deadline);
+    if (!task || task.cancelled || task.canceled || task.status === 'cancelled') return false;
+
+    // Tarefas sem data também entram no planejamento do dia.
+    // Antes, o painel exigia `date` ou `deadline` e acabava mostrando
+    // 0% e 0 XP mesmo quando havia várias tarefas registradas.
+    const hasDate = Boolean(task.date || task.deadline);
+    return !hasDate || isSameDay(task.date) || isSameDay(task.deadline);
   });
 
   const todayDashboardHabits = dashboardHabits.filter((habit) => {
