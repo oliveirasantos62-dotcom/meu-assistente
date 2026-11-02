@@ -807,7 +807,7 @@ export default function Estudos({ data: appData, save: saveAppData }) {
           CICLO DE ESTUDOS
       ====================================================== */}
 
-      {tab === 'cycle' && <StudyCycle data={data} save={save} />}
+      {tab === 'cycle' && <StudyCycle data={appData} save={saveAppData} />}
 
       {/* =====================================================
           SESSÕES
