@@ -27,7 +27,6 @@ import DataDashboard from './components/DataDashboard';
 import AdvancedDataScience from './components/AdvancedDataScience';
 import Reports from './components/Reports';
 import TagsManager from './components/TagsManager';
-import StudyCycle from './components/StudyCycle';
 import Personalization from './components/Personalization';
 
 // Finanças
@@ -721,7 +720,6 @@ export default function App() {
 
         {activeSection === 'estudos' && <Estudos data={data} save={save} />}
 
-        {activeSection === 'study-cycle' && <StudyCycle data={data} save={save} />}
 
         {/* =====================================================
             OBJETIVOS

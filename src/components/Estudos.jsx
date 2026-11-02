@@ -1,5 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 
+import StudyCycle from './StudyCycle';
+
 import {
   createReading,
   createReview,
@@ -14,6 +16,7 @@ import {
 
 const TABS = [
   ['overview', '📚 Visão geral'],
+  ['cycle', '🔄 Ciclo de Estudos'],
   ['sessions', '⏱️ Sessões'],
   ['reading', '📖 Leitura'],
   ['reviews', '🧠 Revisão espaçada'],
@@ -524,6 +527,14 @@ export default function Estudos({ data: appData, save: saveAppData }) {
           </button>
         ))}
       </div>
+
+      {/* =====================================================
+          CICLO DE ESTUDOS
+      ====================================================== */}
+
+      {tab === 'cycle' && (
+        <StudyCycle data={appData} save={saveAppData} />
+      )}
 
       {/* =====================================================
           VISÃO GERAL

@@ -7,7 +7,6 @@ const SECTIONS = [
   { id: 'calendar', label: '📅 Calendário & Agenda' },
   { id: 'diario', label: '📔 Diário' },
   { id: 'estudos', label: '📚 Estudos' },
-  { id: 'study-cycle', label: '🔄 Ciclo de Estudos' },
   { id: 'goals', label: '🎯 Objetivos' },
   { id: 'habits', label: '🔥 Hábitos' },
 
@@ -44,7 +43,6 @@ const DEFAULT_VISIBLE = {
   calendar: true,
   diario: true,
   estudos: true,
-  'study-cycle': true,
   goals: true,
   habits: true,
 
@@ -172,7 +170,7 @@ export default function Sidebar({
   const visibleSections = config.visibleSections;
 
   const moduleMap = {
-    tasks: 'tasks', calendar: 'calendar', estudos: 'estudos', 'study-cycle': 'estudos',
+    tasks: 'tasks', calendar: 'calendar', estudos: 'estudos',
     goals: 'goals', habits: 'habits', projects: 'projects', collections: 'collections',
     fase12: 'reports', reports: 'reports', tags: 'tags', fase13: 'finance', investments: 'investments',
     assistant: 'assistant', gamification: 'gamification',
