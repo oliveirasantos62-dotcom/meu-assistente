@@ -16,6 +16,7 @@ const DEFAULT_PLAN = {
   minutesByDay: { '1': 60, '2': 60, '3': 60, '4': 60, '5': 60, '6': 90, '0': 30 },
   subjectsByDay: { '1': [], '2': [], '3': [], '4': [], '5': [], '6': [], '0': [] },
   cycleSubjects: [],
+  cycleSubjectMinutes: {},
   cycleIndex: 0,
   horizonDays: 42,
   studyTime: '19:00',
@@ -37,6 +38,7 @@ function normalizePlan(plan) {
     minutesByDay: { ...DEFAULT_PLAN.minutesByDay, ...(plan?.minutesByDay || {}) },
     subjectsByDay: { ...DEFAULT_PLAN.subjectsByDay, ...(plan?.subjectsByDay || {}) },
     cycleSubjects: Array.isArray(plan?.cycleSubjects) ? plan.cycleSubjects : [],
+    cycleSubjectMinutes: { ...(plan?.cycleSubjectMinutes || {}) },
     reviewRules: { ...DEFAULT_PLAN.reviewRules, ...(plan?.reviewRules || {}) },
     steps: Array.isArray(plan?.steps) && plan.steps.length ? plan.steps : DEFAULT_PLAN.steps,
   };
@@ -94,12 +96,24 @@ export default function StudyPlanner({ data, save, sessions = [], reviews = [], 
 
   const toggleCycleSubject = (subject) => {
     const current = plan.cycleSubjects || [];
-    updatePlan({ cycleSubjects: current.includes(subject) ? current.filter((item) => item !== subject) : [...current, subject] });
+    const enabled = current.includes(subject);
+    const nextSubjects = enabled ? current.filter((item) => item !== subject) : [...current, subject];
+    const nextMinutes = { ...(plan.cycleSubjectMinutes || {}) };
+    if (!enabled && !nextMinutes[subject]) nextMinutes[subject] = 45;
+    if (enabled) delete nextMinutes[subject];
+    updatePlan({ cycleSubjects: nextSubjects, cycleSubjectMinutes: nextMinutes });
+  };
+
+  const setCycleSubjectMinutes = (subject, minutes) => {
+    updatePlan({ cycleSubjectMinutes: { ...(plan.cycleSubjectMinutes || {}), [subject]: Math.max(5, Number(minutes || 0)) } });
   };
 
   const savePlan = () => {
-    saveAll(plans);
-    setMessage('Planejamento recorrente salvo. Ele vale para todas as semanas enquanto estiver ativo.');
+    const active = plan.active ? plan : { ...plan, active: true };
+    const nextPlans = plans.map((item) => item.id === plan.id ? active : item);
+    save({ ...(data || {}), studyPlans: nextPlans, studyPlan: active, calendarEvents: buildStudyEvents() });
+    setPlans(nextPlans);
+    setMessage('Planejamento salvo e sincronizado com a Agenda e o Painel Principal.');
     window.setTimeout(() => setMessage(''), 3000);
   };
 
@@ -129,21 +143,42 @@ export default function StudyPlanner({ data, save, sessions = [], reviews = [], 
       const minutes = Number(plan.minutesByDay[weekday] || plan.fixedMinutes || 0);
       if (minutes <= 0) return;
 
-      let daySubjects = plan.mode === 'fixed' ? (plan.subjectsByDay[weekday] || []) : [];
       if (plan.mode === 'cycle' && cycleSubjects.length) {
-        const count = Math.max(1, Math.min(4, Math.ceil(minutes / 45)));
-        daySubjects = Array.from({ length: count }, (_, index) => cycleSubjects[(cycleCursor + index) % cycleSubjects.length]);
-        cycleCursor = (cycleCursor + count) % cycleSubjects.length;
-      }
-      if (!daySubjects.length) return;
-      const perSubject = Math.max(10, Math.floor(minutes / daySubjects.length));
-
-      daySubjects.forEach((subject) => {
-        const key = `${dateKey(date)}-${subject}`;
-        if (!events.some((event) => event.source === 'study-plan' && event.planKey === key)) {
-          events.push({ id: uid('study-event'), name: `Estudar: ${subject}`, description: `${perSubject} min · ${plan.mode === 'fixed' ? 'Matéria fixa' : 'Ciclo por tempo diário'}`, date: dateKey(date), scheduledTime: plan.studyTime || '', duration: perSubject, type: 'study', source: 'study-plan', planKey: key, studySubject: subject, done: false, recurringPlanId: plan.id, notes: plan.steps.filter((step) => step.scope === 'global' || step.subject === subject).map((step) => step.title).join(' · ') });
+        let remaining = minutes;
+        let used = 0;
+        let guard = 0;
+        while (remaining > 0 && guard < cycleSubjects.length * 2) {
+          const subject = cycleSubjects[cycleCursor % cycleSubjects.length];
+          const subjectMinutes = Math.max(5, Number(plan.cycleSubjectMinutes?.[subject] || 45));
+          if (subjectMinutes > remaining) break;
+          const key = `${dateKey(date)}-${subject}`;
+          if (!events.some((event) => event.source === 'study-plan' && event.planKey === key)) {
+            const startOffset = used;
+            const [hour, minute] = String(plan.studyTime || '19:00').split(':').map(Number);
+            const start = hour * 60 + minute + startOffset;
+            const scheduledTime = `${String(Math.floor(start / 60) % 24).padStart(2, '0')}:${String(start % 60).padStart(2, '0')}`;
+            events.push({ id: uid('study-event'), name: `Estudar: ${subject}`, description: `${subjectMinutes} min · Ciclo`, date: dateKey(date), scheduledTime, duration: subjectMinutes, type: 'study', source: 'study-plan', planKey: key, studySubject: subject, done: false, recurringPlanId: plan.id, notes: plan.steps.filter((step) => step.scope === 'global' || step.subject === subject).map((step) => step.title).join(' · ') });
+          }
+          remaining -= subjectMinutes;
+          used += subjectMinutes;
+          cycleCursor = (cycleCursor + 1) % cycleSubjects.length;
+          guard += 1;
         }
-      });
+      } else {
+        const daySubjects = plan.subjectsByDay[weekday] || [];
+        if (!daySubjects.length) return;
+        const perSubject = Math.max(10, Math.floor(minutes / daySubjects.length));
+        daySubjects.forEach((subject, index) => {
+          const key = `${dateKey(date)}-${subject}`;
+          if (!events.some((event) => event.source === 'study-plan' && event.planKey === key)) {
+            const startOffset = index * perSubject;
+            const [hour, minute] = String(plan.studyTime || '19:00').split(':').map(Number);
+            const start = hour * 60 + minute + startOffset;
+            const scheduledTime = `${String(Math.floor(start / 60) % 24).padStart(2, '0')}:${String(start % 60).padStart(2, '0')}`;
+            events.push({ id: uid('study-event'), name: `Estudar: ${subject}`, description: `${perSubject} min · Matéria fixa`, date: dateKey(date), scheduledTime, duration: perSubject, type: 'study', source: 'study-plan', planKey: key, studySubject: subject, done: false, recurringPlanId: plan.id, notes: plan.steps.filter((step) => step.scope === 'global' || step.subject === subject).map((step) => step.title).join(' · ') });
+          }
+        });
+      }
     });
 
     const reviewOffsets = [
@@ -208,7 +243,7 @@ export default function StudyPlanner({ data, save, sessions = [], reviews = [], 
         <div className='study-week-grid'>{WEEKDAYS.map(([day, label]) => <label key={day}><strong>{label}</strong><span>minutos</span><input type='number' min='0' value={plan.minutesByDay[day] || 0} onChange={(e) => updatePlan({ minutesByDay: { ...plan.minutesByDay, [day]: Number(e.target.value || 0) } })} /></label>)}</div>
       </div>
 
-      {plan.mode === 'fixed' ? <div className='card'><div className='study-section-heading'><div><h3>📚 Matéria fixa por dia</h3><p>Essa distribuição se repete em todas as semanas enquanto o planejamento estiver ativo.</p></div></div>{subjects.length === 0 ? <div className='study-empty-performance'><strong>Cadastre matérias primeiro.</strong><p>Use as matérias do seu ciclo atual para montar os dias.</p></div> : <div className='study-day-subjects'>{WEEKDAYS.map(([day, label]) => <div className='study-day-card' key={day}><strong>{label}</strong><div>{subjects.map((subject) => <label key={subject} className='study-check'><input type='checkbox' checked={(plan.subjectsByDay[day] || []).includes(subject)} onChange={() => toggleSubjectDay(day, subject)} /><span>{subject}</span></label>)}</div></div>)}</div>}</div> : <div className='card'><div className='study-section-heading'><div><h3>🔄 Matérias do ciclo</h3><p>Escolha as matérias que participam do ciclo. A ordem é percorrida continuamente conforme o tempo de cada dia.</p></div></div>{subjects.length === 0 ? <div className='study-empty-performance'><strong>Cadastre matérias primeiro.</strong></div> : <div className='study-cycle-subject-picker'>{subjects.map((subject) => <label key={subject} className='study-check'><input type='checkbox' checked={(plan.cycleSubjects || []).includes(subject)} onChange={() => toggleCycleSubject(subject)} /><span>{subject}</span></label>)}</div>}</div>}
+      {plan.mode === 'fixed' ? <div className='card'><div className='study-section-heading'><div><h3>📚 Matéria fixa por dia</h3><p>Essa distribuição se repete em todas as semanas enquanto o planejamento estiver ativo.</p></div></div>{subjects.length === 0 ? <div className='study-empty-performance'><strong>Cadastre matérias primeiro.</strong><p>Use as matérias do seu ciclo atual para montar os dias.</p></div> : <div className='study-day-subjects'>{WEEKDAYS.map(([day, label]) => <div className='study-day-card' key={day}><strong>{label}</strong><div>{subjects.map((subject) => <label key={subject} className='study-check'><input type='checkbox' checked={(plan.subjectsByDay[day] || []).includes(subject)} onChange={() => toggleSubjectDay(day, subject)} /><span>{subject}</span></label>)}</div></div>)}</div>}</div> : <div className='card'><div className='study-section-heading'><div><h3>🔄 Matérias do ciclo</h3><p>Escolha as matérias que participam do ciclo. A ordem é percorrida continuamente conforme o tempo de cada dia.</p></div></div>{subjects.length === 0 ? <div className='study-empty-performance'><strong>Cadastre matérias primeiro.</strong></div> : <div className='study-cycle-subject-picker'>{subjects.map((subject) => <div className='study-cycle-subject-row' key={subject}><label className='study-check'><input type='checkbox' checked={(plan.cycleSubjects || []).includes(subject)} onChange={() => toggleCycleSubject(subject)} /><span>{subject}</span></label>{(plan.cycleSubjects || []).includes(subject) && <label className='study-cycle-minutes'>Tempo da matéria (min)<input type='number' min='5' step='5' value={plan.cycleSubjectMinutes?.[subject] || 45} onChange={(e) => setCycleSubjectMinutes(subject, e.target.value)} /></label>}</div>)}</div>}</div>}
 
       <div className='card'>
         <div className='study-section-heading'><div><h3>🪜 Etapas do estudo</h3><p>Crie etapas globais ou específicas por matéria. Ex.: fazer 10 questões do dia anterior.</p></div></div>
