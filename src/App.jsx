@@ -44,6 +44,7 @@ import Foguinho from './components/Foguinho';
 import Grupos from './components/Grupos';
 import Processos from './components/Processos';
 import { getReferenceData } from './utils/moduleReferences';
+import { isTaskCancelled } from './utils/taskStatus';
 
 export default function App() {
   // =========================================================
@@ -125,7 +126,7 @@ export default function App() {
   const referenceData = getReferenceData(data);
   const pageData = (moduleId) => getReferenceData(data, moduleId);
   const referencePendingTasks = Array.isArray(referenceData?.tasks)
-    ? referenceData.tasks.filter((task) => !task.done)
+    ? referenceData.tasks.filter((task) => !task.done && !isTaskCancelled(task, today))
     : [];
   const gamificationReferenceData = getReferenceData(data, 'gamification');
   const gamificationCompletedTasks = Array.isArray(gamificationReferenceData?.tasks)
@@ -144,7 +145,7 @@ export default function App() {
   };
 
   const todayDashboardTasks = dashboardTasks.filter((task) => {
-    if (!task || task.cancelled || task.canceled || task.status === 'cancelled') return false;
+    if (!task || isTaskCancelled(task, today)) return false;
 
     // Tarefas sem data também entram no planejamento do dia.
     // Antes, o painel exigia `date` ou `deadline` e acabava mostrando

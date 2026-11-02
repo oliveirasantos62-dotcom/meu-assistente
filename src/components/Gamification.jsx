@@ -2,24 +2,6 @@ import React from 'react';
 import Shop from './Shop';
 
 export default function Gamification({ data = {}, completedTasks = [], save }) {
-  const resetGamification = () => {
-    const confirmed = window.confirm(
-      'Reiniciar a gamificação? Isso zerará XP, moedas, sequência, missões, conquistas e recompensas da gamificação. Suas tarefas, hábitos, estudos, objetivos e demais dados não serão apagados.'
-    );
-    if (!confirmed) return;
-
-    save({
-      ...data,
-      xp: 0,
-      coins: 0,
-      gamification: {
-        missions: [],
-        achievements: [],
-        rewards: [],
-        streak: 0,
-      },
-    });
-  };
   const xp = Number(data.xp || 0);
   const coins = Number(data.coins || 0);
   const level = Math.floor(xp / 100) + 1;
@@ -42,18 +24,67 @@ export default function Gamification({ data = {}, completedTasks = [], save }) {
   const diaryEntries = Array.isArray(data.diaryEntries) ? data.diaryEntries.length : 0;
   const collections = Array.isArray(data.collections) ? data.collections.length : 0;
 
+  const achievementMetrics = {
+    tasks: completedTasksCount,
+    streak,
+    xp,
+    coins,
+    studies: studySessionsCount,
+    goals: completedGoals.length,
+    habits: habitCompletions,
+    diary: diaryEntries,
+    collections,
+  };
+
+  const achievementBaseline = data.gamification?.achievementBaseline || {};
+  const achievementMetric = (key, value) => Math.max(0, Number(value || 0) - Number(achievementBaseline[key] || 0));
+
+  const resetGamification = () => {
+    const confirmed = window.confirm(
+      'Reiniciar a gamificação? XP, moedas, sequência, missões e recompensas serão zerados. Tarefas, hábitos, estudos, objetivos e demais dados não serão apagados.'
+    );
+    if (!confirmed) return;
+
+    save({
+      ...data,
+      xp: 0,
+      coins: 0,
+      gamification: {
+        ...(data.gamification || {}),
+        missions: [],
+        rewards: [],
+        streak: 0,
+      },
+    });
+  };
+
+  const resetAchievements = () => {
+    const confirmed = window.confirm(
+      'Reiniciar todas as conquistas?\n\nO progresso das conquistas será zerado e as atividades antigas deixarão de contar para os próximos marcos. XP, moedas, tarefas e estudos não serão apagados.'
+    );
+    if (!confirmed) return;
+
+    save({
+      ...data,
+      gamification: {
+        ...(data.gamification || {}),
+        achievements: [],
+        achievementBaseline: achievementMetrics,
+      },
+    });
+  };
   // Conquistas são geradas por linhas infinitas. Quando o último marco é atingido,
   // o próximo cresce automaticamente, sem precisar cadastrar milhares de badges.
   const achievementFamilies = [
-    { icon: '⚡', name: 'Imparável', metric: completedTasksCount, label: 'tarefas concluídas', targets: [1, 5, 10, 25, 50, 100, 250, 500, 1000, 2500], growth: 2.5 },
-    { icon: '🔥', name: 'Consistência', metric: streak, label: 'dias de sequência', targets: [1, 3, 7, 14, 30, 60, 100, 180, 365], growth: 2 },
-    { icon: '⭐', name: 'Colecionador de XP', metric: xp, label: 'XP acumulado', targets: [100, 500, 1500, 5000, 10000, 25000, 50000, 100000], growth: 2.5 },
-    { icon: '🪙', name: 'Economista', metric: coins, label: 'moedas acumuladas', targets: [100, 500, 1000, 2500, 5000, 10000, 25000, 50000], growth: 2.5 },
-    { icon: '📚', name: 'Mestre dos Estudos', metric: studySessionsCount, label: 'sessões de estudo', targets: [1, 5, 10, 25, 50, 100, 250, 500, 1000], growth: 2.5 },
-    { icon: '🎯', name: 'Conquistador', metric: completedGoals.length, label: 'objetivos concluídos', targets: [1, 3, 5, 10, 25, 50, 100, 250, 500], growth: 2.5 },
-    { icon: '💪', name: 'Construtor de Hábitos', metric: habitCompletions, label: 'hábitos cumpridos', targets: [1, 7, 30, 100, 365, 500, 1000, 2500], growth: 2.5 },
-    { icon: '📝', name: 'Cronista', metric: diaryEntries, label: 'registros no diário', targets: [1, 7, 30, 100, 365, 500, 1000, 2500], growth: 2.5 },
-    { icon: '🗂️', name: 'Colecionador', metric: collections, label: 'itens em coleções', targets: [1, 5, 10, 25, 50, 100, 250, 500, 1000], growth: 2.5 },
+    { icon: '⚡', name: 'Imparável', metric: achievementMetric('tasks', completedTasksCount), label: 'tarefas concluídas', targets: [1, 5, 10, 25, 50, 100, 250, 500, 1000, 2500], growth: 2.5 },
+    { icon: '🔥', name: 'Consistência', metric: achievementMetric('streak', streak), label: 'dias de sequência', targets: [1, 3, 7, 14, 30, 60, 100, 180, 365], growth: 2 },
+    { icon: '⭐', name: 'Colecionador de XP', metric: achievementMetric('xp', xp), label: 'XP acumulado', targets: [100, 500, 1500, 5000, 10000, 25000, 50000, 100000], growth: 2.5 },
+    { icon: '🪙', name: 'Economista', metric: achievementMetric('coins', coins), label: 'moedas acumuladas', targets: [100, 500, 1000, 2500, 5000, 10000, 25000, 50000], growth: 2.5 },
+    { icon: '📚', name: 'Mestre dos Estudos', metric: achievementMetric('studies', studySessionsCount), label: 'sessões de estudo', targets: [1, 5, 10, 25, 50, 100, 250, 500, 1000], growth: 2.5 },
+    { icon: '🎯', name: 'Conquistador', metric: achievementMetric('goals', completedGoals.length), label: 'objetivos concluídos', targets: [1, 3, 5, 10, 25, 50, 100, 250, 500], growth: 2.5 },
+    { icon: '💪', name: 'Construtor de Hábitos', metric: achievementMetric('habits', habitCompletions), label: 'hábitos cumpridos', targets: [1, 7, 30, 100, 365, 500, 1000, 2500], growth: 2.5 },
+    { icon: '📝', name: 'Cronista', metric: achievementMetric('diary', diaryEntries), label: 'registros no diário', targets: [1, 7, 30, 100, 365, 500, 1000, 2500], growth: 2.5 },
+    { icon: '🗂️', name: 'Colecionador', metric: achievementMetric('collections', collections), label: 'itens em coleções', targets: [1, 5, 10, 25, 50, 100, 250, 500, 1000], growth: 2.5 },
   ];
 
   const achievements = buildInfiniteAchievements(achievementFamilies);
@@ -117,8 +148,11 @@ export default function Gamification({ data = {}, completedTasks = [], save }) {
             <span>🏆</span>
             <div><small>NÍVEL ATUAL</small><strong>{level}</strong></div>
           </div>
-          <button type="button" className="reset-gamification-btn" onClick={resetGamification} title="Zerar o progresso da gamificação">
-            ↻ Reiniciar gamificação
+          <button type="button" className="reset-gamification-btn" onClick={resetGamification} title="Zerar XP, moedas, sequência, missões e recompensas">
+            ↻ Reiniciar progresso
+          </button>
+          <button type="button" className="reset-achievements-btn" onClick={resetAchievements} title="Zerar somente as conquistas">
+            🏆 Reiniciar conquistas
           </button>
         </div>
       </header>
@@ -431,6 +465,8 @@ const styles = `
 .gamification-actions{display:flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:flex-end}
 .reset-gamification-btn{border:1px solid rgba(220,70,70,.28);background:transparent;color:#c53f4b;border-radius:12px;padding:10px 13px;font-weight:700;cursor:pointer;transition:.2s}
 .reset-gamification-btn:hover{background:rgba(220,70,70,.08);transform:translateY(-1px)}
+.reset-achievements-btn{border:1px solid rgba(109,93,252,.35);background:rgba(109,93,252,.08);color:#6d5dfc;border-radius:12px;padding:10px 13px;font-weight:800;cursor:pointer;transition:.2s}.reset-achievements-btn:hover{background:rgba(109,93,252,.15);transform:translateY(-1px)}
+body.dark .reset-achievements-btn{color:#a99cff;border-color:rgba(169,156,255,.35);background:rgba(109,93,252,.12)}
 body.dark .reset-gamification-btn{color:#ff8d98;border-color:rgba(255,141,152,.32)}
 body.dark .reset-gamification-btn:hover{background:rgba(255,141,152,.1)}
 @media(max-width:600px){.gamification-page{padding:14px}.gamification-header{align-items:flex-start;flex-direction:column}.gamification-actions{width:100%;justify-content:stretch}.gamification-actions .level-badge{flex:1}.reset-gamification-btn{flex:1}.level-badge{width:100%}.gami-panel{padding:16px}.achievement-grid{grid-template-columns:1fr}.achievement-status{display:none}.section-heading{align-items:flex-start}.section-heading>strong,.achievement-count{white-space:normal;text-align:right}.difficulty-row{gap:7px;flex-wrap:wrap}.difficulty-task{flex-basis:100%}.shop-panel .shop-form{grid-template-columns:1fr}.shop-panel .task{align-items:flex-start}.shop-panel .task>div{width:100%}}
@@ -444,6 +480,8 @@ body.dark .reset-gamification-btn:hover{background:rgba(255,141,152,.1)}
 .gamification-actions{display:flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:flex-end}
 .reset-gamification-btn{border:1px solid rgba(220,70,70,.28);background:transparent;color:#c53f4b;border-radius:12px;padding:10px 13px;font-weight:700;cursor:pointer;transition:.2s}
 .reset-gamification-btn:hover{background:rgba(220,70,70,.08);transform:translateY(-1px)}
+.reset-achievements-btn{border:1px solid rgba(109,93,252,.35);background:rgba(109,93,252,.08);color:#6d5dfc;border-radius:12px;padding:10px 13px;font-weight:800;cursor:pointer;transition:.2s}.reset-achievements-btn:hover{background:rgba(109,93,252,.15);transform:translateY(-1px)}
+body.dark .reset-achievements-btn{color:#a99cff;border-color:rgba(169,156,255,.35);background:rgba(109,93,252,.12)}
 body.dark .reset-gamification-btn{color:#ff8d98;border-color:rgba(255,141,152,.32)}
 body.dark .reset-gamification-btn:hover{background:rgba(255,141,152,.1)}
 @media(max-width:600px){.rpg-rule-grid{grid-template-columns:1fr}.rpg-rank{white-space:normal;text-align:center}}

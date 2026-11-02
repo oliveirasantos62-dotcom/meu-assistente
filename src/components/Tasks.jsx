@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { getTagIds } from '../utils/analytics';
 
+import { isTaskCancelled, localDateString } from '../utils/taskStatus';
 const EMPTY_FORM = {
   name: '',
   description: '',
@@ -117,9 +118,9 @@ export default function Tasks({ data, save, completeTask }) {
 
       const matchesFilter =
         filter === 'all' ||
-        (filter === 'pending' && !task.done && !cancelled) ||
+        (filter === 'pending' && !task.done && !isTaskCancelled(task, new Date())) ||
         (filter === 'done' && task.done) ||
-        (filter === 'cancelled' && cancelled) ||
+        (filter === 'cancelled' && isTaskCancelled(task, new Date())) ||
         (filter === 'overdue' &&
           !task.done &&
           !cancelled &&
@@ -400,7 +401,7 @@ export default function Tasks({ data, save, completeTask }) {
   };
 
   const toggleCancelled = (task) => {
-    const isCancelled = task.status === 'cancelled' || task.cancelled === true;
+    const isCancelled = isTaskCancelled(task, new Date());
 
     if (isCancelled) {
       save({
@@ -411,6 +412,8 @@ export default function Tasks({ data, save, completeTask }) {
                 ...item,
                 status: 'pending',
                 cancelled: false,
+                cancellationScope: null,
+                cancelledForDate: null,
                 cancelledAt: null,
                 cancellationReason: '',
               }
@@ -425,12 +428,22 @@ export default function Tasks({ data, save, completeTask }) {
       return;
     }
 
-    const reason = window.prompt(
-      'Por que você está cancelando esta tarefa? (opcional)\n\nEla continuará salva e poderá ser reativada depois.',
-      task.cancellationReason || '',
+    const mode = window.prompt(
+      'Como deseja cancelar esta tarefa?\n\n1 = Cancelar somente hoje\n2 = Suspender indefinidamente\n\nDigite 1 ou 2:',
+      '1',
     );
 
+    if (mode === null) return;
+    if (mode !== '1' && mode !== '2') {
+      alert('Escolha 1 para cancelar somente hoje ou 2 para suspender indefinidamente.');
+      return;
+    }
+
+    const reason = window.prompt('Motivo do cancelamento (opcional):', task.cancellationReason || '');
     if (reason === null) return;
+
+    const today = localDateString(new Date());
+    const indefinite = mode === '2';
 
     save({
       ...data,
@@ -438,8 +451,10 @@ export default function Tasks({ data, save, completeTask }) {
         item.id === task.id
           ? {
               ...item,
-              status: 'cancelled',
-              cancelled: true,
+              status: indefinite ? 'cancelled' : 'pending',
+              cancelled: indefinite,
+              cancellationScope: indefinite ? 'indefinite' : 'day',
+              cancelledForDate: indefinite ? null : today,
               cancelledAt: new Date().toISOString(),
               cancellationReason: reason.trim(),
             }
