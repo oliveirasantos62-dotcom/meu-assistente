@@ -4,6 +4,8 @@ import { canReference } from '../utils/moduleReferences';
 export default function PainelPrincipal({
   data,
   completion = 0,
+  dailyXpDone = 0,
+  dailyXpMax = 0,
   level = 1,
   nextXP = 0,
   progress = 0,
@@ -76,19 +78,20 @@ export default function PainelPrincipal({
   const [noticeForm, setNoticeForm] = useState({
     title: '',
     content: '',
-    color: '#6366f1',
+    backgroundColor: '#fff3a6',
+    textColor: '#2f2a1f',
+    borderColor: '#e0b800',
+    borderEnabled: true,
+    borderMode: 'all',
   });
 
-  const noticeColors = [
-    { value: '#6366f1', label: 'Roxo' },
-    { value: '#3b82f6', label: 'Azul' },
-    { value: '#10b981', label: 'Verde' },
-    { value: '#f59e0b', label: 'Âmbar' },
-    { value: '#ef4444', label: 'Vermelho' },
-    { value: '#ec4899', label: 'Rosa' },
-    { value: '#8b5cf6', label: 'Violeta' },
-    { value: '#14b8a6', label: 'Turquesa' },
-  ];
+  const normalizeNotice = (notice) => ({
+    backgroundColor: notice?.backgroundColor || notice?.color || '#fff3a6',
+    textColor: notice?.textColor || '#2f2a1f',
+    borderColor: notice?.borderColor || notice?.color || '#e0b800',
+    borderEnabled: notice?.borderEnabled !== false,
+    borderMode: notice?.borderMode === 'top' ? 'top' : 'all',
+  });
 
   const updateNoticeBoard = (updater) => {
     if (typeof save !== 'function') return;
@@ -118,7 +121,15 @@ export default function PainelPrincipal({
 
   const openNewNotice = () => {
     setEditingNoticeId(null);
-    setNoticeForm({ title: '', content: '', color: '#6366f1' });
+    setNoticeForm({
+      title: '',
+      content: '',
+      backgroundColor: '#fff3a6',
+      textColor: '#2f2a1f',
+      borderColor: '#e0b800',
+      borderEnabled: true,
+      borderMode: 'all',
+    });
     setNoticeModalOpen(true);
   };
 
@@ -127,7 +138,7 @@ export default function PainelPrincipal({
     setNoticeForm({
       title: notice.title || '',
       content: notice.content || '',
-      color: notice.color || '#6366f1',
+      ...normalizeNotice(notice),
     });
     setNoticeModalOpen(true);
   };
@@ -144,7 +155,11 @@ export default function PainelPrincipal({
       id: editingNoticeId || `${Date.now()}-${Math.random().toString(36).slice(2)}`,
       title: title || 'Aviso',
       content,
-      color: noticeForm.color || '#6366f1',
+      backgroundColor: noticeForm.backgroundColor || '#fff3a6',
+      textColor: noticeForm.textColor || '#2f2a1f',
+      borderColor: noticeForm.borderColor || '#e0b800',
+      borderEnabled: Boolean(noticeForm.borderEnabled),
+      borderMode: noticeForm.borderMode === 'top' ? 'top' : 'all',
       createdAt: editingNoticeId
         ? noticeItems.find((notice) => notice.id === editingNoticeId)?.createdAt || now
         : now,
@@ -596,8 +611,13 @@ export default function PainelPrincipal({
               {noticeItems.map((notice) => (
                 <article
                   key={notice.id}
-                  className='dashboard-notice-card'
-                  style={{ '--notice-accent': notice.color || '#6366f1' }}
+                  className={`dashboard-notice-card ${normalizeNotice(notice).borderEnabled ? 'has-border' : 'no-border'} ${normalizeNotice(notice).borderMode === 'top' ? 'border-top-only' : 'border-all'}`}
+                  style={{
+                    '--notice-bg': normalizeNotice(notice).backgroundColor,
+                    '--notice-text': normalizeNotice(notice).textColor,
+                    '--notice-border': normalizeNotice(notice).borderColor,
+                    '--notice-rotation': `${((String(notice.id || '').split('').reduce((sum, char) => sum + char.charCodeAt(0), 0) % 5) - 2) * 0.45}deg`,
+                  }}
                 >
                   <div className='dashboard-notice-card-top'>
                     <span className='dashboard-notice-pin'>📌</span>
@@ -647,20 +667,93 @@ export default function PainelPrincipal({
               />
             </label>
 
-            <div className='dashboard-notice-color-field'>
-              <span>Cor do aviso</span>
-              <div className='dashboard-notice-color-options'>
-                {noticeColors.map((color) => (
-                  <button
-                    key={color.value}
-                    type='button'
-                    className={`dashboard-notice-color ${noticeForm.color === color.value ? 'selected' : ''}`}
-                    style={{ '--notice-color': color.value }}
-                    onClick={() => setNoticeForm((current) => ({ ...current, color: color.value }))}
-                    aria-label={color.label}
-                    title={color.label}
+            <div className='dashboard-notice-customization'>
+              <div className='dashboard-notice-color-field'>
+                <label htmlFor='notice-background-color'>Cor interna / fundo</label>
+                <div className='dashboard-notice-color-input'>
+                  <input
+                    id='notice-background-color'
+                    type='color'
+                    value={noticeForm.backgroundColor}
+                    onChange={(event) => setNoticeForm((current) => ({ ...current, backgroundColor: event.target.value }))}
                   />
-                ))}
+                  <code>{noticeForm.backgroundColor}</code>
+                </div>
+              </div>
+
+              <div className='dashboard-notice-color-field'>
+                <label htmlFor='notice-text-color'>Cor da letra</label>
+                <div className='dashboard-notice-color-input'>
+                  <input
+                    id='notice-text-color'
+                    type='color'
+                    value={noticeForm.textColor}
+                    onChange={(event) => setNoticeForm((current) => ({ ...current, textColor: event.target.value }))}
+                  />
+                  <code>{noticeForm.textColor}</code>
+                </div>
+              </div>
+
+              <div className='dashboard-notice-color-field'>
+                <label htmlFor='notice-border-color'>Cor da borda</label>
+                <div className='dashboard-notice-color-input'>
+                  <input
+                    id='notice-border-color'
+                    type='color'
+                    value={noticeForm.borderColor}
+                    onChange={(event) => setNoticeForm((current) => ({ ...current, borderColor: event.target.value }))}
+                  />
+                  <code>{noticeForm.borderColor}</code>
+                </div>
+              </div>
+
+              <div className='dashboard-notice-border-options'>
+                <span>Borda</span>
+                <div className='dashboard-notice-segmented'>
+                  <button
+                    type='button'
+                    className={noticeForm.borderEnabled ? 'active' : ''}
+                    onClick={() => setNoticeForm((current) => ({ ...current, borderEnabled: true }))}
+                  >Com borda</button>
+                  <button
+                    type='button'
+                    className={!noticeForm.borderEnabled ? 'active' : ''}
+                    onClick={() => setNoticeForm((current) => ({ ...current, borderEnabled: false }))}
+                  >Sem borda</button>
+                </div>
+              </div>
+
+              <div className='dashboard-notice-border-options'>
+                <span>Estilo da borda</span>
+                <div className='dashboard-notice-segmented'>
+                  <button
+                    type='button'
+                    disabled={!noticeForm.borderEnabled}
+                    className={noticeForm.borderMode === 'top' ? 'active' : ''}
+                    onClick={() => setNoticeForm((current) => ({ ...current, borderMode: 'top' }))}
+                  >Só superior</button>
+                  <button
+                    type='button'
+                    disabled={!noticeForm.borderEnabled}
+                    className={noticeForm.borderMode === 'all' ? 'active' : ''}
+                    onClick={() => setNoticeForm((current) => ({ ...current, borderMode: 'all' }))}
+                  >Todo o contorno</button>
+                </div>
+              </div>
+            </div>
+
+            <div
+              className={`dashboard-notice-preview ${noticeForm.borderEnabled ? 'has-border' : 'no-border'} ${noticeForm.borderMode === 'top' ? 'border-top-only' : 'border-all'}`}
+              style={{
+                '--notice-bg': noticeForm.backgroundColor,
+                '--notice-text': noticeForm.textColor,
+                '--notice-border': noticeForm.borderColor,
+              }}
+            >
+              <span>📌</span>
+              <div>
+                <strong>{noticeForm.title || 'Prévia do post-it'}</strong>
+                <p>{noticeForm.content || 'Assim seu aviso ficará no mural.'}</p>
               </div>
             </div>
 
@@ -687,6 +780,11 @@ export default function PainelPrincipal({
           <strong>{completion}%</strong>
 
           <span>do dia concluído</span>
+
+          <div className='dashboard-daily-xp'>
+            <span>XP do dia</span>
+            <strong>{dailyXpDone} / {dailyXpMax} XP</strong>
+          </div>
         </div>
       </section>
 

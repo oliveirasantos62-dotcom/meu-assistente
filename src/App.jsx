@@ -132,9 +132,53 @@ export default function App() {
     ? gamificationReferenceData.tasks.filter((task) => task.done)
     : [];
   const dashboardTasks = Array.isArray(referenceData?.tasks) ? referenceData.tasks : [];
-  const dashboardCompletion = dashboardTasks.length
-    ? Math.round((dashboardTasks.filter((task) => task.done).length / dashboardTasks.length) * 100)
+  const dashboardHabits = Array.isArray(referenceData?.habits) ? referenceData.habits : [];
+  const dashboardGoals = Array.isArray(referenceData?.goals) ? referenceData.goals : [];
+
+  // Progresso do dia: considera apenas compromissos realmente relacionados
+  // a hoje. Não usa o total histórico de tarefas, pois isso distorcia o
+  // percentual do dia.
+  const isSameDay = (value) => {
+    if (!value) return false;
+    return String(value).slice(0, 10) === String(today).slice(0, 10);
+  };
+
+  const todayDashboardTasks = dashboardTasks.filter((task) => {
+    if (!task || task.cancelled || task.canceled) return false;
+    return isSameDay(task.date) || isSameDay(task.deadline);
+  });
+
+  const todayDashboardHabits = dashboardHabits.filter((habit) => {
+    if (!habit || habit.active === false || habit.isActive === false) return false;
+    // Hábitos são considerados compromissos diários por padrão.
+    const frequency = String(habit.frequency || habit.frequencyType || 'daily').toLowerCase();
+    return frequency === 'daily' || frequency === 'diaria' || frequency === 'diário' || frequency === '1x';
+  });
+
+  const todayDashboardGoals = dashboardGoals.filter((goal) => {
+    if (!goal || !isSameDay(goal.deadline)) return false;
+    return !(goal.done || ['completed', 'concluido', 'concluida'].includes(String(goal.status || '').toLowerCase()));
+  });
+
+  const dailyTotalItems = todayDashboardTasks.length + todayDashboardHabits.length + todayDashboardGoals.length;
+  const dailyDoneItems =
+    todayDashboardTasks.filter((task) => Boolean(task.done)).length +
+    todayDashboardHabits.filter((habit) => Boolean(habit.history?.[today] ?? habit.done)).length +
+    dashboardGoals.filter((goal) => isSameDay(goal.deadline) && (goal.done || ['completed', 'concluido', 'concluida'].includes(String(goal.status || '').toLowerCase()))).length;
+
+  const dashboardCompletion = dailyTotalItems
+    ? Math.round((dailyDoneItems / dailyTotalItems) * 100)
     : 0;
+
+  const dailyXpMax =
+    todayDashboardTasks.reduce((sum, task) => sum + Math.max(0, Number(task.xp) || 0), 0) +
+    todayDashboardHabits.reduce((sum, habit) => sum + Math.max(0, Number(habit.xp ?? habit.xpReward ?? 20) || 20), 0) +
+    todayDashboardGoals.reduce((sum, goal) => sum + Math.max(0, Number(goal.xpReward ?? goal.xp ?? 100) || 100), 0);
+
+  const dailyXpDone =
+    todayDashboardTasks.filter((task) => task.done).reduce((sum, task) => sum + Math.max(0, Number(task.xp) || 0), 0) +
+    todayDashboardHabits.filter((habit) => Boolean(habit.history?.[today] ?? habit.done)).reduce((sum, habit) => sum + Math.max(0, Number(habit.xp ?? habit.xpReward ?? 20) || 20), 0) +
+    dashboardGoals.filter((goal) => isSameDay(goal.deadline) && (goal.done || ['completed', 'concluido', 'concluida'].includes(String(goal.status || '').toLowerCase()))).reduce((sum, goal) => sum + Math.max(0, Number(goal.xpReward ?? goal.xp ?? 100) || 100), 0);
   const dashboardGamificationEnabled = gamificationReferenceData?.xp !== 0 || getReferenceData(data).settings?.moduleReferences?.gamification !== false;
   const dashboardLevel = dashboardGamificationEnabled ? (levelInfo?.level ?? 1) : 1;
   const dashboardNextXP = dashboardGamificationEnabled ? (levelInfo?.nextXP ?? 0) : 0;
@@ -709,6 +753,8 @@ export default function App() {
           <PainelPrincipal
             data={referenceData}
             completion={dashboardCompletion}
+            dailyXpDone={dailyXpDone}
+            dailyXpMax={dailyXpMax}
             level={dashboardLevel}
             nextXP={dashboardNextXP}
             progress={dashboardProgress}
