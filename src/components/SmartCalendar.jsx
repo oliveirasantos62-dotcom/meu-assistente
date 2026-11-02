@@ -112,6 +112,22 @@ const eventHasConflict = (event, events) => {
 };
 
 export default function SmartCalendar({ data, save, completeTask }) {
+  const referenceFlags = data?.settings?.moduleReferences || {};
+  const enabledEventTypes = useMemo(() => Object.keys(EVENT_TYPES).filter((type) => {
+    if (type === 'task') return referenceFlags.tasks !== false;
+    if (type === 'habit') return referenceFlags.habits !== false;
+    if (type === 'investment') return referenceFlags.investments !== false;
+    if (type === 'income' || type === 'expense') return referenceFlags.finance !== false;
+    return true;
+  }), [referenceFlags.tasks, referenceFlags.habits, referenceFlags.investments, referenceFlags.finance]);
+  const agendaDescription = [
+    referenceFlags.tasks !== false ? 'tarefas' : null,
+    'compromissos',
+    referenceFlags.finance !== false ? 'controle financeiro' : null,
+    referenceFlags.investments !== false ? 'investimentos' : null,
+    referenceFlags.habits !== false ? 'hábitos' : null,
+  ].filter(Boolean).join(', ').replace(/, ([^,]*)$/, ' e $1');
+
   const today = new Date();
 
   const todayString = formatDate(today);
@@ -203,7 +219,7 @@ export default function SmartCalendar({ data, save, completeTask }) {
       // Ignora dados inválidos do localStorage.
     }
 
-    return Object.keys(EVENT_TYPES);
+    return enabledEventTypes;
   });
 
   useEffect(() => {
@@ -228,7 +244,7 @@ export default function SmartCalendar({ data, save, completeTask }) {
   };
 
   const showAllTypes = () => {
-    setVisibleTypes(Object.keys(EVENT_TYPES));
+    setVisibleTypes(enabledEventTypes);
   };
 
   const hideAllTypes = () => {
@@ -1332,7 +1348,7 @@ export default function SmartCalendar({ data, save, completeTask }) {
           </h2>
 
           <p className='subtitle'>
-            Tarefas, compromissos e controle financeiro em um só lugar.
+            {agendaDescription.charAt(0).toUpperCase() + agendaDescription.slice(1)} em um só lugar.
           </p>
         </div>
 
@@ -1449,7 +1465,8 @@ export default function SmartCalendar({ data, save, completeTask }) {
             gap: 8,
           }}
         >
-          {Object.entries(EVENT_TYPES).map(([type, config]) => {
+          {enabledEventTypes.map((type) => {
+            const config = EVENT_TYPES[type];
             const active = visibleTypes.includes(type);
 
             return (
@@ -2141,7 +2158,9 @@ export default function SmartCalendar({ data, save, completeTask }) {
           borderTop: '1px solid var(--site-border)',
         }}
       >
-        {Object.entries(EVENT_TYPES).map(([key, config]) => (
+        {enabledEventTypes.map((key) => {
+          const config = EVENT_TYPES[key];
+          return (
           <span
             key={key}
             style={{
@@ -2167,7 +2186,8 @@ export default function SmartCalendar({ data, save, completeTask }) {
             />
             {config.icon} {config.label}
           </span>
-        ))}
+          );
+        })}
       </div>
 
       {/* ===================================================
@@ -2328,7 +2348,8 @@ export default function SmartCalendar({ data, save, completeTask }) {
                       gap: 7,
                     }}
                   >
-                    {Object.entries(EVENT_TYPES).map(([type, config]) => {
+                    {enabledEventTypes.map((type) => {
+                      const config = EVENT_TYPES[type];
                       const selected = eventType === type;
 
                       return (

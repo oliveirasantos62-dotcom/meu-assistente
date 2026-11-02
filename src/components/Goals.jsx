@@ -46,6 +46,8 @@ const initialForm = {
   targetDate: '',
   motivation: '',
   nextStep: '',
+  areaId: '',
+  xpReward: 100,
   tags: [],
 };
 
@@ -138,12 +140,14 @@ function GoalProgress({ value }) {
       </div>
 
       <div className='goal-progress-track'>
-        <div
-          className='goal-progress-fill'
-          style={{
-            width: `${Math.min(100, Math.max(0, value))}%`,
-          }}
-        />
+        {Number(value) > 0 && (
+          <div
+            className='goal-progress-fill'
+            style={{
+              width: `${Math.min(100, Math.max(0, Number(value) || 0))}%`,
+            }}
+          />
+        )}
       </div>
     </div>
   );
@@ -152,6 +156,8 @@ function GoalProgress({ value }) {
 export default function Goals({ data, save }) {
   const goals = normalizeGoals(data);
   const tasksList = Array.isArray(data?.tasks) ? data.tasks : [];
+  const areasList = Array.isArray(data?.areas) ? data.areas : [];
+  const tasksReferenceEnabled = data?.settings?.moduleReferences?.tasks !== false;
 
   const [view, setView] = useState('active');
 
@@ -233,6 +239,8 @@ export default function Goals({ data, save }) {
         tasksList.find((task) => String(task.id) === String(goal.nextStepTaskId))?.name ||
         goal.nextStep ||
         '',
+      areaId: goal.areaId || '',
+      xpReward: Number(goal.xpReward) || 100,
     });
 
     setShowForm(true);
@@ -255,7 +263,7 @@ export default function Goals({ data, save }) {
     const oldMilestones = editingGoal?.milestones || [];
 
     const goalId = editingGoal?.id || createId('goal');
-    const nextStepTitle = form.nextStep.trim();
+    const nextStepTitle = tasksReferenceEnabled ? form.nextStep.trim() : '';
     const existingNextStep = tasksList.find(
       (task) => String(task.id) === String(editingGoal?.nextStepTaskId),
     );
@@ -273,6 +281,7 @@ export default function Goals({ data, save }) {
                 ...task,
                 name: nextStepTitle,
                 goalId,
+                areaId: form.areaId || null,
                 updatedAt: new Date().toISOString(),
               }
             : task,
@@ -290,7 +299,7 @@ export default function Goals({ data, save }) {
             frequency: '1x',
             xp: 40,
             projectId: null,
-            areaId: null,
+            areaId: form.areaId || null,
             goalId,
             done: false,
             createdAt: new Date().toISOString(),
@@ -324,6 +333,9 @@ export default function Goals({ data, save }) {
       targetDate: form.targetDate || '',
       motivation: form.motivation.trim(),
       tags: Array.from(new Set((form.tags || []).map(String))),
+      areaId: form.areaId || null,
+      xpReward: Math.max(0, Number(form.xpReward) || 100),
+      xpClaimed: editingGoal?.xpClaimed === true,
       // Mantém o campo antigo para compatibilidade com dados já salvos.
       nextStep: nextStepTitle,
       nextStepTaskId,
@@ -426,6 +438,7 @@ export default function Goals({ data, save }) {
         : milestone,
     );
 
+    const previousProgress = calculateProgress(goal);
     const updatedGoal = {
       ...goal,
       milestones: updatedMilestones,
@@ -435,6 +448,11 @@ export default function Goals({ data, save }) {
       }),
       updatedAt: new Date().toISOString(),
     };
+
+    const completesNow = previousProgress < 100 && updatedGoal.progress >= 100 && !goal.xpClaimed;
+    if (completesNow) {
+      updatedGoal.xpClaimed = true;
+    }
 
     if (updatedGoal.progress >= 100) {
       updatedGoal.status = 'completed';
@@ -448,6 +466,8 @@ export default function Goals({ data, save }) {
 
     save({
       ...data,
+      xp: completesNow ? (Number(data?.xp) || 0) + (Number(goal.xpReward) || 100) : data?.xp,
+      coins: completesNow ? (Number(data?.coins) || 0) + Math.floor((Number(goal.xpReward) || 100) / 10) : data?.coins,
       goals: nextGoals,
     });
 
@@ -483,12 +503,17 @@ export default function Goals({ data, save }) {
       ],
     };
 
+    const completesNow = previousProgress < 100 && updatedGoal.progress >= 100 && !goal.xpClaimed;
+    if (completesNow) updatedGoal.xpClaimed = true;
+
     const nextGoals = goals.map((item) =>
       item.id === goalId ? updatedGoal : item,
     );
 
     save({
       ...data,
+      xp: completesNow ? (Number(data?.xp) || 0) + (Number(goal.xpReward) || 100) : data?.xp,
+      coins: completesNow ? (Number(data?.coins) || 0) + Math.floor((Number(goal.xpReward) || 100) / 10) : data?.coins,
       goals: nextGoals,
     });
 
@@ -512,6 +537,8 @@ export default function Goals({ data, save }) {
 
       updatedAt: new Date().toISOString(),
 
+      xpClaimed: true,
+
       history: [
         ...(goal.history || []),
         {
@@ -521,8 +548,12 @@ export default function Goals({ data, save }) {
       ],
     };
 
+    const rewardXP = goal.xpClaimed ? 0 : (Number(goal.xpReward) || 100);
+
     save({
       ...data,
+      xp: (Number(data?.xp) || 0) + rewardXP,
+      coins: (Number(data?.coins) || 0) + Math.floor(rewardXP / 10),
 
       goals: goals.map((item) => (item.id === goalId ? updatedGoal : item)),
     });
@@ -1083,6 +1114,34 @@ export default function Goals({ data, save }) {
                 </label>
 
                 <label>
+                  <span>📂 Área / habilidade</span>
+
+                  <select
+                    value={form.areaId}
+                    onChange={(event) => updateForm('areaId', event.target.value)}
+                  >
+                    <option value=''>Sem área</option>
+                    {areasList.map((area) => (
+                      <option key={area.id} value={area.id}>
+                        {area.icon || '📂'} {area.name}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+
+                <label>
+                  <span>⭐ Recompensa do objetivo</span>
+
+                  <input
+                    type='number'
+                    min='0'
+                    step='10'
+                    value={form.xpReward}
+                    onChange={(event) => updateForm('xpReward', event.target.value)}
+                  />
+                </label>
+
+                <label>
                   <span>Data de início</span>
 
                   <input
@@ -1135,17 +1194,19 @@ export default function Goals({ data, save }) {
                 />
               </label>
 
-              <label>
-                <span>🧭 Próximo passo (será criado como tarefa)</span>
+              {tasksReferenceEnabled && (
+                <label>
+                  <span>🧭 Próximo passo (será criado como tarefa)</span>
 
-                <input
-                  value={form.nextStep}
-                  onChange={(event) =>
-                    updateForm('nextStep', event.target.value)
-                  }
-                  placeholder='Ex.: Resolver 20 questões de Matemática'
-                />
-              </label>
+                  <input
+                    value={form.nextStep}
+                    onChange={(event) =>
+                      updateForm('nextStep', event.target.value)
+                    }
+                    placeholder='Ex.: Resolver 20 questões de Matemática'
+                  />
+                </label>
+              )}
 
               {/* ETAPAS */}
 

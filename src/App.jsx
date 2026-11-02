@@ -123,9 +123,22 @@ export default function App() {
   // Dados filtrados apenas para telas agregadoras. Cada página continua
   // usando seus dados completos; referências bloqueadas não aparecem fora dela.
   const referenceData = getReferenceData(data);
+  const pageData = (moduleId) => getReferenceData(data, moduleId);
   const referencePendingTasks = Array.isArray(referenceData?.tasks)
     ? referenceData.tasks.filter((task) => !task.done)
     : [];
+  const gamificationReferenceData = getReferenceData(data, 'gamification');
+  const gamificationCompletedTasks = Array.isArray(gamificationReferenceData?.tasks)
+    ? gamificationReferenceData.tasks.filter((task) => task.done)
+    : [];
+  const dashboardTasks = Array.isArray(referenceData?.tasks) ? referenceData.tasks : [];
+  const dashboardCompletion = dashboardTasks.length
+    ? Math.round((dashboardTasks.filter((task) => task.done).length / dashboardTasks.length) * 100)
+    : 0;
+  const dashboardGamificationEnabled = gamificationReferenceData?.xp !== 0 || getReferenceData(data).settings?.moduleReferences?.gamification !== false;
+  const dashboardLevel = dashboardGamificationEnabled ? (levelInfo?.level ?? 1) : 1;
+  const dashboardNextXP = dashboardGamificationEnabled ? (levelInfo?.nextXP ?? 0) : 0;
+  const dashboardProgress = dashboardGamificationEnabled ? (levelInfo?.progress ?? 0) : 0;
 
   // =========================================================
   // NAVEGAÇÃO
@@ -418,9 +431,10 @@ export default function App() {
   // DADOS DO ASSISTENTE
   // =========================================================
 
-  const assistantPriority = safePendingTasks.slice(0, 3);
+  const assistantPriority = referencePendingTasks.slice(0, 3);
 
-  const assistantAdvice = overload
+  const assistantOverload = referencePendingTasks.length >= 6;
+  const assistantAdvice = assistantOverload
     ? 'Sua lista está pesada. Priorize apenas as 3 tarefas essenciais hoje.'
     : 'Seu próximo melhor passo é avançar nas tarefas de maior impacto.';
 
@@ -694,10 +708,10 @@ export default function App() {
         {activeSection === 'dashboard' && (
           <PainelPrincipal
             data={referenceData}
-            completion={completion}
-            level={levelInfo?.level ?? 1}
-            nextXP={levelInfo?.nextXP ?? 0}
-            progress={levelInfo?.progress ?? 0}
+            completion={dashboardCompletion}
+            level={dashboardLevel}
+            nextXP={dashboardNextXP}
+            progress={dashboardProgress}
             daily={daily}
             productivityScore={productivityScore}
             bestHour={bestHour}
@@ -713,46 +727,46 @@ export default function App() {
         ===================================================== */}
 
         {activeSection === 'calendar' && (
-          <SmartCalendar data={referenceData} save={save} completeTask={completeTask} />
+          <SmartCalendar data={pageData('calendar')} save={save} completeTask={completeTask} />
         )}
 
         {/* =====================================================
             DIÁRIO
         ===================================================== */}
 
-        {activeSection === 'diario' && <Diario data={data} save={save} />}
+        {activeSection === 'diario' && <Diario data={pageData('diario')} save={save} />}
 
         {/* =====================================================
             ESTUDOS
         ===================================================== */}
 
-        {activeSection === 'estudos' && <Estudos data={data} save={save} />}
+        {activeSection === 'estudos' && <Estudos data={pageData('estudos')} save={save} />}
 
         {/* =====================================================
             OBJETIVOS
         ===================================================== */}
 
-        {activeSection === 'goals' && <Goals data={data} save={save} />}
+        {activeSection === 'goals' && <Goals data={pageData('goals')} save={save} />}
 
         {/* =====================================================
             HÁBITOS
         ===================================================== */}
 
-        {activeSection === 'habits' && <HabitsPage data={data} save={save} />}
+        {activeSection === 'habits' && <HabitsPage data={pageData('habits')} save={save} />}
 
         {/* =====================================================
             TAREFAS
         ===================================================== */}
 
         {activeSection === 'tasks' && (
-          <Tasks data={data} save={save} completeTask={completeTask} />
+          <Tasks data={pageData('tasks')} save={save} completeTask={completeTask} />
         )}
 
         {/* =====================================================
             PROCESSOS
         ===================================================== */}
 
-        {activeSection === 'processos' && <Processos data={data} save={save} />}
+        {activeSection === 'processos' && <Processos data={pageData('processos')} save={save} />}
 
         {/* =====================================================
             PROJETOS
@@ -778,14 +792,14 @@ export default function App() {
             EVOLUÇÃO
         ===================================================== */}
 
-        {activeSection === 'evolucao' && <Evolucao data={data} save={save} />}
+        {activeSection === 'evolucao' && <Evolucao data={pageData('evolucao')} save={save} />}
 
         {/* =====================================================
             COLEÇÕES / CONQUISTAS
         ===================================================== */}
 
         {activeSection === 'collections' && (
-          <ColecoesConquistas data={data} save={save} />
+          <ColecoesConquistas data={pageData('collections')} save={save} />
         )}
 
         {/* =====================================================
@@ -795,7 +809,7 @@ export default function App() {
         {activeSection === 'fase12' && (
           <>
             <DataDashboard
-              data={referenceData}
+              data={pageData('reports')}
               records={safeRecords}
               period={period}
               setPeriod={setPeriod}
@@ -808,26 +822,26 @@ export default function App() {
               totalDone={totalDone}
             />
 
-            <AdvancedDataScience data={data} />
+            <AdvancedDataScience data={pageData('reports')} />
           </>
         )}
 
-        {activeSection === 'reports' && <Reports data={referenceData} />}
+        {activeSection === 'reports' && <Reports data={pageData('reports')} />}
 
-        {activeSection === 'tags' && <TagsManager data={data} save={save} />}
+        {activeSection === 'tags' && <TagsManager data={pageData('tags')} save={save} />}
 
         {/* =====================================================
             FINANÇAS
         ===================================================== */}
 
-        {activeSection === 'fase13' && <Finance data={data} save={save} />}
+        {activeSection === 'fase13' && <Finance data={pageData('finance')} save={save} />}
 
         {/* =====================================================
             INVESTIMENTOS
         ===================================================== */}
 
         {activeSection === 'investments' && (
-          <Investments data={data} save={save} />
+          <Investments data={pageData('investments')} save={save} />
         )}
 
         {/* =====================================================
@@ -836,8 +850,8 @@ export default function App() {
 
         {activeSection === 'gamification' && (
           <Gamification
-            data={data}
-            completedTasks={safeCompletedTasks}
+            data={pageData('gamification')}
+            completedTasks={gamificationCompletedTasks}
             save={save}
           />
         )}
@@ -860,11 +874,11 @@ export default function App() {
 
         {activeSection === 'assistant' && (
           <Assistant
-            data={referenceData}
+            data={pageData('assistant')}
             pendingTasks={referencePendingTasks}
             assistantPriority={assistantPriority}
             assistantAdvice={assistantAdvice}
-            overload={overload}
+            overload={assistantOverload}
             save={save}
           />
         )}

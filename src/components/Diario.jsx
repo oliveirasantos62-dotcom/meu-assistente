@@ -3,54 +3,10 @@ import PersonalData from './PersonalData';
 import TagPicker from './TagPicker';
 
 const MENU_ITEMS = [
-  {
-    id: 'today',
-    icon: '🏠',
-    label: 'Hoje',
-    description: 'Meu dia',
-  },
-  {
-    id: 'study',
-    icon: '📚',
-    label: 'Estudos',
-    description: 'Sessões e desempenho',
-  },
-  {
-    id: 'reviews',
-    icon: '🧠',
-    label: 'Revisões',
-    description: 'Revisão espaçada',
-  },
-  {
-    id: 'errors',
-    icon: '❌',
-    label: 'Banco de erros',
-    description: 'Erros e aprendizados',
-  },
-  {
-    id: 'knowledge',
-    icon: '📖',
-    label: 'Conhecimentos',
-    description: 'O que estou aprendendo',
-  },
-  {
-    id: 'performance',
-    icon: '📊',
-    label: 'Desempenho',
-    description: 'Minha evolução',
-  },
-  {
-    id: 'history',
-    icon: '🗓️',
-    label: 'Histórico',
-    description: 'Linha do tempo',
-  },
-  {
-    id: 'reflection',
-    icon: '🔎',
-    label: 'Reflexão',
-    description: 'Reflexão semanal',
-  },
+  { id: 'today', icon: '🏠', label: 'Hoje', description: 'Meu dia' },
+  { id: 'history', icon: '🗓️', label: 'Histórico', description: 'Meus registros' },
+  { id: 'reflection', icon: '🔎', label: 'Reflexão', description: 'Reflexão semanal' },
+  { id: 'insights', icon: '💡', label: 'Insights', description: 'Padrões do diário' },
 ];
 
 const REVIEW_LEVELS = [
@@ -218,6 +174,9 @@ function getInitialDiary() {
     stress: 3,
     motivation: 3,
     productivity: 3,
+    intention: '',
+    priorities: '',
+    gratitude: '',
     happened: '',
     important: '',
     wentWell: '',
@@ -687,50 +646,34 @@ export default function Diario({ data, save }) {
       <div className='diary-hero'>
         <div>
           <span className='eyebrow'>DIÁRIO</span>
-
           <h1>Como foi seu dia?</h1>
-
           <p>{formatLongDate(today)}</p>
         </div>
-
         <div className='today-badge'>📖</div>
       </div>
 
       <div className='diary-stats'>
-        <div className='diary-stat'>
-          <span>📚</span>
-          <div>
-            <strong>{formatMinutes(todayStudyMinutes)}</strong>
-            <small>estudados hoje</small>
-          </div>
-        </div>
-
-        <div className='diary-stat'>
-          <span>🧠</span>
-          <div>
-            <strong>{overdueReviews.length + todayReviews.length}</strong>
-            <small>revisões pendentes</small>
-          </div>
-        </div>
-
-        <div className='diary-stat'>
-          <span>📝</span>
-          <div>
-            <strong>{todaySessions.length}</strong>
-            <small>sessões hoje</small>
-          </div>
-        </div>
-
-        <div className='diary-stat'>
-          <span>🎯</span>
-          <div>
-            <strong>{accuracy}%</strong>
-            <small>precisão geral</small>
-          </div>
-        </div>
+        <div className='diary-stat'><span>📖</span><div><strong>{diaryEntries.length}</strong><small>dias registrados</small></div></div>
+        <div className='diary-stat'><span>🙂</span><div><strong>{diaryForm.mood}/5</strong><small>humor hoje</small></div></div>
+        <div className='diary-stat'><span>⚡</span><div><strong>{diaryForm.energy}/5</strong><small>energia hoje</small></div></div>
+        <div className='diary-stat'><span>🎯</span><div><strong>{diaryForm.focus}/5</strong><small>foco hoje</small></div></div>
       </div>
 
       <form onSubmit={saveDiary}>
+        <div className='diary-card diary-quick-card'>
+          <div className='card-heading'>
+            <div>
+              <h2>☀️ Começo do dia</h2>
+              <p>Defina a direção do seu dia antes de registrar os acontecimentos.</p>
+            </div>
+          </div>
+          <div className='diary-fields'>
+            <TextArea label='🎯 Minha intenção para hoje' value={diaryForm.intention} onChange={(value) => updateDiaryField('intention', value)} placeholder='Como você quer viver este dia?' />
+            <TextArea label='📌 Minhas prioridades' value={diaryForm.priorities} onChange={(value) => updateDiaryField('priorities', value)} placeholder='Até 3 coisas que realmente importam hoje...' />
+            <TextArea label='🙏 Pelo que sou grato hoje?' value={diaryForm.gratitude} onChange={(value) => updateDiaryField('gratitude', value)} placeholder='Uma ou mais coisas pelas quais você é grato.' />
+          </div>
+        </div>
+
         <PersonalData
           data={data}
           save={save}
@@ -741,107 +684,43 @@ export default function Diario({ data, save }) {
           productivityScore={(Number(diaryForm.productivity) || 0) * 20}
           bestHour={null}
           setMood={(mood) => {
-            const moodValues = {
-              'Muito mal': 1,
-              Mal: 2,
-              Neutro: 3,
-              Bem: 4,
-              'Muito bem': 5,
-            };
+            const moodValues = { 'Muito mal': 1, Mal: 2, Neutro: 3, Bem: 4, 'Muito bem': 5 };
             updateDiaryField('mood', moodValues[mood] || 3);
           }}
-          setDailyMetric={(field, value) => {
-            updateDiaryField(field, field === 'sleep' ? String(value) : value);
-          }}
+          setDailyMetric={(field, value) => updateDiaryField(field, field === 'sleep' ? String(value) : value)}
         />
 
         <div className='diary-card'>
-          <div className='card-heading'>
-            <div>
-              <h2>🌱 Outros indicadores pessoais</h2>
-              <p>Continue registrando estresse e motivação junto ao diário.</p>
-            </div>
-          </div>
+          <div className='card-heading'><div><h2>🌱 Estado pessoal</h2><p>Registre como você está para encontrar padrões ao longo do tempo.</p></div></div>
           <div className='rating-grid'>
-            <RatingInput
-              label='Estresse'
-              value={diaryForm.stress}
-              onChange={(value) => updateDiaryField('stress', value)}
-            />
-            <RatingInput
-              label='Motivação'
-              value={diaryForm.motivation}
-              onChange={(value) => updateDiaryField('motivation', value)}
-            />
+            <RatingInput label='Estresse' value={diaryForm.stress} onChange={(value) => updateDiaryField('stress', value)} />
+            <RatingInput label='Motivação' value={diaryForm.motivation} onChange={(value) => updateDiaryField('motivation', value)} />
           </div>
         </div>
 
         <div className='diary-card'>
-          <div className='card-heading'>
-            <div>
-              <h2>✍️ Registro do dia</h2>
-              <p>
-                Não precisa escrever muito. Registre o que realmente importa.
-              </p>
-            </div>
-          </div>
-
+          <div className='card-heading'><div><h2>✍️ Registro do dia</h2><p>Escreva somente o que vale a pena lembrar.</p></div></div>
           <div className='diary-fields'>
-            <TextArea
-              label='O que aconteceu hoje?'
-              value={diaryForm.happened}
-              onChange={(value) => updateDiaryField('happened', value)}
-              placeholder='Conte os acontecimentos importantes...'
-            />
-
-            <TextArea
-              label='O que fiz de importante?'
-              value={diaryForm.important}
-              onChange={(value) => updateDiaryField('important', value)}
-              placeholder='Qual foi sua principal realização?'
-            />
-
-            <TextArea
-              label='O que deu certo?'
-              value={diaryForm.wentWell}
-              onChange={(value) => updateDiaryField('wentWell', value)}
-              placeholder='O que funcionou bem?'
-            />
-
-            <TextArea
-              label='O que deu errado?'
-              value={diaryForm.wentWrong}
-              onChange={(value) => updateDiaryField('wentWrong', value)}
-              placeholder='Onde você poderia ter feito melhor?'
-            />
-
-            <TextArea
-              label='O que aprendi?'
-              value={diaryForm.learned}
-              onChange={(value) => updateDiaryField('learned', value)}
-              placeholder='Uma ideia, conceito, comportamento ou aprendizado...'
-            />
-
-            <TextArea
-              label='O que quero melhorar amanhã?'
-              value={diaryForm.improveTomorrow}
-              onChange={(value) => updateDiaryField('improveTomorrow', value)}
-              placeholder='Escolha uma melhoria concreta...'
-            />
-
-            <TextArea
-              label='Notas livres'
-              value={diaryForm.notes}
-              onChange={(value) => updateDiaryField('notes', value)}
-              placeholder='Escreva qualquer outra coisa...'
-            />
+            <TextArea label='📰 O que aconteceu hoje?' value={diaryForm.happened} onChange={(value) => updateDiaryField('happened', value)} placeholder='Acontecimentos importantes, pessoas, situações...' />
+            <TextArea label='🏆 O que fiz de importante?' value={diaryForm.important} onChange={(value) => updateDiaryField('important', value)} placeholder='Qual foi sua principal realização?' />
+            <TextArea label='✅ O que deu certo?' value={diaryForm.wentWell} onChange={(value) => updateDiaryField('wentWell', value)} placeholder='O que funcionou bem?' />
+            <TextArea label='⚠️ O que deu errado?' value={diaryForm.wentWrong} onChange={(value) => updateDiaryField('wentWrong', value)} placeholder='O que você faria diferente?' />
+            <TextArea label='🧠 O que aprendi?' value={diaryForm.learned} onChange={(value) => updateDiaryField('learned', value)} placeholder='Ideia, conceito, comportamento ou aprendizado...' />
+            <TextArea label='🚀 O que quero melhorar amanhã?' value={diaryForm.improveTomorrow} onChange={(value) => updateDiaryField('improveTomorrow', value)} placeholder='Escolha uma melhoria concreta.' />
           </div>
-
-          <TagPicker data={data} save={save} value={diaryForm.tags || []} onChange={(value) => updateDiaryField('tags', value)} />
-          <button className='primary diary-save-button'>
-            💾 {todayDiary ? 'Atualizar diário' : 'Salvar diário'}
-          </button>
         </div>
+
+        <div className='diary-card diary-notes-card'>
+          <div className='card-heading'><div><h2>📝 Notas livres</h2><p>Um espaço sem regras para escrever qualquer coisa que queira guardar.</p></div></div>
+          <TextArea label='Anotações' value={diaryForm.notes} onChange={(value) => updateDiaryField('notes', value)} placeholder='Escreva livremente...' />
+        </div>
+
+        <div className='diary-card'>
+          <div className='card-heading'><div><h2>🏷️ Organização</h2><p>Use tags para encontrar e analisar seus registros depois.</p></div></div>
+          <TagPicker data={data} save={save} value={diaryForm.tags || []} onChange={(value) => updateDiaryField('tags', value)} />
+        </div>
+
+        <button className='primary diary-save-button'>💾 {todayDiary ? 'Atualizar diário' : 'Salvar diário'}</button>
       </form>
     </div>
   );
@@ -1656,90 +1535,57 @@ export default function Diario({ data, save }) {
   );
 
   const renderHistory = () => {
-    const timeline = [];
-
-    diaryEntries.forEach((entry) => {
-      timeline.push({
+    const timeline = diaryEntries
+      .map((entry) => ({
         id: `diary-${entry.id}`,
         date: entry.date,
         icon: '📖',
-        title: 'Diário escrito',
-        description: entry.important || entry.happened || 'Registro do dia.',
-      });
-    });
-
-    studySessions.forEach((session) => {
-      timeline.push({
-        id: `study-${session.id}`,
-        date: session.date,
-        icon: '📚',
-        title: `${formatMinutes(session.minutes)} de ${session.discipline}`,
-        description: session.subject,
-      });
-    });
-
-    knowledgeItems.forEach((item) => {
-      if (item.lastReview) {
-        timeline.push({
-          id: `review-${item.id}-${item.lastReview}`,
-          date: item.lastReview,
-          icon: '🧠',
-          title: `Revisão: ${item.title}`,
-          description: `${item.mastery}% de domínio`,
-        });
-      }
-    });
-
-    timeline.sort((a, b) => String(b.date).localeCompare(String(a.date)));
-
-    const grouped = timeline.reduce((groups, item) => {
-      if (!groups[item.date]) {
-        groups[item.date] = [];
-      }
-
-      groups[item.date].push(item);
-
-      return groups;
-    }, {});
+        title: entry.important || 'Diário escrito',
+        description: entry.notes || entry.happened || entry.gratitude || 'Registro do dia.',
+      }))
+      .sort((a, b) => String(b.date).localeCompare(String(a.date)));
 
     return (
       <div className='diary-section'>
-        <SectionHeader
-          eyebrow='HISTÓRICO'
-          title='Sua linha do tempo'
-          description='Tudo o que você registrou no Diário ao longo dos dias.'
-          icon='🗓️'
-        />
-
+        <SectionHeader eyebrow='HISTÓRICO' title='Minha linha do tempo' description='Consulte somente seus registros pessoais do Diário.' icon='🗓️' />
         <div className='diary-card'>
           {timeline.length === 0 ? (
-            <EmptyState
-              icon='🗓️'
-              title='Seu histórico está vazio'
-              text='Comece registrando seu dia ou suas sessões de estudo.'
-            />
+            <EmptyState icon='🗓️' title='Seu histórico está vazio' text='Comece registrando seu dia.' />
           ) : (
             <div className='timeline'>
-              {Object.entries(grouped).map(([date, items]) => (
-                <div className='timeline-day' key={date}>
-                  <div className='timeline-date'>{formatDate(date)}</div>
-
-                  <div className='timeline-items'>
-                    {items.map((item) => (
-                      <div className='timeline-item' key={item.id}>
-                        <div className='timeline-icon'>{item.icon}</div>
-
-                        <div>
-                          <strong>{item.title}</strong>
-
-                          <p>{item.description}</p>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
+              {timeline.map((item) => (
+                <div className='timeline-item' key={item.id}>
+                  <div className='timeline-icon'>{item.icon}</div>
+                  <div><div className='timeline-date'>{formatDate(item.date)}</div><strong>{item.title}</strong><p>{item.description}</p></div>
                 </div>
               ))}
             </div>
+          )}
+        </div>
+      </div>
+    );
+  };
+
+  const renderInsights = () => {
+    const entries = diaryEntries.slice(0, 30);
+    const average = (field) => entries.length ? (entries.reduce((sum, item) => sum + Number(item[field] || 0), 0) / entries.length).toFixed(1) : '0.0';
+    const best = [...entries].sort((a, b) => (Number(b.productivity || 0) + Number(b.focus || 0)) - (Number(a.productivity || 0) + Number(a.focus || 0)))[0];
+
+    return (
+      <div className='diary-section'>
+        <SectionHeader eyebrow='INSIGHTS' title='O que seu diário revela' description='Padrões calculados a partir dos seus próprios registros.' icon='💡' />
+        <div className='performance-grid'>
+          <PerformanceCard icon='🙂' value={`${average('mood')}/5`} label='Humor médio' />
+          <PerformanceCard icon='⚡' value={`${average('energy')}/5`} label='Energia média' />
+          <PerformanceCard icon='🎯' value={`${average('focus')}/5`} label='Foco médio' />
+          <PerformanceCard icon='📈' value={`${average('productivity')}/5`} label='Produtividade média' />
+        </div>
+        <div className='diary-card'>
+          <div className='card-heading'><div><h2>🔎 Padrão observado</h2><p>O sistema não inventa recomendações: usa apenas o que você registrou.</p></div></div>
+          {best ? (
+            <div className='insight-highlight'><strong>Seu melhor registro recente foi em {formatDate(best.date)}.</strong><p>{best.important || best.happened || 'Você registrou um dia importante.'}</p></div>
+          ) : (
+            <EmptyState icon='💡' title='Ainda não há dados suficientes' text='Registre alguns dias para começar a identificar padrões.' />
           )}
         </div>
       </div>
@@ -1895,26 +1741,14 @@ export default function Diario({ data, save }) {
       case 'today':
         return renderToday();
 
-      case 'study':
-        return renderStudy();
-
-      case 'reviews':
-        return renderReviews();
-
-      case 'errors':
-        return renderErrors();
-
-      case 'knowledge':
-        return renderKnowledge();
-
-      case 'performance':
-        return renderPerformance();
-
       case 'history':
         return renderHistory();
 
       case 'reflection':
         return renderReflection();
+
+      case 'insights':
+        return renderInsights();
 
       default:
         return renderToday();

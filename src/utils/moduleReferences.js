@@ -36,38 +36,51 @@ export function canReference(data, moduleId) {
  * Dados usados por telas agregadoras (Painel, Assistente, relatórios etc.).
  * A página própria do módulo continua usando os dados completos.
  */
-export function getReferenceData(data) {
+export function getReferenceData(data, ownModule = null) {
   const refs = getModuleReferences(data);
   const source = data || {};
   const next = { ...source };
 
-  if (refs.tasks === false) next.tasks = [];
-  if (refs.habits === false) next.habits = [];
-  if (refs.diario === false) next.diaryEntries = [];
-  if (refs.estudos === false) {
+  const canUse = (moduleId) => moduleId === ownModule || refs[moduleId] !== false;
+
+  if (!canUse('tasks')) {
+    next.tasks = [];
+    next.areas = [];
+  }
+  if (!canUse('habits')) next.habits = [];
+  if (!canUse('diario')) next.diaryEntries = [];
+  if (!canUse('estudos')) {
     next.studySessions = [];
     next.studyCycles = [];
     next.readings = [];
     next.reviews = [];
     next.errors = [];
   }
-  if (refs.goals === false) next.goals = [];
-  if (refs.projects === false) next.projects = [];
-  if (refs.collections === false) next.collections = [];
-  if (refs.tags === false) next.tags = [];
-  if (refs.calendar === false) next.calendarEvents = [];
-  if (refs.finance === false) {
+  if (!canUse('goals')) next.goals = [];
+  if (!canUse('projects')) next.projects = [];
+  if (!canUse('collections')) next.collections = [];
+  if (!canUse('tags')) next.tags = [];
+  if (!canUse('calendar')) next.calendarEvents = [];
+  if (!canUse('finance')) {
     next.finance = { ...(source.finance || {}), transactions: [] };
   }
-  if (refs.investments === false) {
+  if (!canUse('investments')) {
     next.investments = [];
     next.investmentAssets = [];
   }
-  if (refs.processos === false) next.processes = [];
-  if (refs.groups === false) next.groups = [];
-  if (refs.connections === false) next.connections = [];
-  if (refs.foguinho === false) next.foguinho = [];
-  if (refs.assistant === false) next.assistant = { history: [], notes: [] };
+  if (!canUse('processos')) next.processes = [];
+  if (!canUse('groups')) next.groups = [];
+  if (!canUse('connections')) next.connections = [];
+  if (!canUse('foguinho')) next.foguinho = [];
+  if (!canUse('assistant')) next.assistant = { history: [], notes: [] };
+  if (!canUse('evolucao')) {
+    next.evolutions = [];
+  }
+  if (!canUse('gamification')) {
+    next.xp = 0;
+    next.coins = 0;
+    next.gamification = { missions: [], achievements: [], rewards: [], streak: 0 };
+  }
 
   return next;
 }

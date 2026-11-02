@@ -325,10 +325,13 @@ export default function HabitsPage({ data, save }) {
         : habit,
     );
 
-    const xpChange = wasDone === willBeDone ? 0 : willBeDone ? 30 : -30;
+    const habitXP = Math.max(0, Number(targetHabit?.xp) || 30);
+    const xpChange = wasDone === willBeDone ? 0 : willBeDone ? habitXP : -habitXP;
+    const coinChange = wasDone === willBeDone ? 0 : willBeDone ? Math.floor(habitXP / 10) : -Math.floor(habitXP / 10);
     save({
       ...data,
       xp: Math.max(0, (Number(data?.xp) || 0) + xpChange),
+      coins: Math.max(0, (Number(data?.coins) || 0) + coinChange),
       habits: updatedHabits,
     });
 

@@ -18,6 +18,52 @@ export default function Gamification({ data = {}, completedTasks = [], save }) {
   ];
 
   const tasks = Array.isArray(data.tasks) ? data.tasks : [];
+  const goals = Array.isArray(data.goals) ? data.goals : [];
+  const habits = Array.isArray(data.habits) ? data.habits : [];
+  const areas = Array.isArray(data.areas) ? data.areas : [];
+  const studySessions = Array.isArray(data.studySessions) ? data.studySessions : [];
+  const completedGoals = goals.filter((goal) => goal.status === 'completed' || Number(goal.progress) >= 100);
+  const completedTasksCount = tasks.filter((task) => task.done).length;
+  const habitCompletions = habits.reduce((total, habit) => total + Object.values(habit.history || {}).filter(Boolean).length, 0);
+  const studyMinutes = studySessions.reduce((total, session) => total + Math.max(0, Number(session.minutes) || 0), 0);
+
+  const rank = getRank(level);
+  const attributes = [
+    { icon: '⚔️', name: 'Disciplina', xp: completedTasksCount * 10 + habitCompletions * 5, source: 'tarefas + hábitos' },
+    { icon: '📚', name: 'Conhecimento', xp: Math.round(studyMinutes + (Array.isArray(data.reviews) ? data.reviews.length * 10 : 0)), source: 'estudos + revisões' },
+    { icon: '🎯', name: 'Foco', xp: Math.round(studyMinutes * 0.5 + tasks.filter((task) => task.done && String(task.priority || '').toLowerCase() === 'alta').length * 15), source: 'tempo estudado + prioridades' },
+    { icon: '🔥', name: 'Consistência', xp: streak * 25 + habitCompletions * 2, source: 'sequência + hábitos' },
+    { icon: '🏆', name: 'Realização', xp: completedGoals.length * 100 + completedTasksCount * 5, source: 'objetivos + execução' },
+  ].map((attribute) => ({
+    ...attribute,
+    level: Math.floor(attribute.xp / 100) + 1,
+    progress: attribute.xp % 100,
+  }));
+
+  const areaSkills = areas.map((area) => {
+    const areaId = String(area.id);
+    const taskXp = tasks
+      .filter((task) => task.done && String(task.areaId || '') === areaId)
+      .reduce((sum, task) => sum + Math.max(0, Number(task.xp) || 0), 0);
+    const goalXp = goals
+      .filter((goal) => (goal.status === 'completed' || Number(goal.progress) >= 100) && String(goal.areaId || '') === areaId)
+      .reduce((sum, goal) => sum + Math.max(0, Number(goal.xpReward) || 100), 0);
+    const studyXp = studySessions
+      .filter((session) => String(session.areaId || '') === areaId)
+      .reduce((sum, session) => sum + Math.max(0, Number(session.minutes) || 0), 0);
+    const skillXp = Math.round(taskXp + goalXp + studyXp);
+    return {
+      ...area,
+      skillXp,
+      level: Math.floor(skillXp / 100) + 1,
+      progress: skillXp % 100,
+      contributions: [
+        taskXp ? `${taskXp} XP tarefas` : null,
+        goalXp ? `${goalXp} XP objetivos` : null,
+        studyXp ? `${studyXp} XP estudos` : null,
+      ].filter(Boolean),
+    };
+  });
   const nextMilestone = xp < 1500
     ? `${1500 - xp} XP para desbloquear Colecionador.`
     : coins < 500
@@ -135,6 +181,58 @@ export default function Gamification({ data = {}, completedTasks = [], save }) {
         </div> : <p className="empty-state">Suas tarefas cadastradas aparecerão aqui.</p>}
       </section>
 
+      <section className="gami-panel rpg-sheet">
+        <div className="section-heading">
+          <div><span className="section-icon">🧙</span><div><h2>Ficha do personagem</h2><p>Seu progresso vira atributos de RPG. Eles evoluem automaticamente com o que você já faz no sistema.</p></div></div>
+          <span className="rpg-rank">{rank}</span>
+        </div>
+        <div className="attribute-grid">
+          {attributes.map((attribute) => (
+            <article className="attribute-card" key={attribute.name}>
+              <div className="attribute-top"><span className="attribute-icon">{attribute.icon}</span><div><strong>{attribute.name}</strong><small>Nível {attribute.level}</small></div><b>{attribute.xp} XP</b></div>
+              <div className="attribute-track"><span style={{ width: `${attribute.progress}%` }} /></div>
+              <small className="attribute-source">{attribute.source} · {100 - attribute.progress} XP para o próximo nível</small>
+            </article>
+          ))}
+        </div>
+      </section>
+
+      <section className="gami-panel">
+        <div className="section-heading">
+          <div><span className="section-icon">🗺️</span><div><h2>Áreas como habilidades</h2><p>Cada área ganha experiência quando você conclui tarefas, objetivos ou registra estudos vinculados a ela.</p></div></div>
+          <span className="achievement-count">{areaSkills.length} habilidades</span>
+        </div>
+        {areaSkills.length ? (
+          <div className="skill-grid">
+            {areaSkills.map((skill) => (
+              <article className="skill-card" key={skill.id}>
+                <div className="skill-card-top">
+                  <span className="skill-icon">{skill.icon || '📂'}</span>
+                  <div><strong>{skill.name}</strong><small>Nível {skill.level}</small></div>
+                  <b>{skill.skillXp} XP</b>
+                </div>
+                <div className="skill-track"><span style={{ width: `${skill.progress}%` }} /></div>
+                <small>{skill.contributions.length ? skill.contributions.join(' · ') : 'Ainda sem experiência registrada nesta área.'}</small>
+              </article>
+            ))}
+          </div>
+        ) : (
+          <p className="empty-state">Crie áreas em Tarefas → Áreas e vincule seus objetivos ou tarefas. Elas aparecerão aqui como habilidades evolutivas.</p>
+        )}
+      </section>
+
+      <section className="gami-panel rpg-rules">
+        <div className="section-heading">
+          <div><span className="section-icon">✨</span><div><h2>Como seu personagem evolui</h2><p>Não é uma barra separada: a gamificação acompanha sua rotina real.</p></div></div>
+        </div>
+        <div className="rpg-rule-grid">
+          <div><span>✅</span><strong>Tarefa concluída</strong><small>Recebe o XP definido na própria tarefa.</small></div>
+          <div><span>🔥</span><strong>Hábito cumprido</strong><small>Gera XP e fortalece Disciplina e Consistência.</small></div>
+          <div><span>🎯</span><strong>Objetivo concluído</strong><small>Recebe a recompensa de XP configurada no objetivo.</small></div>
+          <div><span>📚</span><strong>Estudo registrado</strong><small>Tempo estudado fortalece Conhecimento e Foco.</small></div>
+        </div>
+      </section>
+
       <section className="gami-panel milestone-panel">
         <span className="milestone-icon">🎁</span>
         <div><h2>Próximo marco</h2><p>{nextMilestone}</p></div>
@@ -149,6 +247,15 @@ export default function Gamification({ data = {}, completedTasks = [], save }) {
       </section>
     </main>
   );
+}
+
+function getRank(level) {
+  if (level >= 30) return '🌟 Lenda';
+  if (level >= 20) return '👑 Mestre';
+  if (level >= 12) return '⚔️ Especialista';
+  if (level >= 7) return '🗺️ Explorador';
+  if (level >= 3) return '🛡️ Aprendiz';
+  return '🌱 Novato';
 }
 
 function getDifficulty(xp) {
@@ -234,6 +341,14 @@ const styles = `
 .shop-panel .shop-form{display:grid;grid-template-columns:2fr 1fr auto;gap:8px;margin-top:10px}
 @media(max-width:850px){.gami-stats{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:600px){.gamification-page{padding:14px}.gamification-header{align-items:flex-start;flex-direction:column}.level-badge{width:100%}.gami-panel{padding:16px}.achievement-grid{grid-template-columns:1fr}.achievement-status{display:none}.section-heading{align-items:flex-start}.section-heading>strong,.achievement-count{white-space:normal;text-align:right}.difficulty-row{gap:7px;flex-wrap:wrap}.difficulty-task{flex-basis:100%}.shop-panel .shop-form{grid-template-columns:1fr}.shop-panel .task{align-items:flex-start}.shop-panel .task>div{width:100%}}
+.rpg-sheet{background:linear-gradient(135deg,rgba(118,103,232,.09),rgba(54,201,232,.06));}
+.rpg-rank{font-weight:900;color:#8d7cff;background:rgba(118,103,232,.12);border:1px solid rgba(118,103,232,.25);padding:8px 12px;border-radius:999px;white-space:nowrap}
+.attribute-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.attribute-card,.skill-card{border:1px solid var(--border,#e9eaf2);background:var(--surface,#f8f8fc);border-radius:16px;padding:15px}
+.attribute-top,.skill-card-top{display:flex;align-items:center;gap:10px}.attribute-top>div,.skill-card-top>div{flex:1;min-width:0}.attribute-top strong,.attribute-top small,.skill-card-top strong,.skill-card-top small{display:block}.attribute-top small,.skill-card-top small{font-size:.72rem;color:var(--muted,#777d91);margin-top:2px}.attribute-top>b,.skill-card-top>b{font-size:.78rem;white-space:nowrap}.attribute-icon,.skill-icon{display:grid;place-items:center;width:40px;height:40px;border-radius:12px;background:#292541;font-size:1.25rem;flex-shrink:0}.attribute-track,.skill-track{height:7px;background:var(--border,#e9eaf2);border-radius:999px;overflow:hidden;margin-top:12px}.attribute-track span,.skill-track span{display:block;height:100%;background:linear-gradient(90deg,#7667e8,#36c9e8);border-radius:inherit}.attribute-source,.skill-card>small{display:block;color:var(--muted,#777d91);font-size:.72rem;margin-top:8px}.skill-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.rpg-rule-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}.rpg-rule-grid>div{padding:14px;border:1px solid var(--border,#e9eaf2);border-radius:15px;background:var(--surface,#f8f8fc)}.rpg-rule-grid span{font-size:1.4rem;display:block;margin-bottom:8px}.rpg-rule-grid strong,.rpg-rule-grid small{display:block}.rpg-rule-grid small{color:var(--muted,#777d91);font-size:.75rem;margin-top:4px;line-height:1.4}
+@media(max-width:850px){.attribute-grid,.skill-grid{grid-template-columns:1fr}.rpg-rule-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:600px){.rpg-rule-grid{grid-template-columns:1fr}.rpg-rank{white-space:normal;text-align:center}}
+
 /* Tema escuro: remove superfícies claras sem alterar a estrutura ou as ações */
 body.dark .gamification-page {
   color: var(--site-on-background, #f0f2f5);
@@ -248,6 +363,12 @@ body.dark .gamification-page .achievement.locked,
 body.dark .gamification-page .empty-state {
   background: var(--gami-panel); border-color: var(--gami-border); color: #f0f2f5;
 }
+body.dark .gamification-page .attribute-card,
+body.dark .gamification-page .skill-card,
+body.dark .gamification-page .rpg-rule-grid>div { background: #20243a; border-color: var(--gami-border); color: #f0f2f5; }
+body.dark .gamification-page .attribute-source,
+body.dark .gamification-page .skill-card>small,
+body.dark .gamification-page .rpg-rule-grid small { color: var(--gami-muted); }
 body.dark .gamification-page .stat-icon,
 body.dark .gamification-page .section-icon { background: #292541; }
 body.dark .gamification-page .gami-stat span:last-child,
