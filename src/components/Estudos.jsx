@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 
-import StudyCycle from './StudyCycle';
+import StudyPlanner from './StudyPlanner';
 
 import {
   createReading,
@@ -16,7 +16,7 @@ import {
 
 const TABS = [
   ['overview', '📚 Visão geral'],
-  ['cycle', '🔄 Ciclo de Estudos'],
+  ['organization', '🗓️ Planejamento'],
   ['sessions', '⏱️ Sessões'],
   ['reading', '📖 Leitura'],
   ['reviews', '🧠 Revisão espaçada'],
@@ -116,6 +116,7 @@ export default function Estudos({ data: appData, save: saveAppData }) {
   const [studyError, setStudyError] = useState(initialError);
 
   const [expandedDisciplines, setExpandedDisciplines] = useState({});
+  const studyCycles = Array.isArray(appData?.studyCycles) ? appData.studyCycles : [];
 
   async function load() {
     setLoading(true);
@@ -528,6 +529,16 @@ export default function Estudos({ data: appData, save: saveAppData }) {
         ))}
       </div>
 
+      {tab === 'organization' && (
+        <StudyPlanner
+          data={appData}
+          save={saveAppData}
+          sessions={data.sessions}
+          reviews={data.reviews}
+          cycles={studyCycles}
+        />
+      )}
+
       {/* =====================================================
           VISÃO GERAL
       ====================================================== */}
@@ -806,8 +817,6 @@ export default function Estudos({ data: appData, save: saveAppData }) {
       {/* =====================================================
           CICLO DE ESTUDOS
       ====================================================== */}
-
-      {tab === 'cycle' && <StudyCycle data={data} save={save} />}
 
       {/* =====================================================
           SESSÕES

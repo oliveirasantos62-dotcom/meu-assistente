@@ -33,6 +33,7 @@ export default function PainelPrincipal({
   const goals = Array.isArray(data?.goals) ? data.goals : [];
 
   const investments = Array.isArray(data?.investments) ? data.investments : [];
+  const showStudies = canReference(data, 'estudos');
 
   const showTasks = canReference(data, 'tasks');
   const showHabits = canReference(data, 'habits');
@@ -324,6 +325,10 @@ export default function PainelPrincipal({
         }),
     [calendarEvents, todayString],
   );
+
+  const todayStudyEvents = useMemo(() => todayEvents.filter((event) => event?.type === 'study'), [todayEvents]);
+  const nextStudyEvents = useMemo(() => calendarEvents.filter((event) => event?.type === 'study' && event?.date >= todayString).sort((a,b) => String(a.date).localeCompare(String(b.date)) || String(a.scheduledTime || '').localeCompare(String(b.scheduledTime || ''))).slice(0, 5), [calendarEvents, todayString]);
+  const studyMinutesToday = todayStudyEvents.reduce((sum, event) => sum + Number(event?.duration || 0), 0);
 
   /*
    * ============================================================
@@ -1314,6 +1319,35 @@ export default function PainelPrincipal({
               </div>
             ))}
           </div>
+        </section>
+      )}
+
+      {showStudies && (
+        <section className='card dashboard-day-card dashboard-study-card'>
+          <div className='dashboard-inline-header'>
+            <div>
+              <span className='section-label'>ESTUDOS</span>
+              <h3>📚 Estudos de hoje</h3>
+              <p>{studyMinutesToday > 0 ? `${studyMinutesToday} min planejados para hoje.` : 'Seu planejamento de estudos aparecerá aqui.'}</p>
+            </div>
+            <div className='dashboard-study-badge'>{todayStudyEvents.length} sessão(ões)</div>
+          </div>
+          {todayStudyEvents.length > 0 ? (
+            <div className='dashboard-inline-list'>
+              {todayStudyEvents.map((event) => (
+                <div key={event.id} className='dashboard-list-item'>
+                  <div className='dashboard-event-time'>{event.scheduledTime || '—'}</div>
+                  <div className='dashboard-list-main'><strong>{event.name}</strong><span>{event.duration || 0} min{event.description ? ` · ${event.description}` : ''}</span></div>
+                </div>
+              ))}
+            </div>
+          ) : nextStudyEvents.length > 0 ? (
+            <div className='dashboard-inline-list'>
+              <div className='dashboard-study-next'><strong>Próximo estudo</strong><span>{nextStudyEvents[0].name} · {formatDate(nextStudyEvents[0].date)} {nextStudyEvents[0].scheduledTime ? `às ${nextStudyEvents[0].scheduledTime}` : ''}</span></div>
+            </div>
+          ) : (
+            <div className='dashboard-empty-state'><span>🗓️</span><div><strong>Planejamento ainda não gerado</strong><p>Abra Estudos → Planejamento para organizar sua rotina e enviar as sessões para a agenda.</p></div></div>
+          )}
         </section>
       )}
 

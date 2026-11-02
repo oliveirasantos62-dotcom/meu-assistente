@@ -74,15 +74,29 @@ export async function reviewItem(req, res) {
   try {
     const b = req.body || {};
     const config = {
-      forgot: { mastery: 20, days: 1 }, little: { mastery: 40, days: 2 }, partial: { mastery: 60, days: 4 }, well: { mastery: 80, days: 7 }, master: { mastery: 95, days: null },
+      forgot: { mastery: 20, fallback: 1 },
+      little: { mastery: 40, fallback: 2 },
+      partial: { mastery: 60, fallback: 4 },
+      well: { mastery: 80, fallback: 7 },
+      master: { mastery: 95, fallback: 14 },
     };
     const rating = config[b.rating];
     if (!rating) return res.status(400).json({ message: 'Avaliação inválida.' });
     const [rows] = await Promise.all([query(`SELECT * FROM review_items WHERE id = ? AND user_id = ?`, [req.params.id, req.user.id])]);
     if (!rows.length) return res.status(404).json({ message: 'Revisão não encontrada.' });
     const item = rows[0];
-    let interval = rating.days;
-    if (b.rating === 'master') interval = Math.min(60, Math.max(14, Number(item.interval_days || 0) * 2 || 14));
+    const progressiveIntervals = [1, 3, 7, 14, 30, 60, 120, 240, 365];
+    const reviewCount = Number(item.review_count || 0);
+    let interval;
+    if (b.rating === 'forgot') {
+      interval = 1;
+    } else {
+      const currentIndex = progressiveIntervals.findIndex((days) => days >= Number(item.interval_days || 0));
+      const nextIndex = Math.min(progressiveIntervals.length - 1, Math.max(reviewCount + 1, currentIndex + 1, 1));
+      interval = progressiveIntervals[nextIndex] || rating.fallback;
+      if (b.rating === 'little') interval = Math.max(2, Math.min(interval, Number(item.interval_days || 0) * 2 || 2));
+      if (b.rating === 'partial') interval = Math.max(4, Math.min(interval, Number(item.interval_days || 0) * 2 || 4));
+    }
     const next = addDays(today(), interval);
     await query(`UPDATE review_items SET mastery=?, last_review=?, next_review=?, interval_days=?, review_count=review_count+1 WHERE id=? AND user_id=?`, [rating.mastery, today(), next, interval, req.params.id, req.user.id]);
     await query(`INSERT INTO review_logs (id,review_item_id,user_id,review_date,rating,mastery,next_review,interval_days) VALUES (?,?,?,?,?,?,?,?)`, [randomUUID(), req.params.id, req.user.id, today(), b.rating, rating.mastery, next, interval]);

@@ -37,6 +37,12 @@ const EVENT_TYPES = {
     icon: '🔥',
     color: '#f59e0b',
   },
+
+  study: {
+    label: 'Estudo',
+    icon: '📚',
+    color: '#7c5cff',
+  },
 };
 
 const pad = (value) => String(value).padStart(2, '0');
@@ -116,6 +122,7 @@ export default function SmartCalendar({ data, save, completeTask }) {
   const enabledEventTypes = useMemo(() => Object.keys(EVENT_TYPES).filter((type) => {
     if (type === 'task') return referenceFlags.tasks !== false;
     if (type === 'habit') return referenceFlags.habits !== false;
+    if (type === 'study') return referenceFlags.estudos !== false;
     if (type === 'investment') return referenceFlags.investments !== false;
     if (type === 'income' || type === 'expense') return referenceFlags.finance !== false;
     return true;
@@ -126,6 +133,7 @@ export default function SmartCalendar({ data, save, completeTask }) {
     referenceFlags.finance !== false ? 'controle financeiro' : null,
     referenceFlags.investments !== false ? 'investimentos' : null,
     referenceFlags.habits !== false ? 'hábitos' : null,
+    referenceFlags.estudos !== false ? 'estudos' : null,
   ].filter(Boolean).join(', ').replace(/, ([^,]*)$/, ' e $1');
 
   const today = new Date();
@@ -221,6 +229,10 @@ export default function SmartCalendar({ data, save, completeTask }) {
 
     return enabledEventTypes;
   });
+
+  useEffect(() => {
+    setVisibleTypes((current) => current.filter((type) => enabledEventTypes.includes(type)));
+  }, [enabledEventTypes.join('|')]);
 
   useEffect(() => {
     try {

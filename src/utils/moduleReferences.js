@@ -52,9 +52,13 @@ export function getReferenceData(data, ownModule = null) {
   if (!canUse('estudos')) {
     next.studySessions = [];
     next.studyCycles = [];
+    next.studyPlan = {};
     next.readings = [];
     next.reviews = [];
     next.errors = [];
+    if (Array.isArray(source.calendarEvents)) {
+      next.calendarEvents = source.calendarEvents.filter((event) => event?.type !== 'study');
+    }
   }
   if (!canUse('goals')) next.goals = [];
   if (!canUse('projects')) next.projects = [];

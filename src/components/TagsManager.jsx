@@ -13,7 +13,7 @@ const TYPES = [
   ['knowledgeItems', 'Conhecimentos'],
   ['errors', 'Banco de erros'],
   ['weeklyReflections', 'Reflexões'],
-  ['studyCycles', 'Ciclo de estudos'],
+  ['studyCycles', 'Matérias de estudos'],
   ['calendarEvents', 'Calendário'],
   ['processes', 'Processos'],
   ['areas', 'Áreas'],
