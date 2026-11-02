@@ -6232,6 +6232,28 @@ body.dark textarea {
   flex-shrink: 0;
 }
 
+.sidebar-switch-caption {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  min-width: 42px;
+}
+
+.sidebar-switch-caption small {
+  font-size: 9px;
+  line-height: 1;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: var(--site-text-muted);
+  text-transform: uppercase;
+}
+
+.sidebar-reference-switch .sidebar-switch {
+  border: 1px solid color-mix(in srgb, var(--primary-color, #7c5cff) 45%, transparent);
+}
+
 .sidebar-switch-label {
   display: flex;
   align-items: center;

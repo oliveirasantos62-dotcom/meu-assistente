@@ -27,7 +27,6 @@ import DataDashboard from './components/DataDashboard';
 import AdvancedDataScience from './components/AdvancedDataScience';
 import Reports from './components/Reports';
 import TagsManager from './components/TagsManager';
-import Personalization from './components/Personalization';
 
 // Finanças
 import Finance from './components/Finance';
@@ -646,6 +645,7 @@ export default function App() {
         setDarkMode={setDarkMode}
         onLogout={handleLogout}
         data={data}
+        save={save}
       />
 
       {/* CONTEÚDO */}
@@ -809,7 +809,6 @@ export default function App() {
 
         {activeSection === 'tags' && <TagsManager data={data} save={save} />}
 
-        {activeSection === 'personalization' && <Personalization data={data} save={save} />}
 
         {/* =====================================================
             FINANÇAS

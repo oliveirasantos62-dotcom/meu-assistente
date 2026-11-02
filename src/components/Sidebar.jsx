@@ -29,7 +29,6 @@ const SECTIONS = [
   { id: 'assistant', label: '🤖 Assistente' },
 
   // PERFIL
-  { id: 'personalization', label: '⚙️ Personalização' },
   { id: 'profile', label: '👤 Meu Perfil' },
 ];
 
@@ -63,7 +62,6 @@ const DEFAULT_VISIBLE = {
   foguinho: false,
   assistant: false,
 
-  personalization: true,
   profile: true,
 };
 
@@ -147,6 +145,7 @@ export default function Sidebar({
   setDarkMode,
   onLogout,
   data,
+  save,
 }) {
   const storageKey = getStorageKey(currentUser);
 
@@ -172,7 +171,7 @@ export default function Sidebar({
   const moduleMap = {
     tasks: 'tasks', calendar: 'calendar', estudos: 'estudos',
     goals: 'goals', habits: 'habits', projects: 'projects', collections: 'collections',
-    fase12: 'reports', reports: 'reports', tags: 'tags', fase13: 'finance', investments: 'investments',
+    fase12: 'dataScience', reports: 'reports', tags: 'tags', fase13: 'finance', investments: 'investments',
     assistant: 'assistant', gamification: 'gamification',
   };
 
@@ -181,6 +180,32 @@ export default function Sidebar({
     if (!moduleKey) return true;
     return data?.settings?.modules?.[moduleKey] !== false;
   };
+
+  const moduleReferenceKey = (id) => moduleMap[id] || id;
+
+  const isReferenceEnabled = (id) => {
+    const key = moduleReferenceKey(id);
+    return data?.settings?.moduleReferences?.[key] !== false;
+  };
+
+  function toggleModuleReference(id) {
+    if (!save) return;
+
+    const key = moduleReferenceKey(id);
+    const current = isReferenceEnabled(id);
+
+    save({
+      ...data,
+      settings: {
+        ...(data?.settings || {}),
+        moduleReferences: {
+          ...(data?.settings?.moduleReferences || {}),
+          [key]: !current,
+        },
+      },
+    });
+  }
+
 
   // Define se a pesquisa está ativada.
   const showSearch =
@@ -530,6 +555,12 @@ export default function Sidebar({
               <span>↕ Solte entre duas páginas para escolher a posição.</span>
 
               <span>✓ Ative somente os recursos que deseja visualizar.</span>
+              <span>◉ Controle se cada página pode aparecer como referência em outras áreas.</span>
+            </div>
+
+            <div className='sidebar-settings-legend'>
+              <span><strong>Visibilidade</strong> = mostra ou oculta a página no menu</span>
+              <span><strong>Referências</strong> = permite ou bloqueia menções, cards, análises e sugestões em outras páginas</span>
             </div>
 
             {/* PESQUISA DO MENU */}
@@ -666,9 +697,11 @@ export default function Sidebar({
                       )}
                     </div>
 
-                    {/* INTERRUPTOR */}
+                    {/* CONTROLES DA PÁGINA */}
                     <div className='sidebar-option-actions'>
-                      <label className='sidebar-switch-label'>
+                      <span className='sidebar-switch-caption'>
+                        <small>Menu</small>
+                        <label className='sidebar-switch-label sidebar-page-switch' title={section.fixed ? 'Página fixa' : checked ? 'Ocultar página' : 'Mostrar página'}>
                         <input
                           type='checkbox'
                           checked={checked}
@@ -676,11 +709,26 @@ export default function Sidebar({
                           onChange={() => toggleSection(section.id)}
                           aria-label={`Ativar ${section.label}`}
                         />
+                        <span className='sidebar-switch'><span /></span>
+                        </label>
+                      </span>
 
-                        <span className='sidebar-switch'>
-                          <span />
-                        </span>
+                      <span className='sidebar-switch-caption'>
+                        <small>Ref.</small>
+                        <label
+                        className='sidebar-switch-label sidebar-reference-switch'
+                        title={isReferenceEnabled(section.id) ? 'Permitir referências em outras páginas' : 'Isolar esta página das outras páginas'}
+                      >
+                        <input
+                          type='checkbox'
+                          checked={isReferenceEnabled(section.id)}
+                          disabled={section.fixed || !moduleEnabled(section.id)}
+                          onChange={() => toggleModuleReference(section.id)}
+                          aria-label={`Permitir referências de ${section.label}`}
+                        />
+                        <span className='sidebar-switch'><span /></span>
                       </label>
+                      </span>
                     </div>
                   </div>
                 );
