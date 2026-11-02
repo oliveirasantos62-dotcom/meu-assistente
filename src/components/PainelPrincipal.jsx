@@ -26,15 +26,23 @@ export default function PainelPrincipal({
     ? data.finance.transactions
     : [];
 
+  const goals = Array.isArray(data?.goals) ? data.goals : [];
+
+  const investments = Array.isArray(data?.investments) ? data.investments : [];
+
   const showTasks = canReference(data, 'tasks');
   const showHabits = canReference(data, 'habits');
+  const showGoals = canReference(data, 'goals');
   const showFinance = canReference(data, 'finance');
+  const showInvestments = canReference(data, 'investments');
   const showCalendar = canReference(data, 'calendar');
 
   const [expandedSections, setExpandedSections] = useState({
     tasks: false,
     habits: false,
     finance: false,
+    goals: false,
+    investments: false,
     agenda: false,
   });
 
@@ -86,6 +94,21 @@ export default function PainelPrincipal({
       : tasks.filter((task) => !task.done).length;
 
   const completedTasksCount = tasks.filter((task) => task.done).length;
+
+  const activeGoals = goals.filter((goal) => !goal.done && goal.status !== 'completed' && goal.status !== 'concluido' && goal.status !== 'concluida');
+
+  const completedGoals = goals.filter((goal) => goal.done || goal.status === 'completed' || goal.status === 'concluido' || goal.status === 'concluida');
+
+  const totalInvestmentValue = investments.reduce((total, investment) => {
+    const quantity = Number(investment?.quantity || 0);
+    const price = Number(investment?.currentPrice || investment?.buyPrice || 0);
+    return total + quantity * price;
+  }, 0);
+
+  const goalProgress = goals.length
+    ? Math.round(goals.reduce((sum, goal) => sum + Math.max(0, Math.min(100, Number(goal?.progress ?? goal?.percentage ?? 0))), 0) / goals.length)
+    : 0;
+
 
   /*
    * Tarefas relacionadas especificamente a hoje.
@@ -480,6 +503,44 @@ export default function PainelPrincipal({
         </button>
         )}
 
+        {/* OBJETIVOS */}
+        {showGoals && (
+          <button
+            type='button'
+            className={`card dashboard-stat dashboard-stat-button ${
+              expandedSections.goals ? 'dashboard-stat-active' : ''
+            }`}
+            onClick={() => toggleSection('goals')}
+            aria-expanded={expandedSections.goals}
+          >
+            <span className='dashboard-stat-icon'>🎯</span>
+            <div>
+              <strong>{activeGoals.length}</strong>
+              <span>objetivos ativos</span>
+            </div>
+            <span className='dashboard-stat-chevron'>{expandedSections.goals ? '⌃' : '⌄'}</span>
+          </button>
+        )}
+
+        {/* INVESTIMENTOS */}
+        {showInvestments && (
+          <button
+            type='button'
+            className={`card dashboard-stat dashboard-stat-button ${
+              expandedSections.investments ? 'dashboard-stat-active' : ''
+            }`}
+            onClick={() => toggleSection('investments')}
+            aria-expanded={expandedSections.investments}
+          >
+            <span className='dashboard-stat-icon'>📈</span>
+            <div>
+              <strong>{investments.length}</strong>
+              <span>investimentos</span>
+            </div>
+            <span className='dashboard-stat-chevron'>{expandedSections.investments ? '⌃' : '⌄'}</span>
+          </button>
+        )}
+
         {/* PRODUTIVIDADE */}
 
         <div className='card dashboard-stat'>
@@ -840,6 +901,78 @@ export default function PainelPrincipal({
                 );
               })
             )}
+          </div>
+        </section>
+      )}
+
+      {/* ======================================================
+          OBJETIVOS
+      ====================================================== */}
+
+      {showGoals && expandedSections.goals && (
+        <section className='card dashboard-inline-section'>
+          <div className='dashboard-inline-header'>
+            <div>
+              <span className='section-label'>OBJETIVOS</span>
+              <h3>Seus objetivos</h3>
+              <p>Resumo dos objetivos que continuam ativos.</p>
+            </div>
+            <button type='button' className='dashboard-collapse-button' onClick={() => toggleSection('goals')}>Ocultar</button>
+          </div>
+          <div className='dashboard-inline-list'>
+            {goals.length === 0 ? (
+              <div className='dashboard-empty-state'><span>🎯</span><div><strong>Nenhum objetivo cadastrado</strong><p>Crie um objetivo para acompanhar seu progresso aqui.</p></div></div>
+            ) : (
+              goals.slice(0, 8).map((goal) => {
+                const value = Math.max(0, Math.min(100, Number(goal?.progress ?? goal?.percentage ?? 0)));
+                const done = Boolean(goal?.done) || ['completed','concluido','concluida'].includes(String(goal?.status || '').toLowerCase());
+                return (
+                  <div key={goal.id} className='dashboard-list-item'>
+                    <div className='dashboard-stat-icon'>🎯</div>
+                    <div className='dashboard-list-main'>
+                      <strong>{goal.title || goal.name || 'Objetivo sem nome'}</strong>
+                      <span>{done ? 'Concluído' : `${value}% concluído`}</span>
+                      <div className='dashboard-reference-progress'><span style={{ width: `${done ? 100 : value}%` }} /></div>
+                    </div>
+                  </div>
+                );
+              })
+            )}
+          </div>
+        </section>
+      )}
+
+      {/* ======================================================
+          INVESTIMENTOS
+      ====================================================== */}
+
+      {showInvestments && expandedSections.investments && (
+        <section className='card dashboard-inline-section'>
+          <div className='dashboard-inline-header'>
+            <div>
+              <span className='section-label'>INVESTIMENTOS</span>
+              <h3>Carteira</h3>
+              <p>Resumo dos investimentos registrados.</p>
+            </div>
+            <button type='button' className='dashboard-collapse-button' onClick={() => toggleSection('investments')}>Ocultar</button>
+          </div>
+          <div className='dashboard-reference-investment-summary'>
+            <div><span>Ativos</span><strong>{investments.length}</strong></div>
+            <div><span>Valor atual</span><strong>{formatCurrency(totalInvestmentValue)}</strong></div>
+          </div>
+          <div className='dashboard-inline-list'>
+            {investments.length === 0 ? (
+              <div className='dashboard-empty-state'><span>📈</span><div><strong>Nenhum investimento cadastrado</strong><p>Adicione ativos na área de investimentos.</p></div></div>
+            ) : investments.slice(0, 8).map((investment) => (
+              <div key={investment.id} className='dashboard-list-item'>
+                <div className='dashboard-stat-icon'>📈</div>
+                <div className='dashboard-list-main'>
+                  <strong>{investment.ticker || investment.name || 'Investimento'}</strong>
+                  <span>{investment.type || 'Ativo'}</span>
+                </div>
+                <strong>{formatCurrency(Number(investment.quantity || 0) * Number(investment.currentPrice || investment.buyPrice || 0))}</strong>
+              </div>
+            ))}
           </div>
         </section>
       )}

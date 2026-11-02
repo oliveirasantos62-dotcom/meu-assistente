@@ -351,9 +351,12 @@ export default function Sidebar({
     .map((id) => SECTIONS.find((section) => section.id === id))
     .filter(Boolean);
 
-  // Exibe somente as páginas ativadas.
+  // A visibilidade do menu é controlada exclusivamente por
+  // "Personalizar menu". O estado de módulos é independente:
+  // se o usuário marcou uma página como visível, ela deve aparecer
+  // no menu mesmo que o módulo tenha sido desativado em outra configuração.
   const menuSections = orderedSections.filter(
-    (section) => visibleSections[section.id] && moduleEnabled(section.id),
+    (section) => visibleSections[section.id],
   );
 
   // Aplica a pesquisa somente quando ela está ativada.
@@ -586,6 +589,13 @@ export default function Sidebar({
                   <span />
                 </span>
               </label>
+            </div>
+
+            {/* CABEÇALHO DOS CONTROLES */}
+            <div className='sidebar-settings-columns' aria-hidden='true'>
+              <span></span>
+              <strong>MENU</strong>
+              <strong>REF.</strong>
             </div>
 
             {/* LISTA DE PÁGINAS */}

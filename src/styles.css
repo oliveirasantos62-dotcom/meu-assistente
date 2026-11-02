@@ -16098,3 +16098,126 @@ body.dark .groups-page .foguinho-card-top {
 body.dark .groups-page .foguinho-card-top {
   color: var(--site-primary, #8b7cff) !important;
 }
+
+/* =========================================================
+   Personalizar menu — cabeçalho único dos controles
+========================================================= */
+.sidebar-settings-columns {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 38px 38px;
+  gap: 8px;
+  align-items: center;
+  padding: 8px 12px 6px 46px;
+  color: var(--site-text-muted, #8f96ad);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: .08em;
+}
+.sidebar-settings-columns strong { text-align: center; }
+
+/* =========================================================
+   Foguinho — tema escuro completo
+========================================================= */
+body.dark .foguinho-page,
+body.dark .foguinho-page .card,
+body.dark .foguinho-page .foguinho-card,
+body.dark .foguinho-page .foguinho-stats .card,
+body.dark .foguinho-page .foguinho-form,
+body.dark .foguinho-page .foguinho-history,
+body.dark .foguinho-page .foguinho-list,
+body.dark .foguinho-page .foguinho-row {
+  background: var(--site-card, #171a29) !important;
+  color: var(--site-on-background, #f5f7ff) !important;
+  border-color: var(--site-border, rgba(255,255,255,.12)) !important;
+}
+body.dark .foguinho-page .foguinho-card h3,
+body.dark .foguinho-page .foguinho-card p,
+body.dark .foguinho-page .foguinho-card small,
+body.dark .foguinho-page .foguinho-card span,
+body.dark .foguinho-page .foguinho-card label,
+body.dark .foguinho-page .foguinho-row,
+body.dark .foguinho-page .foguinho-row strong,
+body.dark .foguinho-page .foguinho-row small,
+body.dark .foguinho-page .foguinho-row p {
+  color: var(--site-text, #f5f7ff) !important;
+}
+body.dark .foguinho-page input,
+body.dark .foguinho-page select,
+body.dark .foguinho-page textarea {
+  background: var(--site-surface-soft, #202438) !important;
+  color: var(--site-text, #f5f7ff) !important;
+  border-color: var(--site-border, rgba(255,255,255,.12)) !important;
+}
+body.dark .foguinho-page .foguinho-card-top {
+  color: var(--site-primary, #8b7cff) !important;
+}
+
+/* =========================================================
+   Referências no Painel Principal
+========================================================= */
+.dashboard-reference-progress {
+  height: 6px;
+  margin-top: 9px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--site-border, rgba(127,127,127,.18));
+}
+.dashboard-reference-progress span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--site-primary, #7c5cff);
+}
+.dashboard-reference-investment-summary {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin-bottom: 14px;
+}
+.dashboard-reference-investment-summary > div {
+  padding: 14px;
+  border: 1px solid var(--site-border, rgba(127,127,127,.18));
+  border-radius: 14px;
+  background: var(--site-surface-soft, rgba(127,127,127,.05));
+}
+.dashboard-reference-investment-summary span,
+.dashboard-reference-investment-summary strong {
+  display: block;
+}
+.dashboard-reference-investment-summary span {
+  color: var(--site-text-muted, #8f96ad);
+  font-size: .78rem;
+  margin-bottom: 4px;
+}
+@media (max-width: 700px) {
+  .sidebar-settings-columns { grid-template-columns: minmax(0, 1fr) 34px 34px; padding-left: 42px; }
+  .dashboard-reference-investment-summary { grid-template-columns: 1fr; }
+}
+
+/* =========================================================
+   Foguinho — correção definitiva do modo escuro
+   A página deve escurecer também os cards individuais.
+========================================================= */
+:is(body.dark, html.dark, body.dark-mode, html.dark-mode, body[data-theme="dark"], html[data-theme="dark"]) .foguinho-page .foguinho-card,
+:is(body.dark, html.dark, body.dark-mode, html.dark-mode, body[data-theme="dark"], html[data-theme="dark"]) .foguinho-page > .card,
+:is(body.dark, html.dark, body.dark-mode, html.dark-mode, body[data-theme="dark"], html[data-theme="dark"]) .foguinho-page .foguinho-history {
+  background: #171a29 !important;
+  color: #f5f7ff !important;
+  border-color: rgba(255,255,255,.12) !important;
+  box-shadow: none !important;
+}
+
+:is(body.dark, html.dark, body.dark-mode, html.dark-mode, body[data-theme="dark"], html[data-theme="dark"]) .foguinho-page .foguinho-card h3,
+:is(body.dark, html.dark, body.dark-mode, html.dark-mode, body[data-theme="dark"], html[data-theme="dark"]) .foguinho-page .foguinho-card p,
+:is(body.dark, html.dark, body.dark-mode, html.dark-mode, body[data-theme="dark"], html[data-theme="dark"]) .foguinho-page .foguinho-card small,
+:is(body.dark, html.dark, body.dark-mode, html.dark-mode, body[data-theme="dark"], html[data-theme="dark"]) .foguinho-page .foguinho-card label {
+  color: #f5f7ff !important;
+}
+
+:is(body.dark, html.dark, body.dark-mode, html.dark-mode, body[data-theme="dark"], html[data-theme="dark"]) .foguinho-page .foguinho-card input,
+:is(body.dark, html.dark, body.dark-mode, html.dark-mode, body[data-theme="dark"], html[data-theme="dark"]) .foguinho-page .foguinho-card select,
+:is(body.dark, html.dark, body.dark-mode, html.dark-mode, body[data-theme="dark"], html[data-theme="dark"]) .foguinho-page .foguinho-card textarea {
+  background: #202438 !important;
+  color: #f5f7ff !important;
+  border-color: rgba(255,255,255,.12) !important;
+}
