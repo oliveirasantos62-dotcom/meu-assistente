@@ -70,6 +70,11 @@ export const emptyAppData = {
 
   collections: [],
 
+  noticeBoard: {
+    enabled: false,
+    items: [],
+  },
+
   // Estruturas centrais de integração
   tags: [],
   studyCycles: [],
@@ -160,6 +165,12 @@ function normalizeData(data) {
   if (!Array.isArray(merged.collections)) {
     merged.collections = [];
   }
+
+  if (!isObject(merged.noticeBoard)) {
+    merged.noticeBoard = { enabled: false, items: [] };
+  }
+  merged.noticeBoard.enabled = Boolean(merged.noticeBoard.enabled);
+  if (!Array.isArray(merged.noticeBoard.items)) merged.noticeBoard.items = [];
 
   if (!Array.isArray(merged.tags)) {
     merged.tags = [];

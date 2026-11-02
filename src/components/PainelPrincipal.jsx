@@ -13,6 +13,8 @@ export default function PainelPrincipal({
   pendingTasks = [],
   onToggleTask,
   onToggleHabit,
+  save,
+  sourceData,
 }) {
   const tasks = Array.isArray(data?.tasks) ? data.tasks : [];
 
@@ -50,6 +52,123 @@ export default function PainelPrincipal({
     setExpandedSections((current) => ({
       ...current,
       [section]: !current[section],
+    }));
+  };
+
+
+  /*
+   * ============================================================
+   * MURAL DE AVISOS
+   * ============================================================
+   * O mural pertence ao Painel Principal e fica salvo nos dados
+   * centrais. Ele funciona como pequenos cartões personalizáveis,
+   * semelhantes aos itens das Coleções, mas voltados para lembretes
+   * e avisos rápidos.
+   */
+  const noticeBoard = data?.noticeBoard && typeof data.noticeBoard === 'object'
+    ? data.noticeBoard
+    : { enabled: false, items: [] };
+
+  const noticeItems = Array.isArray(noticeBoard.items) ? noticeBoard.items : [];
+
+  const [noticeModalOpen, setNoticeModalOpen] = useState(false);
+  const [editingNoticeId, setEditingNoticeId] = useState(null);
+  const [noticeForm, setNoticeForm] = useState({
+    title: '',
+    content: '',
+    color: '#6366f1',
+  });
+
+  const noticeColors = [
+    { value: '#6366f1', label: 'Roxo' },
+    { value: '#3b82f6', label: 'Azul' },
+    { value: '#10b981', label: 'Verde' },
+    { value: '#f59e0b', label: 'Âmbar' },
+    { value: '#ef4444', label: 'Vermelho' },
+    { value: '#ec4899', label: 'Rosa' },
+    { value: '#8b5cf6', label: 'Violeta' },
+    { value: '#14b8a6', label: 'Turquesa' },
+  ];
+
+  const updateNoticeBoard = (updater) => {
+    if (typeof save !== 'function') return;
+
+    const current = {
+      enabled: Boolean(noticeBoard.enabled),
+      items: noticeItems,
+    };
+
+    const next = typeof updater === 'function' ? updater(current) : updater;
+
+    save({
+      ...(sourceData || data),
+      noticeBoard: {
+        ...current,
+        ...next,
+      },
+    });
+  };
+
+  const toggleNoticeBoard = () => {
+    updateNoticeBoard((current) => ({
+      ...current,
+      enabled: !current.enabled,
+    }));
+  };
+
+  const openNewNotice = () => {
+    setEditingNoticeId(null);
+    setNoticeForm({ title: '', content: '', color: '#6366f1' });
+    setNoticeModalOpen(true);
+  };
+
+  const openEditNotice = (notice) => {
+    setEditingNoticeId(notice.id);
+    setNoticeForm({
+      title: notice.title || '',
+      content: notice.content || '',
+      color: notice.color || '#6366f1',
+    });
+    setNoticeModalOpen(true);
+  };
+
+  const saveNotice = (event) => {
+    event.preventDefault();
+
+    const title = noticeForm.title.trim();
+    const content = noticeForm.content.trim();
+    if (!title && !content) return;
+
+    const now = new Date().toISOString();
+    const item = {
+      id: editingNoticeId || `${Date.now()}-${Math.random().toString(36).slice(2)}`,
+      title: title || 'Aviso',
+      content,
+      color: noticeForm.color || '#6366f1',
+      createdAt: editingNoticeId
+        ? noticeItems.find((notice) => notice.id === editingNoticeId)?.createdAt || now
+        : now,
+      updatedAt: now,
+    };
+
+    updateNoticeBoard((current) => ({
+      ...current,
+      enabled: true,
+      items: editingNoticeId
+        ? current.items.map((notice) => notice.id === editingNoticeId ? { ...notice, ...item } : notice)
+        : [item, ...current.items],
+    }));
+
+    setNoticeModalOpen(false);
+    setEditingNoticeId(null);
+  };
+
+  const deleteNotice = (id) => {
+    if (!window.confirm('Excluir este aviso do mural?')) return;
+
+    updateNoticeBoard((current) => ({
+      ...current,
+      items: current.items.filter((notice) => notice.id !== id),
     }));
   };
 
@@ -429,6 +548,129 @@ export default function PainelPrincipal({
       {/* ======================================================
           HEADER
       ====================================================== */}
+
+      <section className='dashboard-notice-toolbar'>
+        <div>
+          <span className='section-label'>MURAL</span>
+          <strong>📌 Mural de avisos</strong>
+          <span>Crie lembretes e avisos rápidos para aparecerem no seu Painel Principal.</span>
+        </div>
+        <div className='dashboard-notice-actions'>
+          <button
+            type='button'
+            className={`dashboard-notice-toggle ${noticeBoard.enabled ? 'active' : ''}`}
+            onClick={toggleNoticeBoard}
+            aria-pressed={noticeBoard.enabled}
+          >
+            {noticeBoard.enabled ? '🟢 Mural ativado' : '⚪ Mural desativado'}
+          </button>
+          {noticeBoard.enabled && (
+            <button type='button' className='dashboard-notice-add' onClick={openNewNotice}>
+              + Novo aviso
+            </button>
+          )}
+        </div>
+      </section>
+
+      {noticeBoard.enabled && (
+        <section className='card dashboard-notice-board'>
+          <div className='dashboard-notice-header'>
+            <div>
+              <span className='section-label'>AVISOS</span>
+              <h3>Seu mural</h3>
+            </div>
+            <span className='dashboard-notice-count'>{noticeItems.length} {noticeItems.length === 1 ? 'aviso' : 'avisos'}</span>
+          </div>
+
+          {noticeItems.length === 0 ? (
+            <div className='dashboard-notice-empty'>
+              <span>📌</span>
+              <div>
+                <strong>Seu mural está vazio</strong>
+                <p>Adicione um lembrete, uma ideia, uma prioridade ou qualquer aviso que queira manter à vista.</p>
+              </div>
+              <button type='button' className='dashboard-notice-add' onClick={openNewNotice}>+ Criar primeiro aviso</button>
+            </div>
+          ) : (
+            <div className='dashboard-notice-grid'>
+              {noticeItems.map((notice) => (
+                <article
+                  key={notice.id}
+                  className='dashboard-notice-card'
+                  style={{ '--notice-accent': notice.color || '#6366f1' }}
+                >
+                  <div className='dashboard-notice-card-top'>
+                    <span className='dashboard-notice-pin'>📌</span>
+                    <div className='dashboard-notice-card-actions'>
+                      <button type='button' onClick={() => openEditNotice(notice)} aria-label='Editar aviso'>✎</button>
+                      <button type='button' onClick={() => deleteNotice(notice.id)} aria-label='Excluir aviso'>×</button>
+                    </div>
+                  </div>
+                  <h4>{notice.title || 'Aviso'}</h4>
+                  <p>{notice.content || 'Sem conteúdo.'}</p>
+                </article>
+              ))}
+            </div>
+          )}
+        </section>
+      )}
+
+      {noticeModalOpen && (
+        <div className='dashboard-notice-modal-backdrop' role='presentation'>
+          <form className='dashboard-notice-modal' onSubmit={saveNotice}>
+            <div className='dashboard-notice-modal-header'>
+              <div>
+                <span className='section-label'>MURAL DE AVISOS</span>
+                <h3>{editingNoticeId ? 'Editar aviso' : 'Novo aviso'}</h3>
+              </div>
+              <button type='button' onClick={() => setNoticeModalOpen(false)} aria-label='Fechar'>×</button>
+            </div>
+
+            <label>
+              Título
+              <input
+                value={noticeForm.title}
+                onChange={(event) => setNoticeForm((current) => ({ ...current, title: event.target.value }))}
+                placeholder='Ex.: Prova na sexta'
+                maxLength={80}
+              />
+            </label>
+
+            <label>
+              Aviso
+              <textarea
+                value={noticeForm.content}
+                onChange={(event) => setNoticeForm((current) => ({ ...current, content: event.target.value }))}
+                placeholder='Escreva o que precisa ficar visível...'
+                rows={5}
+                maxLength={500}
+              />
+            </label>
+
+            <div className='dashboard-notice-color-field'>
+              <span>Cor do aviso</span>
+              <div className='dashboard-notice-color-options'>
+                {noticeColors.map((color) => (
+                  <button
+                    key={color.value}
+                    type='button'
+                    className={`dashboard-notice-color ${noticeForm.color === color.value ? 'selected' : ''}`}
+                    style={{ '--notice-color': color.value }}
+                    onClick={() => setNoticeForm((current) => ({ ...current, color: color.value }))}
+                    aria-label={color.label}
+                    title={color.label}
+                  />
+                ))}
+              </div>
+            </div>
+
+            <div className='dashboard-notice-modal-footer'>
+              <button type='button' className='ghost' onClick={() => setNoticeModalOpen(false)}>Cancelar</button>
+              <button type='submit' className='primary'>Salvar aviso</button>
+            </div>
+          </form>
+        </div>
+      )}
 
       <section className='card dashboard-welcome'>
         <div>

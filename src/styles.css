@@ -16230,3 +16230,389 @@ body.dark .foguinho-page .foguinho-card-top {
 .report-chart-empty strong{color:var(--text-color,#101828);font-size:15px}
 .report-chart-empty p{margin:6px 0 0;max-width:360px;font-size:13px}
 @media (prefers-color-scheme: dark){.insight-box{background:var(--card-bg,#181c2b);color:var(--text-color,#f8fafc);border-color:var(--border-color,#30364d)}.report-chart-empty strong{color:var(--text-color,#f8fafc)}}
+
+/* Status de tarefa cancelada: preserva o registro sem tratá-lo como pendência. */
+.task.cancelled {
+  opacity: 0.72;
+  border-style: dashed;
+}
+
+.task.cancelled .task-name {
+  text-decoration: line-through;
+  text-decoration-thickness: 1px;
+}
+
+.status-chip {
+  display: inline-flex;
+  align-items: center;
+  margin-left: 8px;
+  padding: 3px 8px;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-decoration: none;
+  background: rgba(245, 158, 11, 0.12);
+  color: #f59e0b;
+  border: 1px solid rgba(245, 158, 11, 0.28);
+}
+
+.task-cancellation-reason {
+  color: var(--muted, #8f96aa);
+  font-size: 0.82rem;
+  font-style: italic;
+}
+
+/* Ordenação das tarefas por arrastar e soltar */
+.tasks-order-hint {
+  margin: 10px 0 12px;
+  color: var(--muted, #8f96ad);
+  font-size: 0.85rem;
+}
+
+.task {
+  position: relative;
+  transition: transform .15s ease, opacity .15s ease, box-shadow .15s ease;
+}
+
+.task-drag-handle {
+  flex: 0 0 28px;
+  width: 28px;
+  min-width: 28px;
+  height: 38px;
+  padding: 0;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--muted, #8f96ad);
+  cursor: grab;
+  font-weight: 800;
+  letter-spacing: -3px;
+  line-height: 1;
+}
+
+.task-drag-handle:hover {
+  background: rgba(139, 92, 246, .12);
+  color: var(--accent, #8b5cf6);
+}
+
+.task-drag-handle:active {
+  cursor: grabbing;
+}
+
+.task-dragging {
+  opacity: .45;
+}
+
+.task-drag-over-before::before,
+.task-drag-over-after::after {
+  content: '';
+  position: absolute;
+  left: 10px;
+  right: 10px;
+  height: 3px;
+  border-radius: 99px;
+  background: var(--accent, #8b5cf6);
+  box-shadow: 0 0 12px rgba(139, 92, 246, .45);
+  pointer-events: none;
+  z-index: 3;
+}
+
+.task-drag-over-before::before { top: -5px; }
+.task-drag-over-after::after { bottom: -5px; }
+
+/* ============================================================
+   MURAL DE AVISOS — PAINEL PRINCIPAL
+   ============================================================ */
+.dashboard-notice-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  margin: 18px 0 14px;
+  padding: 14px 16px;
+  border: 1px solid var(--site-border);
+  border-radius: 16px;
+  background: var(--site-card-bg);
+}
+
+.dashboard-notice-toolbar > div:first-child {
+  display: grid;
+  gap: 3px;
+}
+
+.dashboard-notice-toolbar strong {
+  font-size: 15px;
+  color: var(--site-on-background);
+}
+
+.dashboard-notice-toolbar > div:first-child > span:last-child {
+  color: var(--site-text-muted);
+  font-size: 12px;
+}
+
+.dashboard-notice-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.dashboard-notice-toggle,
+.dashboard-notice-add {
+  border: 1px solid var(--site-border);
+  border-radius: 10px;
+  padding: 9px 12px;
+  background: var(--site-card-bg);
+  color: var(--site-on-background);
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.dashboard-notice-toggle.active {
+  border-color: rgba(99, 102, 241, .65);
+  background: rgba(99, 102, 241, .16);
+}
+
+.dashboard-notice-add {
+  background: #6366f1;
+  border-color: #6366f1;
+  color: #fff;
+}
+
+.dashboard-notice-board {
+  margin-bottom: 18px;
+  padding: 18px;
+}
+
+.dashboard-notice-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.dashboard-notice-header h3 {
+  margin: 3px 0 0;
+}
+
+.dashboard-notice-count {
+  color: var(--site-text-muted);
+  font-size: 13px;
+}
+
+.dashboard-notice-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.dashboard-notice-card {
+  position: relative;
+  min-height: 150px;
+  padding: 16px;
+  border: 1px solid var(--site-border);
+  border-top: 4px solid var(--notice-accent, #6366f1);
+  border-radius: 14px;
+  background: var(--site-card-bg);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, .12);
+}
+
+.dashboard-notice-card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.dashboard-notice-pin {
+  font-size: 18px;
+}
+
+.dashboard-notice-card-actions {
+  display: flex;
+  gap: 4px;
+}
+
+.dashboard-notice-card-actions button,
+.dashboard-notice-modal-header > button {
+  width: 30px;
+  height: 30px;
+  border: 1px solid var(--site-border);
+  border-radius: 8px;
+  background: transparent;
+  color: var(--site-text-muted);
+  cursor: pointer;
+  font-weight: 700;
+}
+
+.dashboard-notice-card-actions button:hover,
+.dashboard-notice-modal-header > button:hover {
+  color: var(--site-on-background);
+  background: var(--site-card-bg);
+}
+
+.dashboard-notice-card h4 {
+  margin: 13px 0 7px;
+  color: var(--site-on-background);
+  font-size: 16px;
+}
+
+.dashboard-notice-card p {
+  margin: 0;
+  color: var(--site-text-muted);
+  white-space: pre-wrap;
+  line-height: 1.55;
+}
+
+.dashboard-notice-empty {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 18px;
+  border: 1px dashed var(--site-border);
+  border-radius: 14px;
+}
+
+.dashboard-notice-empty > span {
+  font-size: 28px;
+}
+
+.dashboard-notice-empty > div {
+  flex: 1;
+}
+
+.dashboard-notice-empty strong {
+  color: var(--site-on-background);
+}
+
+.dashboard-notice-empty p {
+  margin: 4px 0 0;
+  color: var(--site-text-muted);
+  font-size: 13px;
+}
+
+.dashboard-notice-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 3000;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: rgba(3, 5, 12, .72);
+  backdrop-filter: blur(5px);
+}
+
+.dashboard-notice-modal {
+  width: min(520px, 100%);
+  max-height: min(720px, calc(100vh - 40px));
+  overflow: auto;
+  padding: 20px;
+  border: 1px solid var(--site-border);
+  border-radius: 18px;
+  background: var(--site-card-bg);
+  color: var(--site-on-background);
+  box-shadow: 0 24px 70px rgba(0, 0, 0, .35);
+}
+
+.dashboard-notice-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 18px;
+}
+
+.dashboard-notice-modal-header h3 {
+  margin: 3px 0 0;
+}
+
+.dashboard-notice-modal label {
+  display: grid;
+  gap: 7px;
+  margin-bottom: 14px;
+  color: var(--site-on-background);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.dashboard-notice-modal input,
+.dashboard-notice-modal textarea {
+  width: 100%;
+  box-sizing: border-box;
+  border: 1px solid var(--site-border);
+  border-radius: 10px;
+  background: var(--site-card-bg);
+  color: var(--site-on-background);
+  padding: 11px 12px;
+  font: inherit;
+  resize: vertical;
+}
+
+.dashboard-notice-modal input:focus,
+.dashboard-notice-modal textarea:focus {
+  outline: 2px solid rgba(99, 102, 241, .35);
+  border-color: #6366f1;
+}
+
+.dashboard-notice-color-field {
+  display: grid;
+  gap: 9px;
+  margin-top: 4px;
+  color: var(--site-on-background);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.dashboard-notice-color-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 9px;
+}
+
+.dashboard-notice-color {
+  width: 32px;
+  height: 32px;
+  border: 3px solid transparent;
+  border-radius: 50%;
+  background: var(--notice-color);
+  cursor: pointer;
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,.25);
+}
+
+.dashboard-notice-color.selected {
+  border-color: var(--site-on-background);
+  outline: 2px solid var(--notice-color);
+  outline-offset: 2px;
+}
+
+.dashboard-notice-modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 20px;
+}
+
+@media (max-width: 900px) {
+  .dashboard-notice-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 640px) {
+  .dashboard-notice-toolbar,
+  .dashboard-notice-empty {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .dashboard-notice-actions {
+    justify-content: flex-start;
+  }
+
+  .dashboard-notice-grid {
+    grid-template-columns: 1fr;
+  }
+}

@@ -60,6 +60,8 @@ export default function Tasks({ data, save, completeTask }) {
   const [areaForm, setAreaForm] = useState(EMPTY_AREA);
   const [observationDrafts, setObservationDrafts] = useState({});
   const [newTagName, setNewTagName] = useState('');
+  const [draggedTaskId, setDraggedTaskId] = useState(null);
+  const [dragOverTask, setDragOverTask] = useState(null);
 
   const tasksList = Array.isArray(data?.tasks) ? data.tasks : [];
   const projectsList = Array.isArray(data?.projects) ? data.projects : [];
@@ -83,7 +85,20 @@ export default function Tasks({ data, save, completeTask }) {
   const visibleTasks = useMemo(() => {
     const query = search.trim().toLocaleLowerCase('pt-BR');
 
-    return tasksList.filter((task) => {
+    const orderedTasks = tasksList
+      .map((task, index) => ({ task, index }))
+      .sort((a, b) => {
+        const aOrder = Number.isFinite(Number(a.task.sortOrder))
+          ? Number(a.task.sortOrder)
+          : a.index;
+        const bOrder = Number.isFinite(Number(b.task.sortOrder))
+          ? Number(b.task.sortOrder)
+          : b.index;
+        return aOrder - bOrder;
+      })
+      .map(({ task }) => task);
+
+    return orderedTasks.filter((task) => {
       const taskTagNames = getTagIds(task)
         .map((tagId) => tagsList.find((tag) => String(tag.id) === String(tagId))?.name || '')
         .join(' ');
@@ -98,12 +113,16 @@ export default function Tasks({ data, save, completeTask }) {
           .includes(query) ||
         taskTagNames.toLocaleLowerCase('pt-BR').includes(query);
 
+      const cancelled = task.status === 'cancelled' || task.cancelled === true;
+
       const matchesFilter =
         filter === 'all' ||
-        (filter === 'pending' && !task.done) ||
+        (filter === 'pending' && !task.done && !cancelled) ||
         (filter === 'done' && task.done) ||
+        (filter === 'cancelled' && cancelled) ||
         (filter === 'overdue' &&
           !task.done &&
+          !cancelled &&
           task.deadline &&
           task.deadline < localDate());
 
@@ -245,6 +264,8 @@ export default function Tasks({ data, save, completeTask }) {
   };
 
   const toggleTask = (task) => {
+    if (task.status === 'cancelled' || task.cancelled === true) return;
+
     if (completeTask) {
       completeTask(task.id);
       return;
@@ -315,12 +336,115 @@ export default function Tasks({ data, save, completeTask }) {
     });
   };
 
+  const reorderTasks = (draggedId, targetId, position = 'before') => {
+    if (!draggedId || !targetId || String(draggedId) === String(targetId)) return;
+
+    const ordered = [...tasksList].sort((a, b) => {
+      const ai = tasksList.findIndex((item) => item.id === a.id);
+      const bi = tasksList.findIndex((item) => item.id === b.id);
+      const ao = Number.isFinite(Number(a.sortOrder)) ? Number(a.sortOrder) : ai;
+      const bo = Number.isFinite(Number(b.sortOrder)) ? Number(b.sortOrder) : bi;
+      return ao - bo;
+    });
+
+    const fromIndex = ordered.findIndex((task) => String(task.id) === String(draggedId));
+    const targetIndex = ordered.findIndex((task) => String(task.id) === String(targetId));
+    if (fromIndex < 0 || targetIndex < 0) return;
+
+    const [moved] = ordered.splice(fromIndex, 1);
+    let insertIndex = ordered.findIndex((task) => String(task.id) === String(targetId));
+    if (insertIndex < 0) return;
+    if (position === 'after') insertIndex += 1;
+    ordered.splice(insertIndex, 0, moved);
+
+    const updatedTasks = ordered.map((task, index) => ({
+      ...task,
+      sortOrder: index,
+    }));
+
+    save({ ...data, tasks: updatedTasks });
+    setDraggedTaskId(null);
+    setDragOverTask(null);
+  };
+
+  const handleTaskDragStart = (event, taskId) => {
+    setDraggedTaskId(taskId);
+    event.dataTransfer.effectAllowed = 'move';
+    event.dataTransfer.setData('text/plain', String(taskId));
+  };
+
+  const handleTaskDragOver = (event, taskId) => {
+    event.preventDefault();
+    if (!draggedTaskId || String(draggedTaskId) === String(taskId)) return;
+
+    const rect = event.currentTarget.getBoundingClientRect();
+    const position = event.clientY < rect.top + rect.height / 2 ? 'before' : 'after';
+    setDragOverTask({ id: taskId, position });
+    event.dataTransfer.dropEffect = 'move';
+  };
+
+  const handleTaskDrop = (event, taskId) => {
+    event.preventDefault();
+    const dragged = event.dataTransfer.getData('text/plain') || draggedTaskId;
+    const position = dragOverTask?.id === taskId ? dragOverTask.position : 'before';
+    reorderTasks(dragged, taskId, position);
+  };
+
   const deleteTask = (id) => {
     if (!window.confirm('Excluir esta tarefa?')) return;
 
     save({
       ...data,
       tasks: tasksList.filter((task) => task.id !== id),
+    });
+  };
+
+  const toggleCancelled = (task) => {
+    const isCancelled = task.status === 'cancelled' || task.cancelled === true;
+
+    if (isCancelled) {
+      save({
+        ...data,
+        tasks: tasksList.map((item) =>
+          item.id === task.id
+            ? {
+                ...item,
+                status: 'pending',
+                cancelled: false,
+                cancelledAt: null,
+                cancellationReason: '',
+              }
+            : item,
+        ),
+      });
+      return;
+    }
+
+    if (task.done) {
+      alert('Uma tarefa concluída não precisa ser cancelada. Reabra-a primeiro se quiser reagendá-la.');
+      return;
+    }
+
+    const reason = window.prompt(
+      'Por que você está cancelando esta tarefa? (opcional)\n\nEla continuará salva e poderá ser reativada depois.',
+      task.cancellationReason || '',
+    );
+
+    if (reason === null) return;
+
+    save({
+      ...data,
+      tasks: tasksList.map((item) =>
+        item.id === task.id
+          ? {
+              ...item,
+              status: 'cancelled',
+              cancelled: true,
+              cancelledAt: new Date().toISOString(),
+              cancellationReason: reason.trim(),
+            }
+          : item,
+      ),
     });
   };
 
@@ -462,10 +586,12 @@ export default function Tasks({ data, save, completeTask }) {
 
   const completedCount = tasksList.filter((task) => task.done).length;
 
-  const pendingCount = tasksList.filter((task) => !task.done).length;
+  const pendingCount = tasksList.filter((task) => !task.done && task.status !== 'cancelled' && !task.cancelled).length;
+
+  const cancelledCount = tasksList.filter((task) => task.status === 'cancelled' || task.cancelled === true).length;
 
   const overdueCount = tasksList.filter(
-    (task) => !task.done && task.deadline && task.deadline < localDate(),
+    (task) => !task.done && task.status !== 'cancelled' && !task.cancelled && task.deadline && task.deadline < localDate(),
   ).length;
 
   const recurringTasks = tasksList.filter(
@@ -515,6 +641,11 @@ export default function Tasks({ data, save, completeTask }) {
         <div className='reward'>
           <strong>{overdueCount}</strong>
           <small>⚠️ Atrasadas</small>
+        </div>
+
+        <div className='reward'>
+          <strong>{cancelledCount}</strong>
+          <small>⏸️ Canceladas</small>
         </div>
       </div>
 
@@ -574,6 +705,7 @@ export default function Tasks({ data, save, completeTask }) {
                 <option value='all'>Todos os status</option>
                 <option value='pending'>Pendentes</option>
                 <option value='done'>Concluídas</option>
+                <option value='cancelled'>Canceladas</option>
                 <option value='overdue'>Atrasadas</option>
               </select>
             </div>
@@ -616,6 +748,8 @@ export default function Tasks({ data, save, completeTask }) {
             </div>
           </div>
 
+          <p className='tasks-order-hint'>↕️ Arraste pelo ícone ⋮⋮ para definir a ordem das tarefas. A ordem fica salva e continua a mesma ao voltar para a página.</p>
+
           <div className='tasks-list'>
             {visibleTasks.map((task) => {
               const project = projectsList.find(
@@ -624,14 +758,35 @@ export default function Tasks({ data, save, completeTask }) {
 
               const area = getTaskArea(task);
 
+              const cancelled = task.status === 'cancelled' || task.cancelled === true;
+
               const overdue =
-                !task.done && task.deadline && task.deadline < localDate();
+                !task.done && !cancelled && task.deadline && task.deadline < localDate();
 
               return (
                 <article
-                  className={`task ${task.done ? 'done' : ''}`}
+                  className={`task ${task.done ? 'done' : ''} ${cancelled ? 'cancelled' : ''} ${draggedTaskId === task.id ? 'task-dragging' : ''} ${dragOverTask?.id === task.id && dragOverTask.position === 'before' ? 'task-drag-over-before' : ''} ${dragOverTask?.id === task.id && dragOverTask.position === 'after' ? 'task-drag-over-after' : ''}`}
                   key={task.id}
+                  draggable
+                  onDragStart={(event) => handleTaskDragStart(event, task.id)}
+                  onDragOver={(event) => handleTaskDragOver(event, task.id)}
+                  onDrop={(event) => handleTaskDrop(event, task.id)}
+                  onDragEnd={() => {
+                    setDraggedTaskId(null);
+                    setDragOverTask(null);
+                  }}
                 >
+                  <button
+                    type='button'
+                    className='task-drag-handle'
+                    draggable={false}
+                    onClick={(event) => event.preventDefault()}
+                    aria-label={`Arrastar tarefa: ${task.name}`}
+                    title='Arraste para reorganizar'
+                  >
+                    ⋮⋮
+                  </button>
+
                   <button
                     type='button'
                     className={`task-completion-button ${task.done ? 'is-done' : 'is-pending'}`}
@@ -654,7 +809,10 @@ export default function Tasks({ data, save, completeTask }) {
                   </button>
 
                   <div className='task-content'>
-                    <strong className='task-name'>{task.name}</strong>
+                    <strong className='task-name'>
+                      {task.name}
+                      {cancelled && <span className='status-chip status-cancelled'>⏸️ Cancelada</span>}
+                    </strong>
 
                     {task.description && (
                       <p className='subtitle'>{task.description}</p>
@@ -683,6 +841,12 @@ export default function Tasks({ data, save, completeTask }) {
                           }}
                         >
                           {area.icon} {area.name}
+                        </span>
+                      )}
+
+                      {cancelled && task.cancellationReason && (
+                        <span className='task-cancellation-reason'>
+                          Motivo: {task.cancellationReason}
                         </span>
                       )}
 
@@ -719,6 +883,15 @@ export default function Tasks({ data, save, completeTask }) {
                   </div>
 
                   <div className='task-actions'>
+                    <button
+                      type='button'
+                      className='ghost'
+                      onClick={() => toggleCancelled(task)}
+                      title={cancelled ? 'Reativar tarefa' : 'Cancelar sem excluir'}
+                    >
+                      {cancelled ? '▶️ Reativar' : '⏸️ Cancelar'}
+                    </button>
+
                     <button
                       type='button'
                       className='ghost'

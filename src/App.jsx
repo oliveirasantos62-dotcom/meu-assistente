@@ -717,6 +717,8 @@ export default function App() {
             bestHour={bestHour}
             pendingTasks={referencePendingTasks}
             today={today}
+            save={save}
+            sourceData={data}
             onToggleTask={handleDashboardToggleTask}
             onToggleHabit={handleDashboardToggleHabit}
           />

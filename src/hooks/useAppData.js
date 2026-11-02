@@ -103,7 +103,12 @@ function normalizeAppData(rawData) {
       if (!existing.includes(tagId)) existing.push(tagId);
     }
 
-    const normalizedTask = { ...task, tags: Array.from(new Set(existing.map(String))) };
+    const normalizedTask = {
+      ...task,
+      status: task.status || (task.cancelled ? 'cancelled' : task.done ? 'done' : 'pending'),
+      cancelled: task.cancelled === true || task.status === 'cancelled',
+      tags: Array.from(new Set(existing.map(String))),
+    };
     delete normalizedTask.tag;
     return normalizedTask;
   });
@@ -186,6 +191,21 @@ function normalizeAppData(rawData) {
 
     // Coleções & Conquistas
     collections: normalizedCollections,
+
+    noticeBoard: {
+      enabled: Boolean(source.noticeBoard?.enabled),
+      items: Array.isArray(source.noticeBoard?.items)
+        ? source.noticeBoard.items.map((item) => ({
+            ...item,
+            id: String(item.id || `${Date.now()}-${Math.random().toString(36).slice(2)}`),
+            title: String(item.title || '').trim(),
+            content: String(item.content || ''),
+            color: item.color || '#6366f1',
+            createdAt: item.createdAt || new Date().toISOString(),
+            updatedAt: item.updatedAt || new Date().toISOString(),
+          }))
+        : [],
+    },
 
     tags: normalizedTags,
 
@@ -489,7 +509,7 @@ export function useAppData(user) {
   const tasks = Array.isArray(safeData.tasks) ? safeData.tasks : [];
 
   const pendingTasks = useMemo(
-    () => tasks.filter((task) => !task.done),
+    () => tasks.filter((task) => !task.done && task.status !== 'cancelled' && !task.cancelled),
     [tasks],
   );
 
@@ -550,7 +570,7 @@ export function useAppData(user) {
     (id) => {
       const task = tasks.find((item) => String(item.id) === String(id));
 
-      if (!task) return;
+      if (!task || task.status === 'cancelled' || task.cancelled === true) return;
 
       const now = new Date();
 
@@ -572,6 +592,8 @@ export function useAppData(user) {
             ? {
                 ...item,
                 done: true,
+                status: 'done',
+                cancelled: false,
                 completedAt: timestamp,
               }
             : item,
@@ -642,6 +664,8 @@ export function useAppData(user) {
           ? {
               ...item,
               done: false,
+              status: 'pending',
+              cancelled: false,
               completedAt: null,
             }
           : item,
