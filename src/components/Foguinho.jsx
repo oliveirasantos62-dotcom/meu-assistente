@@ -312,7 +312,6 @@ export default function Foguinho({ currentUser }) {
     <section className='page-section foguinho-page'>
       <div className='section-heading'>
         <div>
-          <span className='eyebrow'>FASE 3 · SOCIAL</span>
 
           <h2>🔥 Foguinho</h2>
 

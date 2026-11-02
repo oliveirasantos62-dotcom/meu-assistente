@@ -245,7 +245,6 @@ export default function Grupos() {
     <section className='page-section groups-page'>
       <div className='section-heading'>
         <div>
-          <span className='eyebrow'>FASE 6 · SOCIAL</span>
           <h2>👥 Grupos</h2>
           <p>
             Crie comunidades para estudar, manter hábitos, ler e executar

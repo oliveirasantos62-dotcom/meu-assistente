@@ -113,7 +113,7 @@ export default function ProjetosColaborativos() {
 
   return <section className="page-section collaborative-projects-page">
     <div className="section-heading">
-      <div><span className="eyebrow">FASE 5 · COLABORAÇÃO</span><h2>📁 Projetos colaborativos</h2><p>Crie projetos, convide conexões, distribua tarefas e acompanhe o progresso de cada membro.</p></div>
+      <div><h2>📁 Projetos colaborativos</h2><p>Crie projetos, convide conexões, distribua tarefas e acompanhe o progresso de cada membro.</p></div>
       <button className="primary" onClick={() => setShowProject(true)}>＋ Novo projeto</button>
     </div>
     {error && <p className="auth-error" role="alert">{error}</p>}

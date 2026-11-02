@@ -16221,3 +16221,12 @@ body.dark .foguinho-page .foguinho-card-top {
   color: #f5f7ff !important;
   border-color: rgba(255,255,255,.12) !important;
 }
+
+/* Correções de tema e estados vazios dos relatórios */
+.insight-box{display:flex;align-items:flex-start;gap:9px;background:var(--card-bg,#fff);color:var(--text-color,#101828);border-color:var(--border-color,#eaecf0)}
+.insight-icon{flex:0 0 auto;line-height:1.5}
+.report-chart-empty{min-height:260px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;color:var(--muted-color,#667085);padding:20px;box-sizing:border-box}
+.report-chart-empty span{font-size:32px;margin-bottom:8px}
+.report-chart-empty strong{color:var(--text-color,#101828);font-size:15px}
+.report-chart-empty p{margin:6px 0 0;max-width:360px;font-size:13px}
+@media (prefers-color-scheme: dark){.insight-box{background:var(--card-bg,#181c2b);color:var(--text-color,#f8fafc);border-color:var(--border-color,#30364d)}.report-chart-empty strong{color:var(--text-color,#f8fafc)}}
