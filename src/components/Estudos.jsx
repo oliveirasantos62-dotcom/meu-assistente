@@ -1,5 +1,4 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import './Estudos.css';
 
 import {
   createReading,
@@ -94,7 +93,7 @@ function accuracyClass(value) {
   return 'study-accuracy-low';
 }
 
-export default function Estudos() {
+export default function Estudos({ data: appData, save: saveAppData }) {
   const [tab, setTab] = useState('overview');
 
   const [loading, setLoading] = useState(true);
@@ -333,6 +332,10 @@ export default function Estudos() {
       };
 
       const created = await createStudySession(payload);
+
+      if (appData && saveAppData) {
+        saveAppData({ ...appData, studySessions: [{ ...created, date: created.study_date || new Date().toISOString().slice(0,10), minutes: payload.minutes, subject: payload.subject, discipline: payload.discipline }, ...(appData.studySessions || [])] });
+      }
 
       setData((current) => ({
         ...current,

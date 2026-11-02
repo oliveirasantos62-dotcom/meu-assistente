@@ -114,6 +114,10 @@ function normalizeAppData(rawData) {
     // Coleções & Conquistas
     collections: Array.isArray(source.collections) ? source.collections : [],
 
+    tags: Array.isArray(source.tags) ? source.tags : [],
+
+    studyCycles: Array.isArray(source.studyCycles) ? source.studyCycles : [],
+
     errors: Array.isArray(source.errors) ? source.errors : [],
 
     weeklyReflections: Array.isArray(source.weeklyReflections)
@@ -195,8 +199,11 @@ function normalizeAppData(rawData) {
 
     settings:
       source.settings && typeof source.settings === 'object'
-        ? source.settings
-        : {},
+        ? {
+            modules: source.settings.modules && typeof source.settings.modules === 'object' ? source.settings.modules : {},
+            assistant: source.settings.assistant && typeof source.settings.assistant === 'object' ? source.settings.assistant : { webResearch: false },
+          }
+        : { modules: {}, assistant: { webResearch: false } },
   };
 }
 

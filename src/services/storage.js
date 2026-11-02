@@ -70,7 +70,13 @@ export const emptyAppData = {
 
   collections: [],
 
-  settings: {},
+  // Estruturas centrais de integração
+  tags: [],
+  studyCycles: [],
+  settings: {
+    modules: {},
+    assistant: { webResearch: false },
+  },
 };
 
 /*
@@ -153,6 +159,21 @@ function normalizeData(data) {
   if (!Array.isArray(merged.collections)) {
     merged.collections = [];
   }
+
+  if (!Array.isArray(merged.tags)) {
+    merged.tags = [];
+  }
+
+  if (!Array.isArray(merged.studyCycles)) {
+    merged.studyCycles = [];
+  }
+
+  if (!isObject(merged.settings)) {
+    merged.settings = { modules: {}, assistant: { webResearch: false } };
+  }
+
+  if (!isObject(merged.settings.modules)) merged.settings.modules = {};
+  if (!isObject(merged.settings.assistant)) merged.settings.assistant = { webResearch: false };
 
   if (!Array.isArray(merged.calendarEvents)) {
     merged.calendarEvents = [];

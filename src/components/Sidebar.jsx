@@ -7,6 +7,7 @@ const SECTIONS = [
   { id: 'calendar', label: '📅 Calendário & Agenda' },
   { id: 'diario', label: '📔 Diário' },
   { id: 'estudos', label: '📚 Estudos' },
+  { id: 'study-cycle', label: '🔄 Ciclo de Estudos' },
   { id: 'goals', label: '🎯 Objetivos' },
   { id: 'habits', label: '🔥 Hábitos' },
 
@@ -19,6 +20,8 @@ const SECTIONS = [
 
   { id: 'collections', label: '🏆 Coleções & Conquistas' },
   { id: 'fase12', label: '📊 Ciência de Dados' },
+  { id: 'reports', label: '📑 Relatórios' },
+  { id: 'tags', label: '🏷 Tags' },
   { id: 'gamification', label: '🎮 Gamificação' },
   { id: 'fase13', label: '💵 Finanças Pessoais' },
   { id: 'investments', label: '📈 Investimentos' },
@@ -27,6 +30,7 @@ const SECTIONS = [
   { id: 'assistant', label: '🤖 Assistente' },
 
   // PERFIL
+  { id: 'personalization', label: '⚙️ Personalização' },
   { id: 'profile', label: '👤 Meu Perfil' },
 ];
 
@@ -40,6 +44,7 @@ const DEFAULT_VISIBLE = {
   calendar: true,
   diario: true,
   estudos: true,
+  'study-cycle': true,
   goals: true,
   habits: true,
 
@@ -51,6 +56,8 @@ const DEFAULT_VISIBLE = {
 
   collections: false,
   fase12: false,
+  reports: true,
+  tags: true,
   gamification: false,
   fase13: false,
   investments: false,
@@ -58,6 +65,7 @@ const DEFAULT_VISIBLE = {
   foguinho: false,
   assistant: false,
 
+  personalization: true,
   profile: true,
 };
 
@@ -140,6 +148,7 @@ export default function Sidebar({
   darkMode,
   setDarkMode,
   onLogout,
+  data,
 }) {
   const storageKey = getStorageKey(currentUser);
 
@@ -161,6 +170,19 @@ export default function Sidebar({
       : createDefaultConfig();
 
   const visibleSections = config.visibleSections;
+
+  const moduleMap = {
+    tasks: 'tasks', calendar: 'calendar', estudos: 'estudos', 'study-cycle': 'estudos',
+    goals: 'goals', habits: 'habits', projects: 'projects', collections: 'collections',
+    fase12: 'reports', reports: 'reports', tags: 'tags', fase13: 'finance', investments: 'investments',
+    assistant: 'assistant', gamification: 'gamification',
+  };
+
+  const moduleEnabled = (id) => {
+    const moduleKey = moduleMap[id];
+    if (!moduleKey) return true;
+    return data?.settings?.modules?.[moduleKey] !== false;
+  };
 
   // Define se a pesquisa está ativada.
   const showSearch =
@@ -311,7 +333,7 @@ export default function Sidebar({
 
   // Exibe somente as páginas ativadas.
   const menuSections = orderedSections.filter(
-    (section) => visibleSections[section.id],
+    (section) => visibleSections[section.id] && moduleEnabled(section.id),
   );
 
   // Aplica a pesquisa somente quando ela está ativada.

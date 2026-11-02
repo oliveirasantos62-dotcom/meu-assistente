@@ -1,5 +1,4 @@
 import { useMemo, useState } from 'react';
-import './ColecoesConquistas.css';
 
 const novaCategoria = {
   nome: '',
@@ -705,21 +704,48 @@ export default function ColecoesConquistas({ data, save }) {
 
               {categoria.usarImagem && (
                 <label className='cc-campo'>
-                  Link da imagem
+                  Imagem (PNG/JPEG)
                   <input
-                    type='url'
-                    value={formItem.imagem}
-                    onChange={(e) =>
-                      setFormItem({
-                        ...formItem,
-                        imagem: e.target.value,
-                      })
-                    }
-                    placeholder='https://...'
+                    type='file'
+                    accept='image/png,image/jpeg,.png,.jpg,.jpeg'
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (!file) return;
+                      if (!['image/png','image/jpeg'].includes(file.type)) {
+                        window.alert('Use somente PNG ou JPEG/JPG.');
+                        e.target.value = '';
+                        return;
+                      }
+                      if (file.size > 3 * 1024 * 1024) {
+                        window.alert('A imagem deve ter no máximo 3 MB.');
+                        e.target.value = '';
+                        return;
+                      }
+                      const reader = new FileReader();
+                      reader.onload = () => {
+                        const image = new Image();
+                        image.onload = () => {
+                          const max = 1000;
+                          const scale = Math.min(1, max / Math.max(image.width, image.height));
+                          const canvas = document.createElement('canvas');
+                          canvas.width = Math.max(1, Math.round(image.width * scale));
+                          canvas.height = Math.max(1, Math.round(image.height * scale));
+                          const ctx = canvas.getContext('2d');
+                          ctx.drawImage(image, 0, 0, canvas.width, canvas.height);
+                          setFormItem({ ...formItem, imagem: canvas.toDataURL('image/jpeg', 0.82) });
+                        };
+                        image.src = String(reader.result || '');
+                      };
+                      reader.readAsDataURL(file);
+                    }}
                   />
-                  <small>
-                    Nesta versão, a imagem é adicionada por URL pública.
-                  </small>
+                  {formItem.imagem && (
+                    <div className='cc-image-preview'>
+                      <img src={formItem.imagem} alt='Pré-visualização da coleção' />
+                      <button type='button' onClick={() => setFormItem({ ...formItem, imagem: '' })}>Remover imagem</button>
+                    </div>
+                  )}
+                  <small>PNG/JPEG, até 3 MB. A imagem é salva junto ao item e exibida no card.</small>
                 </label>
               )}
 

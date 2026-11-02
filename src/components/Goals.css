@@ -2039,3 +2039,184 @@ body.dark .goals-page button:disabled {
   height: 12px;
   margin-top: 8px;
 }
+
+
+/* =========================================================
+   AJUSTES DE LAYOUT — TÍTULO, DESCRIÇÃO E PRÓXIMO PASSO
+   Evita que textos longos ou cards estreitos comprimam o conteúdo.
+   ========================================================= */
+
+.goals-page,
+.goals-page * {
+  min-width: 0;
+}
+
+.goals-grid {
+  align-items: start;
+}
+
+.goal-card {
+  width: 100%;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.goal-card-top {
+  width: 100%;
+  min-width: 0;
+}
+
+.goal-card-title {
+  display: flex;
+  flex: 1 1 0%;
+  flex-direction: column;
+  min-width: 0;
+  overflow: visible;
+}
+
+.goal-card-title h3 {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  white-space: normal;
+  overflow: visible;
+  overflow-wrap: anywhere;
+  word-break: normal;
+  line-height: 1.4;
+  padding: 1px 0 2px;
+}
+
+.goal-tags {
+  width: 100%;
+  min-width: 0;
+  flex-wrap: wrap;
+}
+
+.goal-description {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  word-break: normal;
+  line-height: 1.6;
+}
+
+.goal-progress,
+.goal-progress-header,
+.goal-progress-track {
+  display: block;
+  width: 100%;
+  min-width: 0;
+}
+
+.goal-progress-header {
+  display: flex;
+}
+
+.goal-progress-track {
+  height: 9px;
+  overflow: hidden;
+  border-radius: 999px;
+}
+
+.goal-progress-fill {
+  max-width: 100%;
+  min-width: 0;
+}
+
+.goal-next-step {
+  width: 100%;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.goal-next-step-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 6px 10px;
+}
+
+.goal-next-step-heading small,
+.goal-next-step-legacy small {
+  color: var(--g-muted);
+  font-size: 0.7rem;
+}
+
+.goal-next-step-task {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  width: 100%;
+  min-width: 0;
+  margin: 8px 0 0;
+  padding: 10px 11px;
+  border: 1px solid rgba(142, 119, 240, 0.2);
+  border-radius: 10px;
+  background: rgba(5, 10, 26, 0.22);
+  cursor: pointer;
+}
+
+.goal-next-step-task input {
+  flex: 0 0 18px;
+  width: 18px;
+  height: 18px;
+  margin: 2px 0 0;
+  accent-color: #8a61ff;
+}
+
+.goal-next-step-task span {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  color: #eef0ff;
+  font-size: 0.86rem;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
+.goal-next-step-task.is-done span {
+  color: var(--g-muted);
+  text-decoration: line-through;
+}
+
+.goal-next-step-legacy {
+  display: grid;
+  gap: 5px;
+  min-width: 0;
+}
+
+.goal-next-step-legacy strong {
+  overflow-wrap: anywhere;
+}
+
+body:not(.dark) .goals-page .goal-next-step-task {
+  background: #f7f7ff;
+  border-color: #e2defa;
+}
+
+body:not(.dark) .goals-page .goal-next-step-task span {
+  color: #26304a;
+}
+
+@media (max-width: 600px) {
+  .goal-card {
+    padding: 15px;
+  }
+
+  .goal-card-top {
+    gap: 9px;
+  }
+
+  .goal-icon {
+    flex-basis: 38px;
+    height: 38px;
+  }
+
+  .goal-card-title h3 {
+    font-size: 1rem;
+  }
+}

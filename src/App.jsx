@@ -25,6 +25,10 @@ import ColecoesConquistas from './components/ColecoesConquistas';
 // Ciência de dados
 import DataDashboard from './components/DataDashboard';
 import AdvancedDataScience from './components/AdvancedDataScience';
+import Reports from './components/Reports';
+import TagsManager from './components/TagsManager';
+import StudyCycle from './components/StudyCycle';
+import Personalization from './components/Personalization';
 
 // Finanças
 import Finance from './components/Finance';
@@ -642,6 +646,7 @@ export default function App() {
         darkMode={darkMode}
         setDarkMode={setDarkMode}
         onLogout={handleLogout}
+        data={data}
       />
 
       {/* CONTEÚDO */}
@@ -714,7 +719,9 @@ export default function App() {
             ESTUDOS
         ===================================================== */}
 
-        {activeSection === 'estudos' && <Estudos />}
+        {activeSection === 'estudos' && <Estudos data={data} save={save} />}
+
+        {activeSection === 'study-cycle' && <StudyCycle data={data} save={save} />}
 
         {/* =====================================================
             OBJETIVOS
@@ -799,6 +806,12 @@ export default function App() {
             <AdvancedDataScience data={data} />
           </>
         )}
+
+        {activeSection === 'reports' && <Reports data={data} />}
+
+        {activeSection === 'tags' && <TagsManager data={data} save={save} />}
+
+        {activeSection === 'personalization' && <Personalization data={data} save={save} />}
 
         {/* =====================================================
             FINANÇAS

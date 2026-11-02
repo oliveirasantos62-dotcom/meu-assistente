@@ -1,5 +1,4 @@
 import React, { useMemo, useState } from 'react';
-import './MicroObjetivos.css';
 
 const localToday = () => {
   const d = new Date();

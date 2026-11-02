@@ -1,5 +1,4 @@
 import React, { useMemo, useState } from 'react';
-import './Goals.css';
 
 const today = () => {
   const date = new Date();
@@ -150,6 +149,7 @@ function GoalProgress({ value }) {
 
 export default function Goals({ data, save }) {
   const goals = normalizeGoals(data);
+  const tasksList = Array.isArray(data?.tasks) ? data.tasks : [];
 
   const [view, setView] = useState('active');
 
@@ -226,7 +226,10 @@ export default function Goals({ data, save }) {
       startDate: goal.startDate || today(),
       targetDate: goal.targetDate || '',
       motivation: goal.motivation || '',
-      nextStep: goal.nextStep || '',
+      nextStep:
+        tasksList.find((task) => String(task.id) === String(goal.nextStepTaskId))?.name ||
+        goal.nextStep ||
+        '',
     });
 
     setShowForm(true);
@@ -248,46 +251,84 @@ export default function Goals({ data, save }) {
 
     const oldMilestones = editingGoal?.milestones || [];
 
+    const goalId = editingGoal?.id || createId('goal');
+    const nextStepTitle = form.nextStep.trim();
+    const existingNextStep = tasksList.find(
+      (task) => String(task.id) === String(editingGoal?.nextStepTaskId),
+    );
+
+    // O próximo passo é uma tarefa real. Ela existe uma única vez em data.tasks
+    // e é apenas referenciada pelo objetivo por meio de nextStepTaskId.
+    let nextTasks = tasksList;
+    let nextStepTaskId = editingGoal?.nextStepTaskId || null;
+
+    if (nextStepTitle) {
+      if (existingNextStep) {
+        nextTasks = tasksList.map((task) =>
+          String(task.id) === String(existingNextStep.id)
+            ? {
+                ...task,
+                name: nextStepTitle,
+                goalId,
+                updatedAt: new Date().toISOString(),
+              }
+            : task,
+        );
+      } else {
+        nextStepTaskId = createId('task');
+        nextTasks = [
+          ...tasksList,
+          {
+            id: nextStepTaskId,
+            name: nextStepTitle,
+            description: '',
+            priority: 'Média',
+            deadline: '',
+            frequency: '1x',
+            xp: 40,
+            projectId: null,
+            areaId: null,
+            goalId,
+            done: false,
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+          },
+        ];
+      }
+    } else if (existingNextStep) {
+      // Ao remover o texto, a tarefa não é apagada: apenas deixa de pertencer
+      // ao campo "próximo passo" e continua disponível na página de Tarefas.
+      nextTasks = tasksList.map((task) =>
+        String(task.id) === String(existingNextStep.id)
+          ? { ...task, goalId: null, updatedAt: new Date().toISOString() }
+          : task,
+      );
+      nextStepTaskId = null;
+    } else {
+      // Não mantém uma referência para uma tarefa que já não existe.
+      nextStepTaskId = null;
+    }
+
     const goal = {
-      id: editingGoal?.id || createId('goal'),
-
+      id: goalId,
       title: form.title.trim(),
-
       description: form.description.trim(),
-
       category: form.category,
-
       horizon: form.horizon,
-
       priority: form.priority,
-
       status: editingGoal?.status || 'active',
-
       startDate: form.startDate || today(),
-
       targetDate: form.targetDate || '',
-
       motivation: form.motivation.trim(),
-
-      nextStep: form.nextStep.trim(),
-
+      // Mantém o campo antigo para compatibilidade com dados já salvos.
+      nextStep: nextStepTitle,
+      nextStepTaskId,
       milestones: oldMilestones,
-
       progress: editingGoal ? calculateProgress(editingGoal) : 0,
-
       linkedTasks: editingGoal?.linkedTasks || [],
-
       linkedProjects: editingGoal?.linkedProjects || [],
-
-      history: editingGoal?.history || [
-        {
-          date: today(),
-          progress: 0,
-        },
-      ],
-
+      history: editingGoal?.history || [{ date: today(), progress: 0 }],
       createdAt: editingGoal?.createdAt || new Date().toISOString(),
-
       updatedAt: new Date().toISOString(),
     };
 
@@ -298,6 +339,7 @@ export default function Goals({ data, save }) {
     save({
       ...data,
       goals: nextGoals,
+      tasks: nextTasks,
     });
 
     setShowForm(false);
@@ -317,6 +359,11 @@ export default function Goals({ data, save }) {
     save({
       ...data,
       goals: goals.filter((item) => item.id !== id),
+      tasks: tasksList.map((task) =>
+        String(task.goalId) === String(id)
+          ? { ...task, goalId: null, updatedAt: new Date().toISOString() }
+          : task,
+      ),
     });
 
     if (selectedGoalId === id) {
@@ -493,6 +540,62 @@ export default function Goals({ data, save }) {
     });
   };
 
+  const convertLegacyNextStep = (goal) => {
+    const title = String(goal?.nextStep || '').trim();
+    if (!title) return;
+
+    // Protege contra IDs órfãos e evita criar tarefas duplicadas.
+    const alreadyLinked = tasksList.find(
+      (task) => String(task.id) === String(goal.nextStepTaskId),
+    );
+    if (alreadyLinked) return;
+
+    const taskId = createId('task');
+    const task = {
+      id: taskId,
+      name: title,
+      description: '',
+      priority: 'Média',
+      deadline: '',
+      frequency: '1x',
+      xp: 40,
+      projectId: null,
+      areaId: null,
+      goalId: goal.id,
+      done: false,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+
+    save({
+      ...data,
+      tasks: [...tasksList, task],
+      goals: goals.map((item) =>
+        item.id === goal.id
+          ? { ...item, nextStepTaskId: taskId, updatedAt: new Date().toISOString() }
+          : item,
+      ),
+    });
+  };
+
+  const toggleNextStepTask = (task) => {
+    if (!task) return;
+    const done = !task.done;
+    save({
+      ...data,
+      tasks: tasksList.map((item) =>
+        String(item.id) === String(task.id)
+          ? {
+              ...item,
+              done,
+              completedAt: done ? new Date().toISOString() : null,
+              updatedAt: new Date().toISOString(),
+            }
+          : item,
+      ),
+    });
+  };
+
   const renderGoalCard = (goal) => {
     const progress = calculateProgress(goal);
 
@@ -570,13 +673,46 @@ export default function Goals({ data, save }) {
           </div>
         </div>
 
-        {goal.nextStep && (
-          <div className='goal-next-step'>
-            <span>🧭 Próximo passo</span>
+        {(goal.nextStepTaskId || goal.nextStep) && (() => {
+          const linkedTask = tasksList.find(
+            (task) => String(task.id) === String(goal.nextStepTaskId),
+          );
 
-            <strong>{goal.nextStep}</strong>
-          </div>
-        )}
+          return (
+            <div className='goal-next-step'>
+              <div className='goal-next-step-heading'>
+                <span>🧭 Próximo passo</span>
+                {linkedTask && (
+                  <small>{linkedTask.done ? 'Concluído' : 'Tarefa vinculada'}</small>
+                )}
+              </div>
+
+              {linkedTask ? (
+                <label className={`goal-next-step-task ${linkedTask.done ? 'is-done' : ''}`}>
+                  <input
+                    type='checkbox'
+                    checked={!!linkedTask.done}
+                    onChange={() => toggleNextStepTask(linkedTask)}
+                    aria-label={linkedTask.done ? 'Reabrir próximo passo' : 'Concluir próximo passo'}
+                  />
+                  <span>{linkedTask.name}</span>
+                </label>
+              ) : (
+                <div className='goal-next-step-legacy'>
+                  <strong>{goal.nextStep}</strong>
+                  <small>Este próximo passo ainda é um texto antigo.</small>
+                  <button
+                    type='button'
+                    className='ghost'
+                    onClick={() => convertLegacyNextStep(goal)}
+                  >
+                    + Transformar em tarefa
+                  </button>
+                </div>
+              )}
+            </div>
+          );
+        })()}
 
         {goal.motivation && (
           <div className='goal-motivation'>
@@ -994,14 +1130,14 @@ export default function Goals({ data, save }) {
               </label>
 
               <label>
-                <span>🧭 Próximo passo</span>
+                <span>🧭 Próximo passo (será criado como tarefa)</span>
 
                 <input
                   value={form.nextStep}
                   onChange={(event) =>
                     updateForm('nextStep', event.target.value)
                   }
-                  placeholder='Qual é a próxima ação concreta?'
+                  placeholder='Ex.: Resolver 20 questões de Matemática'
                 />
               </label>
 
