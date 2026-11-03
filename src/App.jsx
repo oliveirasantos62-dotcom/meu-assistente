@@ -23,13 +23,10 @@ import Evolucao from './components/Evolucao';
 import ColecoesConquistas from './components/ColecoesConquistas';
 
 // Ciência de dados
-import DataDashboard from './components/DataDashboard';
-import AdvancedDataScience from './components/AdvancedDataScience';
 import Reports from './components/Reports';
 import TagsManager from './components/TagsManager';
 
 // Finanças
-import Finance from './components/Finance';
 import Investments from './components/Investments';
 
 // Projetos e tarefas
@@ -860,26 +857,6 @@ export default function App() {
             CIÊNCIA DE DADOS
         ===================================================== */}
 
-        {activeSection === 'fase12' && (
-          <>
-            <DataDashboard
-              data={pageData('reports')}
-              records={safeRecords}
-              period={period}
-              setPeriod={setPeriod}
-              daily={daily}
-              productivityScore={productivityScore}
-              bestHour={bestHour}
-              completion={completion}
-              moodAverage={moodAverage}
-              totalXP={totalXP}
-              totalDone={totalDone}
-            />
-
-            <AdvancedDataScience data={pageData('reports')} />
-          </>
-        )}
-
         {activeSection === 'reports' && <Reports data={pageData('reports')} />}
 
         {activeSection === 'tags' && <TagsManager data={pageData('tags')} save={save} />}
@@ -887,8 +864,6 @@ export default function App() {
         {/* =====================================================
             FINANÇAS
         ===================================================== */}
-
-        {activeSection === 'fase13' && <Finance data={pageData('finance')} save={save} />}
 
         {/* =====================================================
             INVESTIMENTOS
