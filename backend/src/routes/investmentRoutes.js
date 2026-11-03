@@ -7,12 +7,14 @@ import {
   saveSnapshot,
   saveSettings,
   migrateLocalInvestments,
+  getInvestmentQuote,
 } from "../controllers/investmentController.js";
 import { authMiddleware } from "../middleware/auth.js";
 
 const router = Router();
 router.use(authMiddleware);
 router.get("/dashboard", getInvestmentDashboard);
+router.get("/quote/:symbol", getInvestmentQuote);
 router.post("/migrate", migrateLocalInvestments);
 router.post("/snapshots", saveSnapshot);
 router.put("/settings", saveSettings);

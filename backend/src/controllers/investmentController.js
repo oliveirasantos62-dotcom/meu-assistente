@@ -304,3 +304,72 @@ export async function migrateLocalInvestments(req, res) {
     return res.status(500).json({ message: "Erro ao migrar investimentos locais." });
   }
 }
+
+
+function normalizeQuoteSymbol(symbol, market) {
+  const clean = String(symbol || '').trim().toUpperCase();
+  if (!clean) return null;
+  if (market === 'US') return clean.replace(/\s+/g, '');
+  if (market === 'BR') return clean.endsWith('.SA') ? clean : `${clean}.SA`;
+  return clean;
+}
+
+async function fetchYahooChart(symbol) {
+  const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(symbol)}?range=1d&interval=1m&includePrePost=false`;
+  const response = await fetch(url, {
+    headers: {
+      'User-Agent': 'Mozilla/5.0 MeuAssistente/2.0',
+      Accept: 'application/json',
+    },
+  });
+  if (!response.ok) throw new Error(`Fonte de cotação respondeu HTTP ${response.status}.`);
+  const body = await response.json();
+  const result = body?.chart?.result?.[0];
+  if (!result) throw new Error('Ativo não encontrado na fonte de cotação.');
+  const meta = result.meta || {};
+  const price = Number(meta.regularMarketPrice ?? meta.postMarketPrice ?? meta.previousClose);
+  if (!Number.isFinite(price) || price <= 0) throw new Error('A fonte não retornou uma cotação válida.');
+  return {
+    price,
+    currency: String(meta.currency || '').toUpperCase() || null,
+    exchange: meta.exchangeName || null,
+    timestamp: meta.regularMarketTime ? new Date(meta.regularMarketTime * 1000).toISOString() : new Date().toISOString(),
+  };
+}
+
+export async function getInvestmentQuote(req, res) {
+  try {
+    const market = String(req.query.market || 'BR').toUpperCase() === 'US' ? 'US' : 'BR';
+    const inputSymbol = String(req.params.symbol || '').trim().toUpperCase();
+    const yahooSymbol = normalizeQuoteSymbol(inputSymbol, market);
+    if (!yahooSymbol) return res.status(400).json({ message: 'Ticker inválido.' });
+
+    const quote = await fetchYahooChart(yahooSymbol);
+    let price = quote.price;
+    let currency = quote.currency || (market === 'US' ? 'USD' : 'BRL');
+    let fxRate = 1;
+
+    if (market === 'US' && currency === 'USD') {
+      const fx = await fetchYahooChart('BRL=X');
+      fxRate = fx.price;
+      price *= fxRate;
+      currency = 'BRL';
+    }
+
+    return res.json({
+      symbol: inputSymbol,
+      market,
+      price,
+      currency,
+      nativePrice: quote.price,
+      nativeCurrency: quote.currency || null,
+      fxRate,
+      exchange: quote.exchange,
+      updatedAt: quote.timestamp,
+      source: 'Yahoo Finance Chart',
+    });
+  } catch (error) {
+    console.error('Erro ao consultar cotação:', error);
+    return res.status(502).json({ message: error?.message || 'Cotação indisponível no momento.' });
+  }
+}

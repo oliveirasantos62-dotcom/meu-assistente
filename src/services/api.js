@@ -393,8 +393,9 @@ export async function getInvestmentDashboard() {
   return request('/api/investments/dashboard');
 }
 
-export async function getInvestmentQuote(symbol, market = "BR") {
-  return request(`/api/investments/quote/${encodeURIComponent(symbol)}?market=${encodeURIComponent(market)}`);
+export async function getInvestmentQuote(symbol, market = 'BR') {
+  const query = new URLSearchParams({ market });
+  return request(`/api/investments/quote/${encodeURIComponent(symbol)}?${query.toString()}`);
 }
 
 export async function migrateLocalInvestments(payload) {
