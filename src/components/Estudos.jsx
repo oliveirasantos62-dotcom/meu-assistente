@@ -990,6 +990,25 @@ export default function Estudos({
                   currentAngle += (valueFor(item) / total) * 360;
                   return `${colors[index % colors.length]} ${startAngle}deg ${currentAngle}deg`;
                 });
+                let labelAngle = 0;
+                const pieLabels = chartItems.map((item, index) => {
+                  const percentage = (valueFor(item) / total) * 100;
+                  const startAngle = labelAngle;
+                  const sweep = (valueFor(item) / total) * 360;
+                  labelAngle += sweep;
+                  // Evita rótulos sobrepostos em fatias muito pequenas.
+                  if (percentage < 7) return null;
+                  const middleAngle =
+                    (startAngle + sweep / 2 - 90) * (Math.PI / 180);
+                  const radius = 34;
+                  return {
+                    key: item.name,
+                    percentage: Math.round(percentage),
+                    left: `${50 + Math.cos(middleAngle) * radius}%`,
+                    top: `${50 + Math.sin(middleAngle) * radius}%`,
+                    color: colors[index % colors.length],
+                  };
+                });
 
                 return (
                   <div
@@ -1004,22 +1023,53 @@ export default function Estudos({
                     }}
                   >
                     <div
-                      className='study-pie-chart'
-                      role='img'
-                      aria-label={`Gráfico de pizza da distribuição por disciplina: ${chartItems
-                        .map(
-                          (item) =>
-                            `${item.name}, ${Math.round((valueFor(item) / total) * 100)}%`,
-                        )
-                        .join('; ')}`}
+                      className='study-pie-chart-wrap'
                       style={{
-                        background: `conic-gradient(${slices.join(', ')})`,
+                        position: 'relative',
                         width: 'min(100%, 250px)',
                         aspectRatio: '1 / 1',
-                        borderRadius: '50%',
                         justifySelf: 'center',
                       }}
-                    />
+                    >
+                      <div
+                        className='study-pie-chart'
+                        role='img'
+                        aria-label={`Gráfico de pizza da distribuição por disciplina: ${chartItems
+                          .map(
+                            (item) =>
+                              `${item.name}, ${Math.round((valueFor(item) / total) * 100)}%`,
+                          )
+                          .join('; ')}`}
+                        style={{
+                          background: `conic-gradient(${slices.join(', ')})`,
+                          width: '100%',
+                          height: '100%',
+                          borderRadius: '50%',
+                        }}
+                      />
+                      {pieLabels.map(
+                        (label) =>
+                          label && (
+                            <span
+                              key={label.key}
+                              title={`${label.key}: ${label.percentage}% do total`}
+                              style={{
+                                position: 'absolute',
+                                left: label.left,
+                                top: label.top,
+                                transform: 'translate(-50%, -50%)',
+                                color: '#fff',
+                                fontSize: '12px',
+                                fontWeight: 700,
+                                textShadow: '0 1px 3px rgba(0,0,0,.85)',
+                                pointerEvents: 'auto',
+                              }}
+                            >
+                              {label.percentage}%
+                            </span>
+                          ),
+                      )}
+                    </div>
                     <div
                       className='study-pie-legend'
                       style={{ display: 'grid', gap: '12px' }}
@@ -1028,6 +1078,7 @@ export default function Estudos({
                         <div
                           className='study-pie-legend-item'
                           key={item.name}
+                          title={`${item.name}: ${statisticsMetric === 'questions' ? `${valueFor(item).toLocaleString('pt-BR')} questões` : formatHours(valueFor(item))}`}
                           style={{
                             display: 'flex',
                             alignItems: 'flex-start',
@@ -1058,15 +1109,23 @@ export default function Estudos({
                               {statisticsMetric === 'questions'
                                 ? `${valueFor(item).toLocaleString('pt-BR')} questões`
                                 : formatHours(valueFor(item))}
-                              {' · '}
-                              {Math.round((valueFor(item) / total) * 100)}% do
-                              total
                             </small>
                             <small>{item.accuracy}% de acertos</small>
                           </div>
                         </div>
                       ))}
                     </div>
+                    <p
+                      style={{
+                        gridColumn: '1 / -1',
+                        margin: '0',
+                        fontSize: '12px',
+                        opacity: 0.75,
+                      }}
+                    >
+                      Os percentuais aparecem dentro das fatias maiores. Fatias
+                      abaixo de 7% ficam sem rótulo para evitar sobreposição.
+                    </p>
                   </div>
                 );
               })()
