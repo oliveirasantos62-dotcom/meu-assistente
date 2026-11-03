@@ -16440,6 +16440,14 @@ body.dark .foguinho-page .foguinho-card-top {
 .dashboard-notice-modal-header > button {
   width: 30px;
   height: 30px;
+  min-width: 30px;
+  min-height: 30px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  text-align: center;
   border: 1px solid var(--site-border);
   border-radius: 8px;
   background: transparent;
@@ -17009,6 +17017,18 @@ body.dark .reset-achievements-btn{color:#a99cff;border-color:rgba(169,156,255,.3
   display: flex !important;
   align-items: center !important;
   gap: 5px !important;
+}
+
+.dashboard-notice-card-actions button,
+.dashboard-notice-modal-header > button {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 0 !important;
+  min-width: 30px !important;
+  min-height: 30px !important;
+  line-height: 1 !important;
+  text-align: center !important;
 }
 
 .dashboard-notice-card h4 {
