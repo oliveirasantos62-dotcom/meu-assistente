@@ -18,11 +18,9 @@ const SECTIONS = [
   { id: 'groups', label: '👥 Grupos' },
 
   { id: 'collections', label: '🏆 Coleções & Conquistas' },
-  { id: 'fase12', label: '📊 Ciência de Dados' },
   { id: 'reports', label: '📑 Relatórios' },
   { id: 'tags', label: '🏷 Tags' },
   { id: 'gamification', label: '🎮 Gamificação' },
-  { id: 'fase13', label: '💵 Finanças Pessoais' },
   { id: 'investments', label: '📈 Investimentos' },
   { id: 'connections', label: '🤝 Conexões' },
   { id: 'foguinho', label: '🔥 Foguinho' },
@@ -42,27 +40,25 @@ const DEFAULT_VISIBLE = {
   calendar: true,
   diario: true,
   estudos: true,
-  goals: true,
-  habits: true,
+  goals: false,
+  habits: false,
 
   // Evolução aparece por padrão.
-  evolucao: true,
+  evolucao: false,
 
-  projects: true,
-  groups: true,
+  projects: false,
+  groups: false,
 
   collections: false,
-  fase12: false,
-  reports: true,
-  tags: true,
+  reports: false,
+  tags: false,
   gamification: false,
-  fase13: false,
   investments: false,
   connections: false,
   foguinho: false,
   assistant: false,
 
-  profile: true,
+  profile: false,
 };
 
 const DEFAULT_ORDER = SECTIONS.map((section) => section.id);
@@ -169,10 +165,24 @@ export default function Sidebar({
   const visibleSections = config.visibleSections;
 
   const moduleMap = {
-    tasks: 'tasks', processos: 'processos', calendar: 'calendar', diario: 'diario', estudos: 'estudos',
-    goals: 'goals', habits: 'habits', evolucao: 'evolucao', projects: 'projects', groups: 'groups',
-    collections: 'collections', fase12: 'reports', reports: 'reports', tags: 'tags', gamification: 'gamification',
-    fase13: 'finance', investments: 'investments', connections: 'connections', foguinho: 'foguinho', assistant: 'assistant',
+    tasks: 'tasks',
+    processos: 'processos',
+    calendar: 'calendar',
+    diario: 'diario',
+    estudos: 'estudos',
+    goals: 'goals',
+    habits: 'habits',
+    evolucao: 'evolucao',
+    projects: 'projects',
+    groups: 'groups',
+    collections: 'collections',
+    reports: 'reports',
+    tags: 'tags',
+    gamification: 'gamification',
+    investments: 'investments',
+    connections: 'connections',
+    foguinho: 'foguinho',
+    assistant: 'assistant',
   };
 
   const moduleEnabled = (id) => {
@@ -417,7 +427,9 @@ export default function Sidebar({
       >
         {/* IDENTIDADE */}
         <div className='sidebar-brand'>
-          <div className='logo'><img src='/favicon-tech.svg?v=2' alt='' aria-hidden='true' /></div>
+          <div className='logo'>
+            <img src='/favicon-tech.svg?v=2' alt='' aria-hidden='true' />
+          </div>
 
           <div className='sidebar-brand-text'>
             <h3>Meu Assistente</h3>
@@ -552,8 +564,14 @@ export default function Sidebar({
             <div className='sidebar-settings-info'>
               <span>⠿ Arraste as páginas para reorganizar.</span>
               <span>↕ Solte entre duas páginas para escolher a posição.</span>
-              <span><strong>Visibilidade</strong> — mostra ou oculta a página no menu.</span>
-              <span><strong>Referências</strong> — permite ou bloqueia menções, cards, análises e sugestões em outras páginas.</span>
+              <span>
+                <strong>Visibilidade</strong> — mostra ou oculta a página no
+                menu.
+              </span>
+              <span>
+                <strong>Referências</strong> — permite ou bloqueia menções,
+                cards, análises e sugestões em outras páginas.
+              </span>
             </div>
 
             {/* PESQUISA DO MENU */}
@@ -699,7 +717,10 @@ export default function Sidebar({
 
                     {/* CONTROLES */}
                     <div className='sidebar-option-actions'>
-                      <label className='sidebar-switch-label' title='Visibilidade: mostrar ou ocultar no menu'>
+                      <label
+                        className='sidebar-switch-label'
+                        title='Visibilidade: mostrar ou ocultar no menu'
+                      >
                         <input
                           type='checkbox'
                           checked={checked}
@@ -707,18 +728,25 @@ export default function Sidebar({
                           onChange={() => toggleSection(section.id)}
                           aria-label={`Visibilidade de ${section.label}`}
                         />
-                        <span className='sidebar-switch'><span /></span>
+                        <span className='sidebar-switch'>
+                          <span />
+                        </span>
                       </label>
 
                       {!section.fixed && (
-                        <label className='sidebar-switch-label' title='Referências: permitir ou bloquear aparições em outras páginas'>
+                        <label
+                          className='sidebar-switch-label'
+                          title='Referências: permitir ou bloquear aparições em outras páginas'
+                        >
                           <input
                             type='checkbox'
                             checked={isReferenceEnabled(section.id)}
                             onChange={() => toggleReference(section.id)}
                             aria-label={`Referências de ${section.label}`}
                           />
-                          <span className='sidebar-switch sidebar-reference-switch'><span /></span>
+                          <span className='sidebar-switch sidebar-reference-switch'>
+                            <span />
+                          </span>
                         </label>
                       )}
                     </div>

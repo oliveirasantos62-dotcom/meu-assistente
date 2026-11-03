@@ -25,7 +25,66 @@ const formatPercent = (value) => {
   return `${number >= 0 ? '+' : ''}${number.toFixed(2)}%`;
 };
 
-const today = () => new Date().toISOString().slice(0, 10);
+const today = () => {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  const day = String(now.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
+const normalizeSnapshotDate = (value) => {
+  if (value === null || value === undefined) return null;
+
+  const raw = String(value).trim();
+  if (!raw) return null;
+
+  const iso = raw.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (iso) {
+    const date = new Date(Date.UTC(Number(iso[1]), Number(iso[2]) - 1, Number(iso[3])));
+    if (
+      date.getUTCFullYear() === Number(iso[1]) &&
+      date.getUTCMonth() === Number(iso[2]) - 1 &&
+      date.getUTCDate() === Number(iso[3])
+    ) {
+      return `${iso[1]}-${iso[2]}-${iso[3]}`;
+    }
+    return null;
+  }
+
+  const br = raw.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+  if (br) {
+    const date = new Date(Date.UTC(Number(br[3]), Number(br[2]) - 1, Number(br[1])));
+    if (
+      date.getUTCFullYear() === Number(br[3]) &&
+      date.getUTCMonth() === Number(br[2]) - 1 &&
+      date.getUTCDate() === Number(br[1])
+    ) {
+      return `${br[3]}-${br[2]}-${br[1]}`;
+    }
+  }
+
+  return null;
+};
+
+const normalizeHistory = (history) =>
+  (Array.isArray(history) ? history : [])
+    .map((item) => {
+      const date = normalizeSnapshotDate(item?.date);
+      if (!date) return null;
+
+      return {
+        date,
+        invested: Number.isFinite(Number(item?.invested)) ? Number(item.invested) : 0,
+        value: Number.isFinite(Number(item?.value)) ? Number(item.value) : 0,
+        profit: Number.isFinite(Number(item?.profit))
+          ? Number(item.profit)
+          : Number(item?.value || 0) - Number(item?.invested || 0),
+      };
+    })
+    .filter(Boolean)
+    .sort((a, b) => a.date.localeCompare(b.date))
+    .slice(-365);
 
 const getAssetValue = (investment) =>
   Number(investment.quantity || 0) *
@@ -59,15 +118,15 @@ export default function Investments({ data, save }) {
         if (!remote.investments?.length && Array.isArray(local.investments) && local.investments.length) {
           await migrateLocalInvestments({
             investments: local.investments,
-            portfolioHistory: local.portfolioHistory || [],
+            portfolioHistory: normalizeHistory(local.portfolioHistory),
             targetAllocation: local.targetAllocation,
           });
           const migrated = await getInvestmentDashboard();
           if (!cancelled) {
-            save({ ...data, investments: migrated.investments || [], portfolioHistory: migrated.portfolioHistory || [], targetAllocation: migrated.targetAllocation || data.targetAllocation });
+            save({ ...data, investments: migrated.investments || [], portfolioHistory: normalizeHistory(migrated.portfolioHistory), targetAllocation: migrated.targetAllocation || data.targetAllocation });
           }
         } else if (!cancelled) {
-          save({ ...data, investments: remote.investments || [], portfolioHistory: remote.portfolioHistory || [], targetAllocation: remote.targetAllocation || data.targetAllocation });
+          save({ ...data, investments: remote.investments || [], portfolioHistory: normalizeHistory(remote.portfolioHistory), targetAllocation: remote.targetAllocation || data.targetAllocation });
         }
         if (!cancelled) setRemoteReady(true);
       } catch (err) {
@@ -158,7 +217,7 @@ export default function Investments({ data, save }) {
       0,
     );
 
-    const history = data.portfolioHistory || [];
+    const history = normalizeHistory(data?.portfolioHistory);
 
     const existing = history.find((item) => item.date === date);
 
@@ -179,9 +238,17 @@ export default function Investments({ data, save }) {
       updatedHistory = [...history, snapshot];
     }
 
-    return updatedHistory
-      .sort((a, b) => a.date.localeCompare(b.date))
-      .slice(-365);
+    return normalizeHistory(updatedHistory);
+  };
+
+  const getLatestSnapshot = (history) => {
+    const validHistory = normalizeHistory(history);
+    return validHistory.length ? validHistory[validHistory.length - 1] : null;
+  };
+
+  const persistLatestSnapshot = async (history) => {
+    const latest = getLatestSnapshot(history);
+    return latest ? saveInvestmentSnapshot(latest) : [];
   };
 
   /*
@@ -209,7 +276,7 @@ export default function Investments({ data, save }) {
       const created = await createInvestment({ ticker: symbol, type, quantity: q, buyPrice: bPrice, currentPrice });
       const updatedInvestments = [...investments, created];
       const history = savePortfolioSnapshot(updatedInvestments);
-      const savedHistory = await saveInvestmentSnapshot(history[history.length - 1]);
+      const savedHistory = await persistLatestSnapshot(history);
       save({ ...data, investments: updatedInvestments, portfolioHistory: savedHistory, xp: (data.xp || 0) + 20, coins: (data.coins || 0) + 10 });
       setTicker(''); setQuantity(''); setBuyPrice('');
       setMessage(realPrice ? `${symbol} adicionado. Cotação atualizada.` : `${symbol} adicionado usando o preço de compra como referência.`);
@@ -235,7 +302,7 @@ export default function Investments({ data, save }) {
       const updated = await updateInvestment(investment.id, { currentPrice: realPrice });
       const updatedInvestments = investments.map(item => item.id === investment.id ? updated : item);
       const history = savePortfolioSnapshot(updatedInvestments);
-      const savedHistory = await saveInvestmentSnapshot(history[history.length - 1]);
+      const savedHistory = await persistLatestSnapshot(history);
       save({ ...data, investments: updatedInvestments, portfolioHistory: savedHistory });
       setMessage(`${investment.ticker} atualizado com sucesso.`);
     } catch (err) {
@@ -260,7 +327,7 @@ export default function Investments({ data, save }) {
         else updatedInvestments.push(await updateInvestment(investment.id, { currentPrice: realPrice }));
       }
       const history = savePortfolioSnapshot(updatedInvestments);
-      const savedHistory = await saveInvestmentSnapshot(history[history.length - 1]);
+      const savedHistory = await persistLatestSnapshot(history);
       save({ ...data, investments: updatedInvestments, portfolioHistory: savedHistory });
       setMessage('Carteira atualizada.');
     } catch (err) {
@@ -294,7 +361,7 @@ export default function Investments({ data, save }) {
       const updatedInvestments = investments.filter(item => item.id !== id);
       const history = savePortfolioSnapshot(updatedInvestments);
       const savedHistory = history.length
-        ? await saveInvestmentSnapshot(history[history.length - 1])
+        ? await persistLatestSnapshot(history)
         : [];
       save({ ...data, investments: updatedInvestments, portfolioHistory: savedHistory });
       setMessage(`${investment.ticker} removido.`);

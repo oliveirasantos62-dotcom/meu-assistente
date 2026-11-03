@@ -20,11 +20,14 @@ function mapInvestment(row) {
 }
 
 function mapSnapshot(row) {
+  const date = normalizeSnapshotDate(row.snapshot_date);
+  if (!date) return null;
+
   return {
-    date: String(row.snapshot_date).slice(0, 10),
-    invested: Number(row.invested),
-    value: Number(row.value),
-    profit: Number(row.profit),
+    date,
+    invested: Number.isFinite(Number(row.invested)) ? Number(row.invested) : 0,
+    value: Number.isFinite(Number(row.value)) ? Number(row.value) : 0,
+    profit: Number.isFinite(Number(row.profit)) ? Number(row.profit) : 0,
   };
 }
 
@@ -42,17 +45,99 @@ function parseTargetAllocation(value) {
   }
 }
 
+function normalizeSnapshotDate(value) {
+  if (value === null || value === undefined) return null;
+
+  const raw = String(value).trim();
+  if (!raw) return null;
+
+  // ISO/date values: YYYY-MM-DD or YYYY-MM-DDTHH:mm:ss...
+  const iso = raw.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (iso) {
+    const year = Number(iso[1]);
+    const month = Number(iso[2]);
+    const day = Number(iso[3]);
+    const date = new Date(Date.UTC(year, month - 1, day));
+    if (
+      date.getUTCFullYear() === year &&
+      date.getUTCMonth() === month - 1 &&
+      date.getUTCDate() === day
+    ) {
+      return `${iso[1]}-${iso[2]}-${iso[3]}`;
+    }
+    return null;
+  }
+
+  // Compatibilidade com datas antigas no formato brasileiro.
+  const br = raw.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+  if (br) {
+    const day = Number(br[1]);
+    const month = Number(br[2]);
+    const year = Number(br[3]);
+    const date = new Date(Date.UTC(year, month - 1, day));
+    if (
+      date.getUTCFullYear() === year &&
+      date.getUTCMonth() === month - 1 &&
+      date.getUTCDate() === day
+    ) {
+      return `${br[3]}-${br[2]}-${br[1]}`;
+    }
+  }
+
+  return null;
+}
+
 export async function getInvestmentDashboard(req, res) {
   try {
-    const [assets, snapshots, settings] = await Promise.all([
-      query(`SELECT * FROM investment_assets WHERE user_id = ? ORDER BY created_at DESC`, [req.user.id]),
-      query(`SELECT * FROM investment_snapshots WHERE user_id = ? ORDER BY snapshot_date ASC LIMIT 365`, [req.user.id]),
-      query(`SELECT target_allocation FROM investment_settings WHERE user_id = ? LIMIT 1`, [req.user.id]),
-    ]);
+    // Cada bloco é consultado separadamente para que uma configuração antiga
+    // ou uma tabela opcional ausente não derrube toda a carteira com HTTP 500.
+    let assets = [];
+    let snapshots = [];
+    let settings = [];
+
+    try {
+      assets = await query(
+        `SELECT id,ticker,type,quantity,buy_price,current_price,created_at,updated_at
+         FROM investment_assets
+         WHERE user_id = ?
+         ORDER BY created_at DESC`,
+        [req.user.id],
+      );
+    } catch (error) {
+      console.error("Erro ao carregar investment_assets:", error);
+      return res.status(500).json({ message: "Erro ao carregar investimentos." });
+    }
+
+    try {
+      snapshots = await query(
+        `SELECT snapshot_date,invested,value,profit
+         FROM investment_snapshots
+         WHERE user_id = ?
+         ORDER BY snapshot_date ASC
+         LIMIT 365`,
+        [req.user.id],
+      );
+    } catch (error) {
+      console.error("Erro ao carregar investment_snapshots:", error);
+      snapshots = [];
+    }
+
+    try {
+      settings = await query(
+        `SELECT target_allocation
+         FROM investment_settings
+         WHERE user_id = ?
+         LIMIT 1`,
+        [req.user.id],
+      );
+    } catch (error) {
+      console.error("Erro ao carregar investment_settings:", error);
+      settings = [];
+    }
 
     return res.json({
       investments: assets.map(mapInvestment),
-      portfolioHistory: snapshots.map(mapSnapshot),
+      portfolioHistory: snapshots.map(mapSnapshot).filter(Boolean),
       targetAllocation: parseTargetAllocation(settings[0]?.target_allocation),
     });
   } catch (error) {
@@ -130,9 +215,8 @@ export async function deleteInvestment(req, res) {
 export async function saveSnapshot(req, res) {
   try {
     const b = req.body || {};
-    const rawDate = String(b.date || "").trim();
-    const date = rawDate.slice(0, 10);
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+    const date = normalizeSnapshotDate(b.date);
+    if (!date) {
       return res.status(400).json({ message: "Data do histórico inválida." });
     }
 
@@ -196,8 +280,8 @@ export async function migrateLocalInvestments(req, res) {
 
     const history = Array.isArray(b.portfolioHistory) ? b.portfolioHistory : [];
     for (const item of history.slice(-365)) {
-      const date = String(item.date || "").slice(0, 10);
-      if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) continue;
+      const date = normalizeSnapshotDate(item.date);
+      if (!date) continue;
       await query(
         `INSERT INTO investment_snapshots (id,user_id,snapshot_date,invested,value,profit)
          VALUES (?,?,?,?,?,?)
