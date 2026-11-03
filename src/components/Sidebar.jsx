@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useLanguage } from '../context/LanguageContext';
-import assistantIcon from '../../resources/icon-only.png';
 
 const SECTIONS = [
   {
@@ -162,6 +161,8 @@ const DEFAULT_VISIBLE = {
   profile: true,
 };
 
+const DEFAULT_SEARCH_VISIBLE = true;
+
 const DEFAULT_REFERENCES = {
   dashboard: true,
   tasks: true,
@@ -209,32 +210,44 @@ function safeParse(value, fallback) {
   }
 }
 
-function getInitialConfig(user, data) {
+function getInitialConfig(user) {
   const key = getStorageKey(user);
-  let savedConfig = {};
 
   try {
-    savedConfig = safeParse(localStorage.getItem(key), {});
+    const saved = localStorage.getItem(key);
+
+    if (!saved) {
+      return {
+        visible: DEFAULT_VISIBLE,
+        references: DEFAULT_REFERENCES,
+        searchVisible: DEFAULT_SEARCH_VISIBLE,
+      };
+    }
+
+    const parsed = safeParse(saved, {});
+
+    return {
+      visible: {
+        ...DEFAULT_VISIBLE,
+        ...(parsed.visible || {}),
+      },
+      references: {
+        ...DEFAULT_REFERENCES,
+        ...(parsed.references || {}),
+      },
+      // Compatibilidade: versões antigas ainda não tinham essa preferência.
+      searchVisible:
+        typeof parsed.searchVisible === 'boolean'
+          ? parsed.searchVisible
+          : DEFAULT_SEARCH_VISIBLE,
+    };
   } catch {
-    savedConfig = {};
+    return {
+      visible: DEFAULT_VISIBLE,
+      references: DEFAULT_REFERENCES,
+      searchVisible: DEFAULT_SEARCH_VISIBLE,
+    };
   }
-
-  // A visibilidade do menu continua local ao dispositivo.
-  // As referências, porém, usam a configuração central do appData,
-  // compartilhada por todas as páginas e sincronizada com a nuvem.
-  const persistedReferences = data?.settings?.moduleReferences || {};
-
-  return {
-    visible: {
-      ...DEFAULT_VISIBLE,
-      ...(savedConfig.visible || {}),
-    },
-    references: {
-      ...DEFAULT_REFERENCES,
-      ...(savedConfig.references || {}),
-      ...persistedReferences,
-    },
-  };
 }
 
 function getAriaLabel(section, label) {
@@ -254,8 +267,6 @@ export default function Sidebar({
   setActiveSection,
   onNavigate,
   currentUser,
-  data,
-  save,
   darkMode = false,
   setDarkMode,
   onLogout,
@@ -264,15 +275,15 @@ export default function Sidebar({
 }) {
   const { t } = useLanguage();
 
-  const [config, setConfig] = useState(() => getInitialConfig(currentUser, data));
+  const [config, setConfig] = useState(() => getInitialConfig(currentUser));
 
   const [search, setSearch] = useState('');
   const [showCustomizer, setShowCustomizer] = useState(false);
   const [customizerTab, setCustomizerTab] = useState('visibility');
 
   useEffect(() => {
-    setConfig(getInitialConfig(currentUser, data));
-  }, [currentUser, data?.settings?.moduleReferences]);
+    setConfig(getInitialConfig(currentUser));
+  }, [currentUser]);
 
   // Permite sair da personalização pelo teclado, sem ficar preso na camada modal.
   useEffect(() => {
@@ -379,47 +390,35 @@ export default function Sidebar({
   }
 
   function updateReference(sectionId, value) {
-    const nextReferences = {
-      ...config.references,
-      [sectionId]: value,
-    };
-
-    // Atualiza imediatamente o estado visual do menu.
     setConfig((previous) => ({
       ...previous,
-      references: nextReferences,
+      references: {
+        ...previous.references,
+        [sectionId]: value,
+      },
     }));
-
-    // Salva na mesma fonte de dados que as outras páginas consultam.
-    // O hook useAppData também sincroniza esta alteração com a conta na nuvem.
-    if (typeof save === 'function' && data) {
-      save({
-        ...data,
-        settings: {
-          ...(data.settings || {}),
-          moduleReferences: nextReferences,
-        },
-      });
-    }
   }
 
   function restoreDefaults() {
-    const defaultReferences = { ...DEFAULT_REFERENCES };
+    setConfig({
+      visible: {
+        ...DEFAULT_VISIBLE,
+      },
+      references: {
+        ...DEFAULT_REFERENCES,
+      },
+      searchVisible: DEFAULT_SEARCH_VISIBLE,
+    });
+  }
 
+  function updateSearchVisibility(value) {
     setConfig((previous) => ({
       ...previous,
-      visible: { ...DEFAULT_VISIBLE },
-      references: defaultReferences,
+      searchVisible: value,
     }));
 
-    if (typeof save === 'function' && data) {
-      save({
-        ...data,
-        settings: {
-          ...(data.settings || {}),
-          moduleReferences: defaultReferences,
-        },
-      });
+    if (!value) {
+      setSearch('');
     }
   }
 
@@ -489,7 +488,7 @@ export default function Sidebar({
               aria-label={text('brand.openDashboard', 'Abrir Dashboard')}
             >
               <div className='logo' aria-label='Meu Assistente'>
-                <img src={assistantIcon} alt='Meu Assistente' />
+                <img src='../../resources/icon-only.png' alt='Ícone' />
               </div>
 
               <div className='sidebar-brand-text'>
@@ -512,36 +511,41 @@ export default function Sidebar({
               SEARCH
           ====================================================== */}
 
-          <div className='sidebar-search'>
-            <label htmlFor='sidebar-search' className='sr-only'>
-              {text('sidebar.searchLabel', 'Pesquisar no menu')}
-            </label>
+          {config.searchVisible && (
+            <div className='sidebar-search'>
+              <label htmlFor='sidebar-search' className='sr-only'>
+                {text('sidebar.searchLabel', 'Pesquisar no menu')}
+              </label>
 
-            <span className='sidebar-search-icon' aria-hidden='true'>
-              🔎
-            </span>
+              <span className='sidebar-search-icon' aria-hidden='true'>
+                <svg viewBox='0 0 24 24' focusable='false'>
+                  <circle cx='10.8' cy='10.8' r='6.8' />
+                  <path d='m16 16 4.2 4.2' />
+                </svg>
+              </span>
 
-            <input
-              id='sidebar-search'
-              type='search'
-              value={search}
-              onChange={(event) => setSearch(event.target.value)}
-              placeholder={text('sidebar.searchPlaceholder', 'Pesquisar...')}
-              autoComplete='off'
-            />
+              <input
+                id='sidebar-search'
+                type='search'
+                value={search}
+                onChange={(event) => setSearch(event.target.value)}
+                placeholder={text('sidebar.searchPlaceholder', 'Pesquisar...')}
+                autoComplete='off'
+              />
 
-            {search && (
-              <button
-                type='button'
-                className='sidebar-search-clear'
-                onClick={() => setSearch('')}
-                aria-label={text('sidebar.clearSearch', 'Limpar pesquisa')}
-                title={text('sidebar.clearSearch', 'Limpar pesquisa')}
-              >
-                ×
-              </button>
-            )}
-          </div>
+              {search && (
+                <button
+                  type='button'
+                  className='sidebar-search-clear'
+                  onClick={() => setSearch('')}
+                  aria-label={text('sidebar.clearSearch', 'Limpar pesquisa')}
+                  title={text('sidebar.clearSearch', 'Limpar pesquisa')}
+                >
+                  ×
+                </button>
+              )}
+            </div>
+          )}
 
           {/* =====================================================
               NAVIGATION
@@ -611,10 +615,7 @@ export default function Sidebar({
               }}
             >
               <span className='sidebar-customize-icon' aria-hidden='true'>
-                <svg viewBox='0 0 24 24' focusable='false'>
-                  <path d='M12 8.25a3.75 3.75 0 1 0 0 7.5 3.75 3.75 0 0 0 0-7.5Z' />
-                  <path d='m19.4 15 .05.04a1.7 1.7 0 0 1-2.4 2.4l-.04-.05a1.7 1.7 0 0 0-2.9 1.2v.16a1.7 1.7 0 0 1-3.4 0v-.07a1.7 1.7 0 0 0-2.9-1.2l-.05.05a1.7 1.7 0 1 1-2.4-2.4l.05-.05a1.7 1.7 0 0 0-1.2-2.9h-.16a1.7 1.7 0 0 1 0-3.4h.07a1.7 1.7 0 0 0 1.2-2.9l-.05-.05a1.7 1.7 0 1 1 2.4-2.4l.05.05a1.7 1.7 0 0 0 2.9-1.2v-.16a1.7 1.7 0 0 1 3.4 0v.07a1.7 1.7 0 0 0 2.9 1.2l.05-.05a1.7 1.7 0 1 1 2.4 2.4l-.05.05a1.7 1.7 0 0 0 1.2 2.9h.16a1.7 1.7 0 0 1 0 3.4h-.07a1.7 1.7 0 0 0-1.2 2.9Z' />
-                </svg>
+                ⚙️
               </span>
 
               <span>{text('sidebar.customizeMenu', 'Personalizar menu')}</span>
@@ -768,6 +769,45 @@ export default function Sidebar({
                   <span className='sidebar-customizer-counter'>
                     {visibleCount}/{SECTIONS.length}
                   </span>
+                </div>
+
+                <div className='sidebar-search-setting'>
+                  <div className='sidebar-search-setting-info'>
+                    <div className='sidebar-search-setting-icon'>
+                      <span className='sidebar-search-setting-icon-symbol' aria-hidden='true'>
+                        <svg viewBox='0 0 24 24' focusable='false'>
+                          <circle cx='10.8' cy='10.8' r='6.8' />
+                          <path d='m16 16 4.2 4.2' />
+                        </svg>
+                      </span>
+                      <span>
+                        <strong>Barra de pesquisa</strong>
+                        <small>
+                          {config.searchVisible
+                            ? 'Visível no menu lateral'
+                            : 'Oculta do menu lateral'}
+                        </small>
+                      </span>
+                    </div>
+                  </div>
+
+                  <label className='sidebar-switch-label'>
+                    <input
+                      type='checkbox'
+                      checked={Boolean(config.searchVisible)}
+                      onChange={(event) =>
+                        updateSearchVisibility(event.target.checked)
+                      }
+                      aria-label={
+                        config.searchVisible
+                          ? 'Ocultar barra de pesquisa'
+                          : 'Mostrar barra de pesquisa'
+                      }
+                    />
+                    <span className='sidebar-switch'>
+                      <span />
+                    </span>
+                  </label>
                 </div>
 
                 <div className='sidebar-customizer-actions'>

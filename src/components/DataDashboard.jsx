@@ -250,13 +250,13 @@ export default function Dashboard({
         <div className='stat'>
           <strong>{focus || '—'}</strong>
 
-          <small>🎯 Foco / 5</small>
+          <small>🎯 Foco </small>
         </div>
 
         <div className='stat'>
           <strong>{energy || '—'}</strong>
 
-          <small>⚡ Energia / 5</small>
+          <small>⚡ Energia</small>
         </div>
 
         <div className='stat'>
