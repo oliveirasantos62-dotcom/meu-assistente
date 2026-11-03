@@ -10,6 +10,7 @@ import {
 } from '../services/api';
 import { storageService } from '../services/storage';
 
+
 const TYPES = ['Ações', 'FIIs', 'Cripto', 'Renda Fixa'];
 
 const formatMoney = (value) =>
@@ -24,19 +25,19 @@ const formatPercent = (value) => {
   return `${number >= 0 ? '+' : ''}${number.toFixed(2)}%`;
 };
 
-const today = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; };
+const today = () => new Date().toISOString().slice(0, 10);
 
 const getAssetValue = (investment) =>
-  Number(investment.quantity || 0) * Number(investment.currentPriceBRL ?? investment.currentPrice ?? investment.buyPriceBRL ?? investment.buyPrice ?? 0);
+  Number(investment?.quantity || 0) *
+  Number(investment?.currentPrice || investment?.buyPrice || 0);
 
 const getInvestedValue = (investment) =>
-  Number(investment.quantity || 0) * Number(investment.buyPriceBRL ?? investment.buyPrice ?? 0);
+  Number(investment?.quantity || 0) * Number(investment?.buyPrice || 0);
 
 export default function Investments({ data, save }) {
   const [ticker, setTicker] = useState('');
   const [type, setType] = useState('Ações');
   const [market, setMarket] = useState('BR');
-  const [currency, setCurrency] = useState('BRL');
   const [quantity, setQuantity] = useState('');
   const [buyPrice, setBuyPrice] = useState('');
 
@@ -46,7 +47,15 @@ export default function Investments({ data, save }) {
   const [error, setError] = useState('');
   const [remoteReady, setRemoteReady] = useState(false);
 
-  const investments = data?.investments || [];
+  const investments = Array.isArray(data?.investments)
+    ? data.investments.filter((item) => item && typeof item === 'object')
+    : [];
+
+  const safePortfolioHistory = Array.isArray(data?.portfolioHistory)
+    ? data.portfolioHistory.filter(
+        (item) => item && typeof item === 'object' && item.date && Number.isFinite(Number(item.value)),
+      )
+    : [];
 
   useEffect(() => {
     let cancelled = false;
@@ -108,15 +117,32 @@ export default function Investments({ data, save }) {
    * =========================================================
    */
 
+  const getMarketLabel = (value) => ({
+    BR: 'Brasil',
+    US: 'EUA',
+    GLOBAL: 'Internacional',
+  }[value] || value);
+
   const fetchRealPrice = async (symbol, selectedMarket = market) => {
-    const cleanSymbol = symbol.trim().toUpperCase();
+    const cleanSymbol = String(symbol || '').trim().toUpperCase();
     if (!cleanSymbol) return null;
+
     try {
-      return await getInvestmentQuote(cleanSymbol, selectedMarket);
+      const result = await getInvestmentQuote(cleanSymbol, selectedMarket);
+      const price = Number(result?.price);
+      return Number.isFinite(price) && price > 0 ? price : null;
     } catch (err) {
       console.error('Erro ao consultar cotação:', err);
       return null;
     }
+  };
+
+  const getStoredMarket = (investment) => {
+    if (investment?.market) return String(investment.market).toUpperCase();
+    if (investment?.type === 'FIIs' || /\d/.test(String(investment?.ticker || ''))) return 'BR';
+    if (String(investment?.ticker || '').includes('.')) return 'GLOBAL';
+    if (investment?.type === 'Cripto') return 'US';
+    return 'US';
   };
 
   /*
@@ -138,29 +164,29 @@ export default function Investments({ data, save }) {
       0,
     );
 
-    const history = data.portfolioHistory || [];
+    const history = safePortfolioHistory;
 
-    const existing = history.find((item) => item.date === date);
+    const existing = history.find((item) => item?.date === date);
 
     let updatedHistory;
 
     const snapshot = {
       date,
-      invested,
-      value: total,
-      profit: total - invested,
+      invested: Number.isFinite(invested) ? invested : 0,
+      value: Number.isFinite(total) ? total : 0,
+      profit: Number.isFinite(total - invested) ? total - invested : 0,
     };
 
     if (existing) {
       updatedHistory = history.map((item) =>
-        item.date === date ? snapshot : item,
+        item?.date === date ? snapshot : item,
       );
     } else {
       updatedHistory = [...history, snapshot];
     }
 
     return updatedHistory
-      .sort((a, b) => a.date.localeCompare(b.date))
+      .sort((a, b) => String(a?.date || '').localeCompare(String(b?.date || '')))
       .slice(-365);
   };
 
@@ -179,25 +205,27 @@ export default function Investments({ data, save }) {
     const bPrice = Number(buyPrice);
 
     if (!symbol) return setError('Informe o ticker do ativo.');
+    if (type === 'Ações' && market === 'GLOBAL' && !symbol.includes('.')) {
+      return setError('Para ações internacionais, use o símbolo do Yahoo Finance com o sufixo da bolsa. Ex.: VOW3.DE, SAP.DE ou NESN.SW.');
+    }
     if (!Number.isFinite(q) || q <= 0) return setError('Informe uma quantidade válida.');
     if (!Number.isFinite(bPrice) || bPrice <= 0) return setError('Informe um preço de compra válido.');
 
     setLoading(true);
     try {
-      const quote = await fetchRealPrice(symbol, market);
-      const currentPrice = quote?.price ?? bPrice;
-      const assetCurrency = quote?.currency || currency;
-      const fxToBrl = Number(quote?.fxToBrl || 1);
-      const buyPriceBRL = bPrice * fxToBrl;
-      const currentPriceBRL = Number(quote?.priceBRL || currentPrice * fxToBrl);
-      const created = await createInvestment({ ticker: symbol, type, market, currency: assetCurrency, quantity: q, buyPrice: bPrice, currentPrice, buyPriceBRL, currentPriceBRL });
+      const isManualQuote = type === 'Renda Fixa';
+      const realPrice = isManualQuote ? null : await fetchRealPrice(symbol, market);
+      if (!isManualQuote && realPrice === null) {
+        throw new Error(`Cotação indisponível para ${symbol} (${getMarketLabel(market)}). Verifique o ticker ou tente novamente.`);
+      }
+      const currentPrice = realPrice ?? bPrice;
+      const created = await createInvestment({ ticker: symbol, type, quantity: q, buyPrice: bPrice, currentPrice });
       const updatedInvestments = [...investments, created];
       const history = savePortfolioSnapshot(updatedInvestments);
       const savedHistory = await saveInvestmentSnapshot(history[history.length - 1]);
       save({ ...data, investments: updatedInvestments, portfolioHistory: savedHistory, xp: (data.xp || 0) + 20, coins: (data.coins || 0) + 10 });
       setTicker(''); setQuantity(''); setBuyPrice('');
-      setCurrency(assetCurrency);
-      setMessage(quote ? `${symbol} adicionado. Cotação atualizada (${assetCurrency}).` : `${symbol} adicionado usando o preço de compra como referência.`);
+      setMessage(isManualQuote ? `${symbol} adicionado com valor manual.` : `${symbol} adicionado com cotação atualizada.`);
     } catch (err) {
       console.error(err);
       setError(err.message || 'Erro ao salvar investimento.');
@@ -215,14 +243,19 @@ export default function Investments({ data, save }) {
   const refreshInvestment = async (investment) => {
     setError(''); setMessage(''); setLoadingTicker(investment.ticker);
     try {
-      const quote = await fetchRealPrice(investment.ticker, investment.market || 'BR');
-      if (!quote) throw new Error(`Não foi possível atualizar ${investment.ticker}.`);
-      const updated = await updateInvestment(investment.id, { currentPrice: quote.price, currency: quote.currency, currentPriceBRL: quote.priceBRL ?? quote.price });
+      const isManualQuote = investment?.type === 'Renda Fixa';
+      if (isManualQuote) {
+        setMessage(`${investment?.ticker || 'Ativo'} usa valor manual.`);
+        return;
+      }
+      const realPrice = await fetchRealPrice(investment.ticker, getStoredMarket(investment));
+      if (realPrice === null) throw new Error(`Não foi possível atualizar ${investment?.ticker || 'Ativo'}.`);
+      const updated = await updateInvestment(investment.id, { currentPrice: realPrice });
       const updatedInvestments = investments.map(item => item.id === investment.id ? updated : item);
       const history = savePortfolioSnapshot(updatedInvestments);
       const savedHistory = await saveInvestmentSnapshot(history[history.length - 1]);
       save({ ...data, investments: updatedInvestments, portfolioHistory: savedHistory });
-      setMessage(`${investment.ticker} atualizado com sucesso.`);
+      setMessage(`${investment?.ticker || 'Ativo'} atualizado com sucesso.`);
     } catch (err) {
       setError(err.message || 'Erro ao atualizar investimento.');
     } finally { setLoadingTicker(''); }
@@ -240,9 +273,13 @@ export default function Investments({ data, save }) {
     try {
       const updatedInvestments = [];
       for (const investment of investments) {
-        const quote = await fetchRealPrice(investment.ticker, investment.market || 'BR');
-        if (!quote) updatedInvestments.push(investment);
-        else updatedInvestments.push(await updateInvestment(investment.id, { currentPrice: quote.price, currency: quote.currency, currentPriceBRL: quote.priceBRL ?? quote.price }));
+        if (investment?.type === 'Renda Fixa') {
+          updatedInvestments.push(investment);
+          continue;
+        }
+        const realPrice = await fetchRealPrice(investment.ticker, getStoredMarket(investment));
+        if (realPrice === null) updatedInvestments.push(investment);
+        else updatedInvestments.push(await updateInvestment(investment.id, { currentPrice: realPrice }));
       }
       const history = savePortfolioSnapshot(updatedInvestments);
       const savedHistory = await saveInvestmentSnapshot(history[history.length - 1]);
@@ -262,23 +299,35 @@ export default function Investments({ data, save }) {
   const removeInvestment = async (id) => {
     const investment = investments.find((item) => item.id === id);
     if (!investment) return;
-    if (!window.confirm(`Excluir ${investment.ticker} da carteira?`)) return;
+    if (!window.confirm(`Excluir ${investment?.ticker || 'Ativo'} da carteira?`)) return;
     try {
-      try {
-        await deleteInvestment(id);
-      } catch (remoteError) {
-        // IDs legados/localmente criados podem não existir na carteira remota.
-        // Nesse caso, removemos o registro local em vez de deixar o usuário preso
-        // em um 404. Erros reais do servidor continuam sendo exibidos.
-        if (remoteError?.status !== 404) throw remoteError;
+      await deleteInvestment(id);
+    } catch (err) {
+      // Backends antigos podem responder 404 para um ID legado. Como o ativo
+      // já não existe na nuvem, removemos também do estado local e deixamos a
+      // sincronização seguir normalmente. Outros erros continuam visíveis.
+      if (err?.status !== 404) {
+        setError(err.message || 'Erro ao excluir investimento.');
+        return;
       }
+    }
+
+    try {
       const updatedInvestments = investments.filter(item => item.id !== id);
       const history = savePortfolioSnapshot(updatedInvestments);
-      const savedHistory = history.length ? await saveInvestmentSnapshot(history[history.length - 1]) : [];
+      const savedHistory = history.length
+        ? await saveInvestmentSnapshot(history[history.length - 1])
+        : [];
       save({ ...data, investments: updatedInvestments, portfolioHistory: savedHistory });
-      setMessage(`${investment.ticker} removido.`);
+      setMessage(`${investment?.ticker || 'Ativo'} removido.`);
     } catch (err) {
-      setError(err.message || 'Erro ao excluir investimento.');
+      // A exclusão do ativo já foi feita; não reintroduzir o item por causa de
+      // uma falha secundária ao salvar o histórico.
+      save({
+        ...data,
+        investments: investments.filter(item => item.id !== id),
+      });
+      setError(err.message || 'Investimento removido, mas o histórico não pôde ser atualizado.');
     }
   };
 
@@ -372,12 +421,13 @@ export default function Investments({ data, save }) {
     const groups = {};
 
     investments.forEach((investment) => {
-      const type = investment.type || 'Outros';
+      const type = investment?.type || 'Outros';
 
       groups[type] = (groups[type] || 0) + getAssetValue(investment);
     });
 
     return Object.entries(groups)
+      .filter((entry) => Array.isArray(entry) && entry[0] != null && Number.isFinite(Number(entry[1])))
       .map(([type, value]) => ({
         type,
         value,
@@ -395,11 +445,11 @@ export default function Investments({ data, save }) {
    * =========================================================
    */
 
-  const portfolioHistory = data.portfolioHistory || [];
+  const portfolioHistory = safePortfolioHistory;
 
   const historyMax = Math.max(
     1,
-    ...portfolioHistory.map((item) => Number(item.value) || 0),
+    ...portfolioHistory.map((item) => Number(item?.value) || 0),
   );
 
   return (
@@ -587,7 +637,7 @@ export default function Investments({ data, save }) {
         ) : (
           <div className='invest-line-chart-wrap'>
             {(() => {
-              const values = portfolioHistory.map((item) => Number(item.value) || 0);
+              const values = portfolioHistory.map((item) => Number(item?.value) || 0).filter(Number.isFinite);
               const minValue = Math.min(...values) * 0.96;
               const maxValue = Math.max(...values) * 1.04 || 1;
               const range = maxValue - minValue || 1;
@@ -604,8 +654,8 @@ export default function Investments({ data, save }) {
               return (
                 <>
                   <div className='invest-chart-summary'>
-                    <strong>{formatMoney(last.value)}</strong>
-                    <span>Último registro · {new Date(last.item.date + 'T12:00:00').toLocaleDateString('pt-BR')}</span>
+                    <strong>{formatMoney(last?.value)}</strong>
+                    <span>Último registro · {last?.item?.date ? new Date(last.item.date + 'T12:00:00').toLocaleDateString('pt-BR') : '—'}</span>
                   </div>
                   <svg className='invest-line-chart' viewBox={`0 0 ${width} ${height}`} role='img' aria-label='Gráfico de evolução patrimonial'>
                     <defs>
@@ -622,7 +672,7 @@ export default function Investments({ data, save }) {
                     <polyline points={line} fill='none' stroke='#7567f8' strokeWidth='4' strokeLinecap='round' strokeLinejoin='round' />
                     {points.map((point, index) => (
                       <circle key={point.item.date + index} cx={point.x} cy={point.y} r={index === points.length - 1 ? 6 : 3.5} fill={index === points.length - 1 ? '#7567f8' : 'var(--invest-dot)'} stroke='#fff' strokeWidth='2'>
-                        <title>{`${point.item.date}: ${formatMoney(point.value)}`}</title>
+                        <title>{`${point?.item?.date || 'Sem data'}: ${formatMoney(point?.value)}`}</title>
                       </circle>
                     ))}
                   </svg>
@@ -674,7 +724,7 @@ export default function Investments({ data, save }) {
                       fontSize: 13,
                     }}
                   >
-                    <strong>{investment.ticker}</strong>
+                    <strong>{investment?.ticker || 'Ativo'}</strong>
 
                     <span>
                       {percentage.toFixed(1)}% · {formatMoney(value)}
@@ -768,23 +818,19 @@ export default function Investments({ data, save }) {
           }}
         >
           <input
-            placeholder={market === 'BR' ? 'Ticker: PETR4' : market === 'US' ? 'Ticker: TSLA' : 'Ticker: AAPL ou SAP.DE'}
+            placeholder={type === 'Ações' && market === 'BR' ? 'Ticker: PETR4' : type === 'Ações' && market === 'US' ? 'Ticker: TSLA' : type === 'Ações' ? 'Yahoo: VOW3.DE' : type === 'Cripto' ? 'Ticker: BTC-USD' : 'Ativo: CDB 120% CDI'}
             value={ticker}
             onChange={(event) => setTicker(event.target.value.toUpperCase())}
           />
 
           <select
-            value={market}
-            onChange={(event) => setMarket(event.target.value)}
-          >
-            <option value='BR'>🇧🇷 Brasil (B3)</option>
-            <option value='US'>🇺🇸 Estados Unidos</option>
-            <option value='GLOBAL'>🌎 Global</option>
-          </select>
-
-          <select
             value={type}
-            onChange={(event) => setType(event.target.value)}
+            onChange={(event) => {
+              const nextType = event.target.value;
+              setType(nextType);
+              if (nextType === 'FIIs' || nextType === 'Renda Fixa') setMarket('BR');
+              else if (nextType === 'Cripto') setMarket('US');
+            }}
           >
             {TYPES.map((item) => (
               <option key={item} value={item}>
@@ -792,6 +838,14 @@ export default function Investments({ data, save }) {
               </option>
             ))}
           </select>
+
+          {type === 'Ações' && (
+            <select value={market} onChange={(event) => setMarket(event.target.value)}>
+              <option value='BR'>🇧🇷 Brasil</option>
+              <option value='US'>🇺🇸 EUA</option>
+              <option value='GLOBAL'>🌎 Internacional</option>
+            </select>
+          )}
 
           <input
             type='number'
@@ -806,7 +860,7 @@ export default function Investments({ data, save }) {
             type='number'
             min='0'
             step='0.01'
-            placeholder='Preço médio'
+            placeholder='Preço médio (R$)'
             value={buyPrice}
             onChange={(event) => setBuyPrice(event.target.value)}
           />
@@ -831,7 +885,7 @@ export default function Investments({ data, save }) {
             color: 'var(--site-text-muted)',
           }}
         >
-          A cotação atual será buscada automaticamente quando disponível.
+          A cotação é consultada no servidor e convertida para BRL. Ações internacionais usam o símbolo do Yahoo Finance (ex.: VOW3.DE, SAP.DE, NESN.SW). Renda Fixa usa valor manual.
         </small>
       </div>
 
@@ -905,15 +959,19 @@ export default function Investments({ data, save }) {
 
           const profitPct = invested > 0 ? (profit / invested) * 100 : 0;
 
-          const isUpdating = loadingTicker === investment.ticker;
+          const isUpdating = loadingTicker === investment?.ticker;
 
           return (
             <div className='task investment-row' key={investment.id}>
               <div style={{ flex: 1 }}>
-                <strong>{investment.ticker}</strong>
+                <strong>{investment?.ticker || 'Ativo'}</strong>
 
                 <span className='tag' style={{ marginLeft: 6 }}>
-                  {investment.type} · {investment.market || 'BR'} · {investment.currency || 'BRL'}
+                  {investment?.type}
+                </span>
+
+                <span className='tag' style={{ marginLeft: 6 }}>
+                  {getMarketLabel(getStoredMarket(investment))}
                 </span>
 
                 <div
@@ -923,11 +981,11 @@ export default function Investments({ data, save }) {
                     marginTop: 5,
                   }}
                 >
-                  {investment.quantity} un. · PM{' '}
-                  {formatMoney(investment.buyPrice)}
+                  {investment?.quantity} un. · PM{' '}
+                  {formatMoney(investment?.buyPrice)}
                   {' · '}
                   Atual{' '}
-                  {formatMoney(investment.currentPrice || investment.buyPrice)}
+                  {formatMoney(investment?.currentPrice || investment?.buyPrice)}
                 </div>
 
                 {investment.updatedAt && (
