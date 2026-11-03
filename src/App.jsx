@@ -48,7 +48,7 @@ import { isTaskCancelled } from './utils/taskStatus';
 import { useLanguage } from './context/LanguageContext.jsx';
 
 export default function App() {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
 
   // =========================================================
   // AUTENTICAÇÃO
@@ -509,7 +509,7 @@ export default function App() {
       : '🎮 Nenhuma moeda gasta em recompensas.',
   ];
 
-  const todayLabel = new Date().toLocaleDateString('pt-BR', {
+  const todayLabel = new Date().toLocaleDateString(language, {
     weekday: 'long',
     day: '2-digit',
     month: 'long',

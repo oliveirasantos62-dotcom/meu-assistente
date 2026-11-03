@@ -421,7 +421,7 @@ export default function Sidebar({
       >
         {/* IDENTIDADE */}
         <div className='sidebar-brand'>
-          <div className='logo'>A</div>
+          <div className='logo' aria-label='Meu Assistente'><img src='/favicon-tech.svg' alt='' /></div>
 
           <div className='sidebar-brand-text'>
             <h3>Meu Assistente</h3>
