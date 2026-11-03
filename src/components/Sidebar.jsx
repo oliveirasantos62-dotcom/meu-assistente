@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useLanguage } from '../context/LanguageContext';
+import assistantIcon from '../../resources/icon-only.png';
 
 const SECTIONS = [
   {
@@ -467,7 +468,7 @@ export default function Sidebar({
               aria-label={text('brand.openDashboard', 'Abrir Dashboard')}
             >
               <div className='logo' aria-label='Meu Assistente'>
-                <img src='../../resources/icon-only.png' alt='Ícone' />
+                <img src={assistantIcon} alt='Meu Assistente' />
               </div>
 
               <div className='sidebar-brand-text'>
@@ -589,7 +590,10 @@ export default function Sidebar({
               }}
             >
               <span className='sidebar-customize-icon' aria-hidden='true'>
-                ⚙️
+                <svg viewBox='0 0 24 24' focusable='false'>
+                  <path d='M12 8.25a3.75 3.75 0 1 0 0 7.5 3.75 3.75 0 0 0 0-7.5Z' />
+                  <path d='m19.4 15 .05.04a1.7 1.7 0 0 1-2.4 2.4l-.04-.05a1.7 1.7 0 0 0-2.9 1.2v.16a1.7 1.7 0 0 1-3.4 0v-.07a1.7 1.7 0 0 0-2.9-1.2l-.05.05a1.7 1.7 0 1 1-2.4-2.4l.05-.05a1.7 1.7 0 0 0-1.2-2.9h-.16a1.7 1.7 0 0 1 0-3.4h.07a1.7 1.7 0 0 0 1.2-2.9l-.05-.05a1.7 1.7 0 1 1 2.4-2.4l.05.05a1.7 1.7 0 0 0 2.9-1.2v-.16a1.7 1.7 0 0 1 3.4 0v.07a1.7 1.7 0 0 0 2.9 1.2l.05-.05a1.7 1.7 0 1 1 2.4 2.4l-.05.05a1.7 1.7 0 0 0 1.2 2.9h.16a1.7 1.7 0 0 1 0 3.4h-.07a1.7 1.7 0 0 0-1.2 2.9Z' />
+                </svg>
               </span>
 
               <span>{text('sidebar.customizeMenu', 'Personalizar menu')}</span>
