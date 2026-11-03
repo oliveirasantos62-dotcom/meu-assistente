@@ -299,7 +299,6 @@ export default function SmartCalendar({ data, save, completeTask }) {
     };
 
     return tasks
-      .filter((task) => !isTaskCancelled(task, new Date()))
       .map((task) => {
         const rawFrequency = String(task.frequency || task.recurrence || '').trim().toLowerCase();
         const isDaily = [
