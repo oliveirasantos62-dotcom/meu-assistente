@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useLanguage } from '../context/LanguageContext';
 import './Sidebar.css';
+import brandIcon from '../../resources/icon-only.png';
 
 const SECTIONS = [
   {
@@ -489,7 +490,7 @@ export default function Sidebar({
               aria-label={text('brand.openDashboard', 'Abrir Dashboard')}
             >
               <div className='logo' aria-label='Meu Assistente'>
-                <img src='../../resources/icon-only.png' alt='Ícone' />
+                <img src={brandIcon} alt='Meu Assistente' />
               </div>
 
               <div className='sidebar-brand-text'>
