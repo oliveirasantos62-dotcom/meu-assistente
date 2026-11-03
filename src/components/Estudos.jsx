@@ -1061,12 +1061,12 @@ export default function Estudos({
                 {statisticsByDiscipline.map((discipline) => (
                   <div className='study-discipline' key={discipline.name}>
                     <div className='study-discipline-header'>
-                      <div>
+                      <div className='study-discipline-info'>
                         <strong>{discipline.name}</strong>
-                        <small>
-                          {discipline.questions} questões ·{' '}
-                          {formatHours(discipline.minutes)}
-                        </small>
+
+                        <small>{discipline.questions} questões</small>
+
+                        <small>{formatHours(discipline.minutes)}</small>
                       </div>
 
                       <div className='study-discipline-score'>

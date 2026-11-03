@@ -19415,3 +19415,14 @@ body.dark .sidebar-mobile-close {
   margin-top: 20px;
   text-align: center;
 }
+
+.study-discipline-info {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+}
+
+.study-discipline-info small {
+  display: block;
+}
