@@ -3,6 +3,7 @@ import { query } from "../db/pool.js";
 
 const BRAPI_BASE = "https://brapi.dev/api/quote";
 const YAHOO_BASE = "https://query1.finance.yahoo.com/v8/finance/chart";
+let investmentSchemaPromise = null;
 
 const normalizeMarket = (value) => {
   const allowed = ["BR", "US", "GLOBAL"];
@@ -14,7 +15,7 @@ const normalizeCurrency = (value) => {
   return /^[A-Z]{3}$/.test(currency) ? currency : "BRL";
 };
 
-async function ensureInvestmentSchema() {
+async function createInvestmentSchema() {
   await query(`CREATE TABLE IF NOT EXISTS investment_assets (
     id VARCHAR(64) NOT NULL, user_id VARCHAR(64) NOT NULL, ticker VARCHAR(64) NOT NULL,
     type VARCHAR(32) NOT NULL DEFAULT 'Ações', quantity DECIMAL(20,8) NOT NULL DEFAULT 0,
@@ -39,6 +40,27 @@ async function ensureInvestmentSchema() {
   if (!names.has('currency')) await query(`ALTER TABLE investment_assets ADD COLUMN currency VARCHAR(3) NOT NULL DEFAULT 'BRL'`);
   if (!names.has('buy_price_brl')) await query(`ALTER TABLE investment_assets ADD COLUMN buy_price_brl DECIMAL(20,8) NOT NULL DEFAULT 0`);
   if (!names.has('current_price_brl')) await query(`ALTER TABLE investment_assets ADD COLUMN current_price_brl DECIMAL(20,8) NOT NULL DEFAULT 0`);
+}
+
+function ensureInvestmentSchema() {
+  if (!investmentSchemaPromise) {
+    investmentSchemaPromise = createInvestmentSchema().catch((error) => {
+      investmentSchemaPromise = null;
+      throw error;
+    });
+  }
+  return investmentSchemaPromise;
+}
+
+function parseAllocation(value) {
+  if (!value) return null;
+  if (typeof value === "object") return value;
+  try { return JSON.parse(value); } catch { return null; }
+}
+
+function finiteNonNegative(value, fallback = 0) {
+  const n = Number(value);
+  return Number.isFinite(n) && n >= 0 ? n : fallback;
 }
 
 async function fetchJson(url, headers = {}) {
@@ -137,9 +159,7 @@ export async function getInvestmentDashboard(req, res) {
     return res.json({
       investments: assets.map(mapInvestment),
       portfolioHistory: snapshots.map(mapSnapshot),
-      targetAllocation: settings[0]?.target_allocation
-        ? JSON.parse(settings[0].target_allocation)
-        : { "Ações": 60, "FIIs": 20, "Renda Fixa": 20, "Cripto": 0 },
+      targetAllocation: parseAllocation(settings[0]?.target_allocation) || { "Ações": 60, "FIIs": 20, "Renda Fixa": 20, "Cripto": 0 },
     });
   } catch (error) {
     console.error(error);
@@ -227,9 +247,10 @@ export async function saveSnapshot(req, res) {
     const b = req.body || {};
     const date = String(b.date || "").slice(0, 10);
     if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return res.status(400).json({ message: "Data inválida." });
-    const invested = Number(b.invested || 0);
-    const value = Number(b.value || 0);
+    const invested = finiteNonNegative(b.invested);
+    const value = finiteNonNegative(b.value);
     const profit = Number(b.profit ?? value - invested);
+    if (!Number.isFinite(profit)) return res.status(400).json({ message: "Lucro/prejuízo inválido." });
 
     await query(
       `INSERT INTO investment_snapshots (id,user_id,snapshot_date,invested,value,profit)
