@@ -242,7 +242,13 @@ function getInitialConfig(user) {
 }
 
 function getAriaLabel(section, label) {
-  return `${label}`;
+  return label;
+}
+
+// O ícone já é renderizado separadamente. Remove emojis antigos do dicionário
+// para impedir que cada item apareça com dois símbolos.
+function cleanNavLabel(value) {
+  return String(value || '').replace(/^(?:\p{Extended_Pictographic}\uFE0F?\s*)+/u, '').trim();
 }
 
 export default function Sidebar({
@@ -250,6 +256,9 @@ export default function Sidebar({
   setActiveSection,
   onNavigate,
   currentUser,
+  darkMode = false,
+  setDarkMode,
+  onLogout,
   isOpen = false,
   onClose,
 }) {
@@ -287,13 +296,14 @@ export default function Sidebar({
     return fallback;
   };
 
-  const getLabel = (section) => text(`nav.${section.id}`, section.fallback);
+  const getLabel = (section) => cleanNavLabel(text(`nav.${section.id}`, section.fallback));
 
   const filteredSections = useMemo(() => {
     const normalizedSearch = search.trim().toLowerCase();
 
     return SECTIONS.filter((section) => {
-      if (!config.visible[section.id]) {
+      // O Dashboard é a página inicial fixa e nunca pode desaparecer.
+      if (section.id !== 'dashboard' && !config.visible[section.id]) {
         return false;
       }
 
@@ -325,7 +335,9 @@ export default function Sidebar({
       navigate(sectionId);
     }
 
-    if (onClose) {
+    // Em telas pequenas, a navegação fecha a gaveta. No desktop,
+    // o menu permanece aberto para facilitar a troca entre páginas.
+    if (onClose && typeof window !== 'undefined' && window.matchMedia('(max-width: 900px)').matches) {
       onClose();
     }
   }
@@ -395,7 +407,7 @@ export default function Sidebar({
     (section) => config.references[section.id],
   ).length;
 
-  const sidebarClassName = ['sidebar', isOpen ? 'sidebar-open' : '']
+  const sidebarClassName = ['sidebar', isOpen ? 'sidebar-open' : 'sidebar-closed']
     .filter(Boolean)
     .join(' ');
 
@@ -570,16 +582,27 @@ export default function Sidebar({
               </span>
             </div>
 
-            <button
-              type='button'
-              className='sidebar-footer-settings'
-              onClick={() => {
-                setCustomizerTab('visibility');
-                setShowCustomizer(true);
-              }}
-            >
-              ⚙️
-            </button>
+            <div className='sidebar-footer-actions'>
+              <button
+                type='button'
+                className='sidebar-theme-toggle'
+                onClick={() => setDarkMode?.(!darkMode)}
+                aria-pressed={Boolean(darkMode)}
+                title={darkMode ? text('sidebar.lightMode', 'Ativar modo claro') : text('sidebar.darkMode', 'Ativar modo escuro')}
+              >
+                <span aria-hidden='true'>{darkMode ? '☀️' : '🌙'}</span>
+                <span>{darkMode ? text('sidebar.lightModeLabel', 'Modo claro') : text('sidebar.darkModeLabel', 'Modo escuro')}</span>
+              </button>
+              <button
+                type='button'
+                className='sidebar-logout-button'
+                onClick={onLogout}
+                disabled={!onLogout}
+              >
+                <span aria-hidden='true'>↪</span>
+                <span>{text('sidebar.logout', 'Sair da conta')}</span>
+              </button>
+            </div>
           </div>
         </div>
       </aside>

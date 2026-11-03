@@ -198,6 +198,9 @@ export default function App() {
   // =========================================================
 
   const [activeSection, setActiveSection] = useState('dashboard');
+  const [sidebarOpen, setSidebarOpen] = useState(() =>
+    typeof window !== 'undefined' ? window.innerWidth > 900 : true
+  );
 
   // =========================================================
   // TEMA
@@ -709,7 +712,20 @@ export default function App() {
   // =========================================================
 
   return (
-    <div id='app' className='app-layout'>
+    <div id='app' className={`app-layout ${sidebarOpen ? 'sidebar-visible' : 'sidebar-hidden'}`}>
+      {/* BOTÃO PARA REABRIR O MENU EM TELAS PEQUENAS OU APÓS RECOLHER */}
+      {!sidebarOpen && (
+        <button
+          type='button'
+          className='mobile-sidebar-trigger'
+          onClick={() => setSidebarOpen(true)}
+          aria-label={t('sidebar.open', 'Abrir menu')}
+          title={t('sidebar.open', 'Abrir menu')}
+        >
+          ☰
+        </button>
+      )}
+
       {/* SIDEBAR */}
 
       <Sidebar
@@ -719,6 +735,8 @@ export default function App() {
         darkMode={darkMode}
         setDarkMode={setDarkMode}
         onLogout={handleLogout}
+        isOpen={sidebarOpen}
+        onClose={() => setSidebarOpen(false)}
         data={data}
         save={save}
       />
