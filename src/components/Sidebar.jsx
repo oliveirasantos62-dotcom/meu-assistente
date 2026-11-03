@@ -254,6 +254,8 @@ export default function Sidebar({
   setActiveSection,
   onNavigate,
   currentUser,
+  data,
+  save,
   darkMode = false,
   setDarkMode,
   onLogout,

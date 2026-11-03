@@ -1,0 +1,17 @@
+CORREÇÃO DE ERROS — MEU ASSISTENTE
+
+Arquivos incluídos:
+- src/components/Sidebar.jsx: declara corretamente as props `data` e `save` usadas pela sincronização de referências. Isso elimina o ReferenceError: data is not defined que impedia o React de abrir.
+- src/utils/moduleReferences.js: utilitário para aplicar as referências desativadas em telas agregadoras.
+- public/manifest.webmanifest: troca o ícone inexistente favicon-tech.svg pelos PNGs existentes.
+- index.html: atualiza a versão de cache do favicon.
+- public/favicon-tech.png e public/favicon.png: ícones atualizados.
+
+INSTALAÇÃO
+1. Faça backup do projeto.
+2. Extraia o ZIP na raiz do projeto, mantendo a estrutura das pastas.
+3. Aceite substituir os arquivos correspondentes.
+4. Rode `npm run build`.
+5. Faça commit e push para o GitHub para publicar na Vercel.
+
+Observação: o ZIP contém somente os arquivos envolvidos nesta correção. Não substitui o projeto inteiro.
