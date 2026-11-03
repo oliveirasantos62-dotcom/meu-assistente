@@ -19,6 +19,8 @@ const DEFAULT_REFERENCES = {
   connections: true,
   foguinho: true,
   assistant: true,
+  dataScience: true,
+  profile: true,
 };
 
 export function getModuleReferences(data) {

@@ -209,37 +209,32 @@ function safeParse(value, fallback) {
   }
 }
 
-function getInitialConfig(user) {
+function getInitialConfig(user, data) {
   const key = getStorageKey(user);
+  let savedConfig = {};
 
   try {
-    const saved = localStorage.getItem(key);
-
-    if (!saved) {
-      return {
-        visible: DEFAULT_VISIBLE,
-        references: DEFAULT_REFERENCES,
-      };
-    }
-
-    const parsed = safeParse(saved, {});
-
-    return {
-      visible: {
-        ...DEFAULT_VISIBLE,
-        ...(parsed.visible || {}),
-      },
-      references: {
-        ...DEFAULT_REFERENCES,
-        ...(parsed.references || {}),
-      },
-    };
+    savedConfig = safeParse(localStorage.getItem(key), {});
   } catch {
-    return {
-      visible: DEFAULT_VISIBLE,
-      references: DEFAULT_REFERENCES,
-    };
+    savedConfig = {};
   }
+
+  // A visibilidade do menu continua local ao dispositivo.
+  // As referências, porém, usam a configuração central do appData,
+  // compartilhada por todas as páginas e sincronizada com a nuvem.
+  const persistedReferences = data?.settings?.moduleReferences || {};
+
+  return {
+    visible: {
+      ...DEFAULT_VISIBLE,
+      ...(savedConfig.visible || {}),
+    },
+    references: {
+      ...DEFAULT_REFERENCES,
+      ...(savedConfig.references || {}),
+      ...persistedReferences,
+    },
+  };
 }
 
 function getAriaLabel(section, label) {
@@ -267,15 +262,15 @@ export default function Sidebar({
 }) {
   const { t } = useLanguage();
 
-  const [config, setConfig] = useState(() => getInitialConfig(currentUser));
+  const [config, setConfig] = useState(() => getInitialConfig(currentUser, data));
 
   const [search, setSearch] = useState('');
   const [showCustomizer, setShowCustomizer] = useState(false);
   const [customizerTab, setCustomizerTab] = useState('visibility');
 
   useEffect(() => {
-    setConfig(getInitialConfig(currentUser));
-  }, [currentUser]);
+    setConfig(getInitialConfig(currentUser, data));
+  }, [currentUser, data?.settings?.moduleReferences]);
 
   // Permite sair da personalização pelo teclado, sem ficar preso na camada modal.
   useEffect(() => {
@@ -382,24 +377,48 @@ export default function Sidebar({
   }
 
   function updateReference(sectionId, value) {
+    const nextReferences = {
+      ...config.references,
+      [sectionId]: value,
+    };
+
+    // Atualiza imediatamente o estado visual do menu.
     setConfig((previous) => ({
       ...previous,
-      references: {
-        ...previous.references,
-        [sectionId]: value,
-      },
+      references: nextReferences,
     }));
+
+    // Salva na mesma fonte de dados que as outras páginas consultam.
+    // O hook useAppData também sincroniza esta alteração com a conta na nuvem.
+    if (typeof save === 'function' && data) {
+      save({
+        ...data,
+        settings: {
+          ...(data.settings || {}),
+          moduleReferences: nextReferences,
+        },
+      });
+    }
   }
 
   function restoreDefaults() {
-    setConfig({
-      visible: {
-        ...DEFAULT_VISIBLE,
-      },
-      references: {
-        ...DEFAULT_REFERENCES,
-      },
-    });
+    const defaultReferences = { ...DEFAULT_REFERENCES };
+
+    setConfig((previous) => ({
+      ...previous,
+      visible: { ...DEFAULT_VISIBLE },
+      references: defaultReferences,
+    }));
+
+    if (typeof save === 'function' && data) {
+      save({
+        ...data,
+        settings: {
+          ...(data.settings || {}),
+          moduleReferences: defaultReferences,
+        },
+      });
+    }
   }
 
   function showAll() {
