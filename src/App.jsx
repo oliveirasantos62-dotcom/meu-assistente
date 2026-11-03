@@ -129,15 +129,25 @@ export default function App() {
   const referenceData = getReferenceData(data);
   const pageData = (moduleId) => getReferenceData(data, moduleId);
   const referencePendingTasks = Array.isArray(referenceData?.tasks)
-    ? referenceData.tasks.filter((task) => !task.done && !isTaskCancelled(task, today))
+    ? referenceData.tasks.filter(
+        (task) => !task.done && !isTaskCancelled(task, today),
+      )
     : [];
   const gamificationReferenceData = getReferenceData(data, 'gamification');
-  const gamificationCompletedTasks = Array.isArray(gamificationReferenceData?.tasks)
+  const gamificationCompletedTasks = Array.isArray(
+    gamificationReferenceData?.tasks,
+  )
     ? gamificationReferenceData.tasks.filter((task) => task.done)
     : [];
-  const dashboardTasks = Array.isArray(referenceData?.tasks) ? referenceData.tasks : [];
-  const dashboardHabits = Array.isArray(referenceData?.habits) ? referenceData.habits : [];
-  const dashboardGoals = Array.isArray(referenceData?.goals) ? referenceData.goals : [];
+  const dashboardTasks = Array.isArray(referenceData?.tasks)
+    ? referenceData.tasks
+    : [];
+  const dashboardHabits = Array.isArray(referenceData?.habits)
+    ? referenceData.habits
+    : [];
+  const dashboardGoals = Array.isArray(referenceData?.goals)
+    ? referenceData.goals
+    : [];
 
   // Progresso do dia: considera apenas compromissos realmente relacionados
   // a hoje. Não usa o total histórico de tarefas, pois isso distorcia o
@@ -158,40 +168,105 @@ export default function App() {
   });
 
   const todayDashboardHabits = dashboardHabits.filter((habit) => {
-    if (!habit || habit.active === false || habit.isActive === false) return false;
+    if (!habit || habit.active === false || habit.isActive === false)
+      return false;
     // Hábitos são considerados compromissos diários por padrão.
-    const frequency = String(habit.frequency || habit.frequencyType || 'daily').toLowerCase();
-    return frequency === 'daily' || frequency === 'diaria' || frequency === 'diário' || frequency === '1x';
+    const frequency = String(
+      habit.frequency || habit.frequencyType || 'daily',
+    ).toLowerCase();
+    return (
+      frequency === 'daily' ||
+      frequency === 'diaria' ||
+      frequency === 'diário' ||
+      frequency === '1x'
+    );
   });
 
   const todayDashboardGoals = dashboardGoals.filter((goal) => {
     if (!goal || !isSameDay(goal.deadline)) return false;
-    return !(goal.done || ['completed', 'concluido', 'concluida'].includes(String(goal.status || '').toLowerCase()));
+    return !(
+      goal.done ||
+      ['completed', 'concluido', 'concluida'].includes(
+        String(goal.status || '').toLowerCase(),
+      )
+    );
   });
 
-  const dailyTotalItems = todayDashboardTasks.length + todayDashboardHabits.length + todayDashboardGoals.length;
+  const dailyTotalItems =
+    todayDashboardTasks.length +
+    todayDashboardHabits.length +
+    todayDashboardGoals.length;
   const dailyDoneItems =
     todayDashboardTasks.filter((task) => Boolean(task.done)).length +
-    todayDashboardHabits.filter((habit) => Boolean(habit.history?.[today] ?? habit.done)).length +
-    dashboardGoals.filter((goal) => isSameDay(goal.deadline) && (goal.done || ['completed', 'concluido', 'concluida'].includes(String(goal.status || '').toLowerCase()))).length;
+    todayDashboardHabits.filter((habit) =>
+      Boolean(habit.history?.[today] ?? habit.done),
+    ).length +
+    dashboardGoals.filter(
+      (goal) =>
+        isSameDay(goal.deadline) &&
+        (goal.done ||
+          ['completed', 'concluido', 'concluida'].includes(
+            String(goal.status || '').toLowerCase(),
+          )),
+    ).length;
 
   const dashboardCompletion = dailyTotalItems
     ? Math.round((dailyDoneItems / dailyTotalItems) * 100)
     : 0;
 
   const dailyXpMax =
-    todayDashboardTasks.reduce((sum, task) => sum + Math.max(0, Number(task.xp) || 0), 0) +
-    todayDashboardHabits.reduce((sum, habit) => sum + Math.max(0, Number(habit.xp ?? habit.xpReward ?? 20) || 20), 0) +
-    todayDashboardGoals.reduce((sum, goal) => sum + Math.max(0, Number(goal.xpReward ?? goal.xp ?? 100) || 100), 0);
+    todayDashboardTasks.reduce(
+      (sum, task) => sum + Math.max(0, Number(task.xp) || 0),
+      0,
+    ) +
+    todayDashboardHabits.reduce(
+      (sum, habit) =>
+        sum + Math.max(0, Number(habit.xp ?? habit.xpReward ?? 20) || 20),
+      0,
+    ) +
+    todayDashboardGoals.reduce(
+      (sum, goal) =>
+        sum + Math.max(0, Number(goal.xpReward ?? goal.xp ?? 100) || 100),
+      0,
+    );
 
   const dailyXpDone =
-    todayDashboardTasks.filter((task) => task.done).reduce((sum, task) => sum + Math.max(0, Number(task.xp) || 0), 0) +
-    todayDashboardHabits.filter((habit) => Boolean(habit.history?.[today] ?? habit.done)).reduce((sum, habit) => sum + Math.max(0, Number(habit.xp ?? habit.xpReward ?? 20) || 20), 0) +
-    dashboardGoals.filter((goal) => isSameDay(goal.deadline) && (goal.done || ['completed', 'concluido', 'concluida'].includes(String(goal.status || '').toLowerCase()))).reduce((sum, goal) => sum + Math.max(0, Number(goal.xpReward ?? goal.xp ?? 100) || 100), 0);
-  const dashboardGamificationEnabled = gamificationReferenceData?.xp !== 0 || getReferenceData(data).settings?.moduleReferences?.gamification !== false;
-  const dashboardLevel = dashboardGamificationEnabled ? (levelInfo?.level ?? 1) : 1;
-  const dashboardNextXP = dashboardGamificationEnabled ? (levelInfo?.nextXP ?? 0) : 0;
-  const dashboardProgress = dashboardGamificationEnabled ? (levelInfo?.progress ?? 0) : 0;
+    todayDashboardTasks
+      .filter((task) => task.done)
+      .reduce((sum, task) => sum + Math.max(0, Number(task.xp) || 0), 0) +
+    todayDashboardHabits
+      .filter((habit) => Boolean(habit.history?.[today] ?? habit.done))
+      .reduce(
+        (sum, habit) =>
+          sum + Math.max(0, Number(habit.xp ?? habit.xpReward ?? 20) || 20),
+        0,
+      ) +
+    dashboardGoals
+      .filter(
+        (goal) =>
+          isSameDay(goal.deadline) &&
+          (goal.done ||
+            ['completed', 'concluido', 'concluida'].includes(
+              String(goal.status || '').toLowerCase(),
+            )),
+      )
+      .reduce(
+        (sum, goal) =>
+          sum + Math.max(0, Number(goal.xpReward ?? goal.xp ?? 100) || 100),
+        0,
+      );
+  const dashboardGamificationEnabled =
+    gamificationReferenceData?.xp !== 0 ||
+    getReferenceData(data).settings?.moduleReferences?.gamification !== false;
+  const dashboardLevel = dashboardGamificationEnabled
+    ? (levelInfo?.level ?? 1)
+    : 1;
+  const dashboardNextXP = dashboardGamificationEnabled
+    ? (levelInfo?.nextXP ?? 0)
+    : 0;
+  const dashboardProgress = dashboardGamificationEnabled
+    ? (levelInfo?.progress ?? 0)
+    : 0;
 
   // =========================================================
   // NAVEGAÇÃO
@@ -199,7 +274,7 @@ export default function App() {
 
   const [activeSection, setActiveSection] = useState('dashboard');
   const [sidebarOpen, setSidebarOpen] = useState(() =>
-    typeof window !== 'undefined' ? window.innerWidth > 900 : true
+    typeof window !== 'undefined' ? window.innerWidth > 900 : true,
   );
 
   // =========================================================
@@ -239,24 +314,33 @@ export default function App() {
   const [focusSeconds, setFocusSeconds] = useState(25 * 60);
   const [focusRunning, setFocusRunning] = useState(false);
   const [focusCompleted, setFocusCompleted] = useState(false);
+  // Tipo de cronômetro: regressivo ou livre
+  const [focusMode, setFocusMode] = useState('timer');
 
+  // Dados da sessão de Estudos vinculada ao Modo Foco
+  const [focusStudyContext, setFocusStudyContext] = useState(null);
+
+  // Resultado do cronômetro que será enviado de volta para Estudos
+  const [completedFocusSession, setCompletedFocusSession] = useState(null);
   // =========================================================
   // TIMER DO MODO FOCO
   // =========================================================
 
   useEffect(() => {
-    if (!focusRunning) {
-      return undefined;
-    }
+    if (!focusRunning) return undefined;
 
     const timerId = window.setInterval(() => {
       setFocusSeconds((current) => {
+        // MODO LIVRE: conta de zero para cima
+        if (focusMode === 'free') {
+          return current + 1;
+        }
+
+        // TEMPORIZADOR: conta de trás para frente
         if (current <= 1) {
           window.clearInterval(timerId);
-
           setFocusRunning(false);
           setFocusCompleted(true);
-
           return 0;
         }
 
@@ -265,7 +349,7 @@ export default function App() {
     }, 1000);
 
     return () => window.clearInterval(timerId);
-  }, [focusRunning]);
+  }, [focusRunning, focusMode]);
 
   // =========================================================
   // ABRIR MODO FOCO
@@ -274,6 +358,9 @@ export default function App() {
   function openFocusMode() {
     setFocusTaskId('');
     setFocusItemType('');
+
+    setFocusMode('timer');
+    setFocusStudyContext(null);
 
     setFocusMinutes(25);
     setFocusSeconds(25 * 60);
@@ -288,7 +375,53 @@ export default function App() {
       behavior: 'instant',
     });
   }
+  function startStudyFocus(sessionDetails) {
+    const duration = Math.max(1, Number(sessionDetails.minutes) || 25);
 
+    setFocusTaskId('');
+    setFocusItemType('');
+
+    setFocusStudyContext({
+      discipline: sessionDetails.discipline,
+      subject: sessionDetails.subject,
+      method: sessionDetails.method || 'Modo Foco',
+      difficulty: Number(sessionDetails.difficulty) || 3,
+    });
+
+    setFocusMode('timer');
+    setFocusMinutes(duration);
+    setFocusSeconds(duration * 60);
+
+    setFocusRunning(false);
+    setFocusCompleted(false);
+    setFocusOpen(true);
+
+    window.scrollTo({
+      top: 0,
+      behavior: 'instant',
+    });
+  }
+  function finishFocusSession() {
+    setFocusRunning(false);
+
+    const elapsedSeconds =
+      focusMode === 'free'
+        ? focusSeconds
+        : Math.max(0, focusMinutes * 60 - focusSeconds);
+
+    const elapsedMinutes = Math.max(1, Math.round(elapsedSeconds / 60));
+
+    if (focusStudyContext) {
+      setCompletedFocusSession({
+        ...focusStudyContext,
+        minutes: elapsedMinutes,
+        method: focusStudyContext.method || 'Modo Foco',
+      });
+    }
+
+    setFocusOpen(false);
+    setFocusCompleted(false);
+  }
   // =========================================================
   // FECHAR MODO FOCO
   // =========================================================
@@ -312,9 +445,9 @@ export default function App() {
   function resetFocusTimer() {
     setFocusRunning(false);
     setFocusCompleted(false);
-    setFocusSeconds(focusMinutes * 60);
-  }
 
+    setFocusSeconds(focusMode === 'free' ? 0 : focusMinutes * 60);
+  }
   // =========================================================
   // TEMPO FORMATADO
   // =========================================================
@@ -531,14 +664,19 @@ export default function App() {
           <header className='focus-page-header'>
             <div>
               <span className='focus-eyebrow'>MODO FOCO</span>
-
               <h1>
                 {focusCompleted
-                  ? 'Sessão concluída 🎉'
-                  : 'Concentre-se no que importa'}
+                  ? 'Tempo concluído 🎉'
+                  : focusMode === 'free'
+                    ? 'Modo livre'
+                    : 'Concentre-se no que importa'}
               </h1>
 
-              <p>Escolha uma tarefa ou hábito pendente e concentre-se nele.</p>
+              <p>
+                {focusStudyContext
+                  ? `${focusStudyContext.discipline} — ${focusStudyContext.subject}`
+                  : 'Escolha uma tarefa ou hábito pendente e concentre-se nele.'}
+              </p>
             </div>
 
             <button
@@ -554,9 +692,50 @@ export default function App() {
 
           <section className='focus-page-content'>
             {/* TIMER */}
+            <div className='focus-duration-buttons'>
+              <button
+                type='button'
+                className={focusMode === 'timer' ? 'active' : ''}
+                onClick={() => {
+                  setFocusRunning(false);
+                  setFocusMode('timer');
+                  setFocusSeconds(focusMinutes * 60);
+                  setFocusCompleted(false);
+                }}
+              >
+                ⏳ Temporizador
+              </button>
 
+              <button
+                type='button'
+                className={focusMode === 'free' ? 'active' : ''}
+                onClick={() => {
+                  setFocusRunning(false);
+                  setFocusMode('free');
+                  setFocusSeconds(0);
+                  setFocusCompleted(false);
+                }}
+              >
+                ⏱️ Modo livre
+              </button>
+            </div>
             <div className='focus-timer'>{formattedFocusTime}</div>
+            {focusStudyContext && (
+              <div className='focus-finish-session'>
+                <button
+                  type='button'
+                  className='focus-primary-button'
+                  onClick={finishFocusSession}
+                >
+                  ✓ Finalizar e registrar sessão
+                </button>
 
+                <small>
+                  O tempo será enviado para Estudos. Depois você poderá informar
+                  questões, acertos e observações.
+                </small>
+              </div>
+            )}
             {/* CONTROLES */}
 
             <div className='focus-controls'>
@@ -680,27 +859,29 @@ export default function App() {
 
             {/* DURAÇÃO */}
 
-            <div className='focus-duration'>
-              <span>Duração</span>
+            {focusMode === 'timer' && (
+              <div className='focus-duration'>
+                <span>Duração</span>
 
-              <div className='focus-duration-buttons'>
-                {[15, 25, 45, 60].map((minutes) => (
-                  <button
-                    key={minutes}
-                    type='button'
-                    className={focusMinutes === minutes ? 'active' : ''}
-                    onClick={() => {
-                      setFocusMinutes(minutes);
-                      setFocusRunning(false);
-                      setFocusCompleted(false);
-                      setFocusSeconds(minutes * 60);
-                    }}
-                  >
-                    {minutes} min
-                  </button>
-                ))}
+                <div className='focus-duration-buttons'>
+                  {[15, 25, 30, 45, 60].map((minutes) => (
+                    <button
+                      key={minutes}
+                      type='button'
+                      className={focusMinutes === minutes ? 'active' : ''}
+                      onClick={() => {
+                        setFocusMinutes(minutes);
+                        setFocusRunning(false);
+                        setFocusCompleted(false);
+                        setFocusSeconds(minutes * 60);
+                      }}
+                    >
+                      {minutes} min
+                    </button>
+                  ))}
+                </div>
               </div>
-            </div>
+            )}
           </section>
         </div>
       </div>
@@ -712,7 +893,10 @@ export default function App() {
   // =========================================================
 
   return (
-    <div id='app' className={`app-layout ${sidebarOpen ? 'sidebar-visible' : 'sidebar-hidden'}`}>
+    <div
+      id='app'
+      className={`app-layout ${sidebarOpen ? 'sidebar-visible' : 'sidebar-hidden'}`}
+    >
       {/* BOTÃO PARA REABRIR O MENU EM TELAS PEQUENAS OU APÓS RECOLHER */}
       {!sidebarOpen && (
         <button
@@ -752,7 +936,9 @@ export default function App() {
               <span className='main-header-eyebrow'>Meu Assistente</span>
 
               <h1>
-                {activeSection === 'dashboard' ? t('header.overview') : t(`nav.${activeSection}`)}
+                {activeSection === 'dashboard'
+                  ? t('header.overview')
+                  : t(`nav.${activeSection}`)}
               </h1>
 
               <p>{todayLabel}</p>
@@ -802,46 +988,69 @@ export default function App() {
         ===================================================== */}
 
         {activeSection === 'calendar' && (
-          <SmartCalendar data={pageData('calendar')} save={save} completeTask={completeTask} />
+          <SmartCalendar
+            data={pageData('calendar')}
+            save={save}
+            completeTask={completeTask}
+          />
         )}
 
         {/* =====================================================
             DIÁRIO
         ===================================================== */}
 
-        {activeSection === 'diario' && <Diario data={pageData('diario')} save={save} />}
+        {activeSection === 'diario' && (
+          <Diario data={pageData('diario')} save={save} />
+        )}
 
         {/* =====================================================
             ESTUDOS
         ===================================================== */}
 
-        {activeSection === 'estudos' && <Estudos data={pageData('estudos')} save={save} />}
-
+        {activeSection === 'estudos' && (
+          <Estudos
+            data={pageData('estudos')}
+            save={save}
+            onStartFocus={startStudyFocus}
+            completedFocusSession={completedFocusSession}
+            onConsumeFocusSession={() => setCompletedFocusSession(null)}
+          />
+        )}
         {/* =====================================================
             OBJETIVOS
         ===================================================== */}
 
-        {activeSection === 'goals' && <Goals data={pageData('goals')} save={save} />}
+        {activeSection === 'goals' && (
+          <Goals data={pageData('goals')} save={save} />
+        )}
 
         {/* =====================================================
             HÁBITOS
         ===================================================== */}
 
-        {activeSection === 'habits' && <HabitsPage data={pageData('habits')} save={save} />}
+        {activeSection === 'habits' && (
+          <HabitsPage data={pageData('habits')} save={save} />
+        )}
 
         {/* =====================================================
             TAREFAS
         ===================================================== */}
 
         {activeSection === 'tasks' && (
-          <Tasks data={pageData('tasks')} save={save} completeTask={completeTask} />
+          <Tasks
+            data={pageData('tasks')}
+            save={save}
+            completeTask={completeTask}
+          />
         )}
 
         {/* =====================================================
             PROCESSOS
         ===================================================== */}
 
-        {activeSection === 'processos' && <Processos data={pageData('processos')} save={save} />}
+        {activeSection === 'processos' && (
+          <Processos data={pageData('processos')} save={save} />
+        )}
 
         {/* =====================================================
             PROJETOS
@@ -867,7 +1076,9 @@ export default function App() {
             EVOLUÇÃO
         ===================================================== */}
 
-        {activeSection === 'evolucao' && <Evolucao data={pageData('evolucao')} save={save} />}
+        {activeSection === 'evolucao' && (
+          <Evolucao data={pageData('evolucao')} save={save} />
+        )}
 
         {/* =====================================================
             COLEÇÕES / CONQUISTAS
@@ -903,13 +1114,17 @@ export default function App() {
 
         {activeSection === 'reports' && <Reports data={pageData('reports')} />}
 
-        {activeSection === 'tags' && <TagsManager data={pageData('tags')} save={save} />}
+        {activeSection === 'tags' && (
+          <TagsManager data={pageData('tags')} save={save} />
+        )}
 
         {/* =====================================================
             FINANÇAS
         ===================================================== */}
 
-        {activeSection === 'finance' && <Finance data={pageData('finance')} save={save} />}
+        {activeSection === 'finance' && (
+          <Finance data={pageData('finance')} save={save} />
+        )}
 
         {/* =====================================================
             INVESTIMENTOS

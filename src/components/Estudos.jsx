@@ -182,7 +182,13 @@ function getChartDateLabel(date, period) {
     month: '2-digit',
   });
 }
-export default function Estudos({ data: appData, save: saveAppData }) {
+export default function Estudos({
+  data: appData,
+  save: saveAppData,
+  onStartFocus,
+  completedFocusSession,
+  onConsumeFocusSession,
+}) {
   const [tab, setTab] = useState('overview');
 
   const [loading, setLoading] = useState(true);
@@ -212,6 +218,26 @@ export default function Estudos({ data: appData, save: saveAppData }) {
   const [statisticsMetric, setStatisticsMetric] = useState('questions');
 
   const [showAllDisciplines, setShowAllDisciplines] = useState(true);
+  useEffect(() => {
+    if (!completedFocusSession) return;
+
+    setSession((current) => ({
+      ...current,
+      discipline: completedFocusSession.discipline || current.discipline,
+      subject: completedFocusSession.subject || current.subject,
+      method: completedFocusSession.method || 'Modo Foco',
+      difficulty: completedFocusSession.difficulty || current.difficulty,
+      minutes: completedFocusSession.minutes || current.minutes,
+    }));
+
+    setTab('sessions');
+
+    flash(
+      `Sessão de ${completedFocusSession.minutes} minuto(s) pronta para salvar.`,
+    );
+
+    onConsumeFocusSession?.();
+  }, [completedFocusSession]);
   async function load() {
     setLoading(true);
     setError('');
@@ -1367,6 +1393,32 @@ export default function Estudos({ data: appData, save: saveAppData }) {
           <h3>⏱️ Registrar sessão de estudo</h3>
 
           <form onSubmit={submitSession} className='form-grid'>
+            <div className='study-focus-start'>
+              <button
+                type='button'
+                className='focus-primary-button'
+                disabled={
+                  !session.discipline.trim() ||
+                  !session.subject.trim() ||
+                  !onStartFocus
+                }
+                onClick={() => {
+                  onStartFocus({
+                    discipline: session.discipline.trim(),
+                    subject: session.subject.trim(),
+                    minutes: session.minutes,
+                    method: session.method,
+                    difficulty: session.difficulty,
+                  });
+                }}
+              >
+                ▶ Iniciar sessão no Modo Foco
+              </button>
+
+              <small>
+                Inicie o cronômetro e acompanhe seu tempo real de estudo.
+              </small>
+            </div>
             <label>
               Disciplina
               <input
