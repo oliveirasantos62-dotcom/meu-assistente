@@ -411,18 +411,24 @@ function translateText(value, language) {
 
 function translateDom(root, language, originals) {
   if (!root) return;
+
   const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
   const textNodes = [];
   while (walker.nextNode()) textNodes.push(walker.currentNode);
 
   textNodes.forEach((node) => {
     const parent = node.parentElement;
-    if (!parent || ['SCRIPT', 'STYLE', 'NOSCRIPT', 'TEXTAREA'].includes(parent.tagName)) return;
-    if (parent.closest('[data-no-translate="true"]')) return;
-    if (!originals.has(node)) originals.set(node, node.nodeValue);
-    const source = originals.get(node);
+    if (!parent || ['SCRIPT', 'STYLE', 'NOSCRIPT', 'TEXTAREA', 'CODE', 'PRE'].includes(parent.tagName)) return;
+    if (parent.closest('[data-no-translate="true"], [contenteditable="true"]')) return;
+
+    const current = node.nodeValue;
+    const record = originals.get(node);
+    // React may reuse a text node for a new label. Detect that change rather
+    // than continuing to translate the stale value captured on first render.
+    const source = record && current === record.translated ? record.source : current;
     const translated = translateText(source, language);
-    if (node.nodeValue !== translated) node.nodeValue = translated;
+    originals.set(node, { source, translated });
+    if (current !== translated) node.nodeValue = translated;
   });
 
   const attrs = ['placeholder', 'title', 'aria-label', 'aria-description'];
@@ -430,12 +436,13 @@ function translateDom(root, language, originals) {
     if (element.dataset?.noTranslate === 'true') return;
     attrs.forEach((attr) => {
       if (!element.hasAttribute(attr)) return;
-      const key = `${attr}:${element}`;
       if (!element.__languageOriginals) element.__languageOriginals = {};
-      if (!(attr in element.__languageOriginals)) element.__languageOriginals[attr] = element.getAttribute(attr);
-      const source = element.__languageOriginals[attr];
+      const current = element.getAttribute(attr);
+      const record = element.__languageOriginals[attr];
+      const source = record && current === record.translated ? record.source : current;
       const translated = translateText(source, language);
-      if (element.getAttribute(attr) !== translated) element.setAttribute(attr, translated);
+      element.__languageOriginals[attr] = { source, translated };
+      if (current !== translated) element.setAttribute(attr, translated);
     });
   });
 }

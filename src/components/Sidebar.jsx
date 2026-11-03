@@ -247,6 +247,7 @@ function getAriaLabel(section, label) {
 
 export default function Sidebar({
   activeSection,
+  setActiveSection,
   onNavigate,
   currentUser,
   isOpen = false,
@@ -317,8 +318,11 @@ export default function Sidebar({
   }, [t]);
 
   function handleNavigate(sectionId) {
-    if (onNavigate) {
-      onNavigate(sectionId);
+    // Compatível com as duas APIs usadas pelo App: onNavigate e setActiveSection.
+    const navigate = onNavigate || setActiveSection;
+
+    if (typeof navigate === 'function') {
+      navigate(sectionId);
     }
 
     if (onClose) {
