@@ -467,7 +467,7 @@ export default function Sidebar({
               aria-label={text('brand.openDashboard', 'Abrir Dashboard')}
             >
               <div className='logo' aria-label='Meu Assistente'>
-                <img src='/favicon-tech.png' alt='' />
+                <img src='../../resources/icon-only.png' alt='Ícone' />
               </div>
 
               <div className='sidebar-brand-text'>
