@@ -1,138 +1,41 @@
 import { randomUUID } from "crypto";
 import { query } from "../db/pool.js";
 
-const BRAPI_BASE = "https://brapi.dev/api/quote";
-const YAHOO_BASE = "https://query1.finance.yahoo.com/v8/finance/chart";
-let investmentSchemaPromise = null;
+const TYPES = ["Ações", "FIIs", "Cripto", "Renda Fixa"];
+const MARKETS = ["BR", "US", "GLOBAL"];
 
+const quoteCache = new Map();
+let schemaPromise = null;
+
+const normalizeType = (value) => TYPES.includes(value) ? value : "Ações";
 const normalizeMarket = (value) => {
-  const allowed = ["BR", "US", "GLOBAL"];
-  return allowed.includes(String(value || "").toUpperCase()) ? String(value).toUpperCase() : "BR";
+  const market = String(value || "BR").trim().toUpperCase();
+  return MARKETS.includes(market) ? market : "BR";
 };
 
-const normalizeCurrency = (value) => {
-  const currency = String(value || "").trim().toUpperCase();
-  return /^[A-Z]{3}$/.test(currency) ? currency : "BRL";
-};
-
-async function createInvestmentSchema() {
-  await query(`CREATE TABLE IF NOT EXISTS investment_assets (
-    id VARCHAR(64) NOT NULL, user_id VARCHAR(64) NOT NULL, ticker VARCHAR(64) NOT NULL,
-    type VARCHAR(32) NOT NULL DEFAULT 'Ações', quantity DECIMAL(20,8) NOT NULL DEFAULT 0,
-    buy_price DECIMAL(20,8) NOT NULL DEFAULT 0, current_price DECIMAL(20,8) NOT NULL DEFAULT 0,
-    market VARCHAR(16) NOT NULL DEFAULT 'BR', currency VARCHAR(3) NOT NULL DEFAULT 'BRL',
-    buy_price_brl DECIMAL(20,8) NOT NULL DEFAULT 0, current_price_brl DECIMAL(20,8) NOT NULL DEFAULT 0,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    PRIMARY KEY (id), INDEX idx_investment_user (user_id)
-  )`);
-  await query(`CREATE TABLE IF NOT EXISTS investment_snapshots (
-    id VARCHAR(64) NOT NULL, user_id VARCHAR(64) NOT NULL, snapshot_date DATE NOT NULL,
-    invested DECIMAL(20,8) NOT NULL DEFAULT 0, value DECIMAL(20,8) NOT NULL DEFAULT 0, profit DECIMAL(20,8) NOT NULL DEFAULT 0,
-    PRIMARY KEY (id), UNIQUE KEY uq_investment_snapshot (user_id, snapshot_date), INDEX idx_snapshot_user (user_id)
-  )`);
-  await query(`CREATE TABLE IF NOT EXISTS investment_settings (
-    user_id VARCHAR(64) NOT NULL, target_allocation JSON NULL, PRIMARY KEY (user_id)
-  )`);
-
-  const columns = await query(`SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'investment_assets'`);
-  const names = new Set(columns.map((row) => row.COLUMN_NAME));
-  if (!names.has('market')) await query(`ALTER TABLE investment_assets ADD COLUMN market VARCHAR(16) NOT NULL DEFAULT 'BR'`);
-  if (!names.has('currency')) await query(`ALTER TABLE investment_assets ADD COLUMN currency VARCHAR(3) NOT NULL DEFAULT 'BRL'`);
-  if (!names.has('buy_price_brl')) await query(`ALTER TABLE investment_assets ADD COLUMN buy_price_brl DECIMAL(20,8) NOT NULL DEFAULT 0`);
-  if (!names.has('current_price_brl')) await query(`ALTER TABLE investment_assets ADD COLUMN current_price_brl DECIMAL(20,8) NOT NULL DEFAULT 0`);
+function today() {
+  return new Date().toISOString().slice(0, 10);
 }
 
-function ensureInvestmentSchema() {
-  if (!investmentSchemaPromise) {
-    investmentSchemaPromise = createInvestmentSchema().catch((error) => {
-      investmentSchemaPromise = null;
-      throw error;
-    });
-  }
-  return investmentSchemaPromise;
+function normalizeDate(value) {
+  if (!value) return today();
+  const raw = String(value).trim();
+  if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) return raw;
+  const br = raw.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+  if (br) return `${br[3]}-${br[2]}-${br[1]}`;
+  return null;
 }
-
-function parseAllocation(value) {
-  if (!value) return null;
-  if (typeof value === "object") return value;
-  try { return JSON.parse(value); } catch { return null; }
-}
-
-function finiteNonNegative(value, fallback = 0) {
-  const n = Number(value);
-  return Number.isFinite(n) && n >= 0 ? n : fallback;
-}
-
-async function fetchJson(url, headers = {}) {
-  const response = await fetch(url, { headers });
-  const text = await response.text();
-  let data = null;
-  try { data = JSON.parse(text); } catch {}
-  if (!response.ok) throw new Error(data?.message || `Cotação indisponível (HTTP ${response.status}).`);
-  return data;
-}
-
-async function fetchBrapiQuote(symbol) {
-  const headers = {};
-  if (process.env.BRAPI_TOKEN) headers.Authorization = `Bearer ${process.env.BRAPI_TOKEN}`;
-  const data = await fetchJson(`${BRAPI_BASE}/${encodeURIComponent(symbol)}`, headers);
-  const result = data?.results?.[0];
-  if (!result?.regularMarketPrice) throw new Error(`Ativo ${symbol} não encontrado na B3.`);
-  return { price: Number(result.regularMarketPrice), currency: "BRL", name: result.longName || result.shortName || symbol };
-}
-
-async function fetchYahooQuote(symbol) {
-  const data = await fetchJson(`${YAHOO_BASE}/${encodeURIComponent(symbol)}?range=1d&interval=1d`);
-  const meta = data?.chart?.result?.[0]?.meta;
-  const price = Number(meta?.regularMarketPrice ?? meta?.previousClose);
-  if (!Number.isFinite(price) || price <= 0) throw new Error(`Ativo ${symbol} não encontrado no mercado informado.`);
-  return { price, currency: normalizeCurrency(meta?.currency), name: meta?.longName || meta?.shortName || symbol };
-}
-
-async function fetchFxToBrl(currency) {
-  if (currency === "BRL") return 1;
-  const pair = `${currency}BRL=X`;
-  try {
-    const data = await fetchJson(`${YAHOO_BASE}/${encodeURIComponent(pair)}?range=1d&interval=1d`);
-    const meta = data?.chart?.result?.[0]?.meta;
-    const rate = Number(meta?.regularMarketPrice ?? meta?.previousClose);
-    return Number.isFinite(rate) && rate > 0 ? rate : null;
-  } catch {
-    return null;
-  }
-}
-
-export async function getInvestmentQuote(req, res) {
-  try {
-    const symbol = String(req.params.symbol || "").trim().toUpperCase();
-    const market = normalizeMarket(req.query.market);
-    if (!symbol) return res.status(400).json({ message: "Informe o ticker." });
-    const quote = market === "BR" ? await fetchBrapiQuote(symbol) : await fetchYahooQuote(symbol);
-    const fxToBrl = await fetchFxToBrl(quote.currency);
-    return res.json({ ticker: symbol, market, name: quote.name, price: quote.price, currency: quote.currency, fxToBrl, priceBRL: fxToBrl ? quote.price * fxToBrl : null });
-  } catch (error) {
-    console.error("Erro na cotação:", error);
-    return res.status(502).json({ message: error.message || "Falha ao consultar a cotação." });
-  }
-}
-
-const normalizeType = (value) => {
-  const allowed = ["Ações", "FIIs", "Cripto", "Renda Fixa"];
-  return allowed.includes(value) ? value : "Ações";
-};
 
 function mapInvestment(row) {
   return {
     id: row.id,
     ticker: row.ticker,
     type: row.type,
+    market: normalizeMarket(row.market),
+    currency: row.currency || (normalizeMarket(row.market) === "US" ? "USD" : "BRL"),
     quantity: Number(row.quantity),
     buyPrice: Number(row.buy_price),
     currentPrice: Number(row.current_price),
-    market: row.market || "BR",
-    currency: row.currency || "BRL",
-    buyPriceBRL: Number(row.buy_price_brl || row.buy_price),
-    currentPriceBRL: Number(row.current_price_brl || row.current_price),
     updatedAt: row.updated_at,
     createdAt: row.created_at,
   };
@@ -147,6 +50,121 @@ function mapSnapshot(row) {
   };
 }
 
+async function ensureInvestmentSchema() {
+  if (!schemaPromise) {
+    schemaPromise = (async () => {
+      await query(`CREATE TABLE IF NOT EXISTS investment_assets (
+        id CHAR(36) NOT NULL PRIMARY KEY,
+        user_id CHAR(36) NOT NULL,
+        ticker VARCHAR(20) NOT NULL,
+        type VARCHAR(40) NOT NULL DEFAULT 'Ações',
+        market VARCHAR(12) NOT NULL DEFAULT 'BR',
+        currency VARCHAR(8) NOT NULL DEFAULT 'BRL',
+        quantity DECIMAL(20,8) NOT NULL,
+        buy_price DECIMAL(20,8) NOT NULL,
+        current_price DECIMAL(20,8) NOT NULL,
+        created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        INDEX idx_investment_assets_user (user_id),
+        INDEX idx_investment_assets_ticker (user_id, ticker)
+      )`);
+
+      // Compatibilidade com instalações antigas da fase 7.
+      try { await query(`ALTER TABLE investment_assets ADD COLUMN market VARCHAR(12) NOT NULL DEFAULT 'BR'`); } catch (e) { if (!/duplicate|exists/i.test(String(e?.message || ""))) console.warn("market migration:", e.message); }
+      try { await query(`ALTER TABLE investment_assets ADD COLUMN currency VARCHAR(8) NOT NULL DEFAULT 'BRL'`); } catch (e) { if (!/duplicate|exists/i.test(String(e?.message || ""))) console.warn("currency migration:", e.message); }
+
+      await query(`CREATE TABLE IF NOT EXISTS investment_snapshots (
+        id CHAR(36) NOT NULL PRIMARY KEY,
+        user_id CHAR(36) NOT NULL,
+        snapshot_date DATE NOT NULL,
+        invested DECIMAL(20,8) NOT NULL DEFAULT 0,
+        value DECIMAL(20,8) NOT NULL DEFAULT 0,
+        profit DECIMAL(20,8) NOT NULL DEFAULT 0,
+        created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE KEY unique_investment_snapshot_day (user_id, snapshot_date),
+        INDEX idx_investment_snapshots_user_date (user_id, snapshot_date)
+      )`);
+
+      await query(`CREATE TABLE IF NOT EXISTS investment_settings (
+        user_id CHAR(36) NOT NULL PRIMARY KEY,
+        target_allocation JSON NOT NULL,
+        updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+      )`);
+    })().catch((error) => {
+      schemaPromise = null;
+      throw error;
+    });
+  }
+  return schemaPromise;
+}
+
+async function fetchJson(url, timeoutMs = 7000) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const response = await fetch(url, { signal: controller.signal, headers: { Accept: "application/json", "User-Agent": "MeuAssistente/2.0" } });
+    const text = await response.text();
+    let body = null;
+    try { body = text ? JSON.parse(text) : null; } catch {}
+    if (!response.ok) {
+      const error = new Error(`Upstream HTTP ${response.status}`);
+      error.status = response.status;
+      throw error;
+    }
+    return body;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+async function quoteFromYahoo(symbol) {
+  const encoded = encodeURIComponent(symbol);
+  const body = await fetchJson(`https://query1.finance.yahoo.com/v8/finance/chart/${encoded}?range=1d&interval=1m&includePrePost=false`);
+  const result = body?.chart?.result?.[0];
+  const price = Number(result?.meta?.regularMarketPrice ?? result?.indicators?.quote?.[0]?.close?.filter(Number.isFinite).at(-1));
+  if (!Number.isFinite(price) || price <= 0) throw new Error("Cotação Yahoo indisponível");
+  return { price, currency: result?.meta?.currency || "USD", source: "Yahoo Finance" };
+}
+
+async function quoteFromBrapi(symbol) {
+  const body = await fetchJson(`https://brapi.dev/api/quote/${encodeURIComponent(symbol)}`);
+  const result = body?.results?.[0];
+  const price = Number(result?.regularMarketPrice);
+  if (!Number.isFinite(price) || price <= 0) throw new Error("Cotação Brapi indisponível");
+  return { price, currency: result?.currency || "BRL", source: "Brapi" };
+}
+
+export async function getQuote(req, res) {
+  const symbol = String(req.params.symbol || "").trim().toUpperCase();
+  const market = normalizeMarket(req.query.market);
+  if (!symbol) return res.status(400).json({ message: "Ticker inválido." });
+
+  const cacheKey = `${market}:${symbol}`;
+  const cached = quoteCache.get(cacheKey);
+  if (cached && Date.now() - cached.timestamp < 60_000) return res.json(cached.value);
+
+  const providers = market === "BR"
+    ? [() => quoteFromBrapi(symbol), () => quoteFromYahoo(symbol)]
+    : [() => quoteFromYahoo(symbol)];
+
+  let lastError = null;
+  for (const provider of providers) {
+    try {
+      const quote = await provider();
+      const value = { symbol, market, ...quote, fetchedAt: new Date().toISOString() };
+      quoteCache.set(cacheKey, { timestamp: Date.now(), value });
+      return res.json(value);
+    } catch (error) {
+      lastError = error;
+    }
+  }
+
+  const cachedStale = quoteCache.get(cacheKey)?.value;
+  if (cachedStale) return res.json({ ...cachedStale, stale: true });
+  console.error("Quote providers failed", { symbol, market, error: lastError?.message });
+  return res.status(502).json({ message: `Cotação indisponível no momento para ${symbol}.`, code: lastError?.status === 429 ? "RATE_LIMITED" : "QUOTE_UNAVAILABLE" });
+}
+
 export async function getInvestmentDashboard(req, res) {
   try {
     await ensureInvestmentSchema();
@@ -155,11 +173,10 @@ export async function getInvestmentDashboard(req, res) {
       query(`SELECT * FROM investment_snapshots WHERE user_id = ? ORDER BY snapshot_date ASC LIMIT 365`, [req.user.id]),
       query(`SELECT target_allocation FROM investment_settings WHERE user_id = ? LIMIT 1`, [req.user.id]),
     ]);
-
     return res.json({
       investments: assets.map(mapInvestment),
       portfolioHistory: snapshots.map(mapSnapshot),
-      targetAllocation: parseAllocation(settings[0]?.target_allocation) || { "Ações": 60, "FIIs": 20, "Renda Fixa": 20, "Cripto": 0 },
+      targetAllocation: settings[0]?.target_allocation ? JSON.parse(settings[0].target_allocation) : { "Ações": 60, "FIIs": 20, "Renda Fixa": 20, "Cripto": 0 },
     });
   } catch (error) {
     console.error(error);
@@ -176,22 +193,13 @@ export async function createInvestment(req, res) {
     const buyPrice = Number(b.buyPrice);
     const currentPrice = Number(b.currentPrice ?? b.buyPrice);
     const market = normalizeMarket(b.market);
-    const currency = normalizeCurrency(b.currency);
-    const buyPriceBRL = Number(b.buyPriceBRL ?? buyPrice);
-    const currentPriceBRL = Number(b.currentPriceBRL ?? currentPrice);
-
+    const currency = String(b.currency || (market === "US" ? "USD" : "BRL")).toUpperCase();
     if (!ticker) return res.status(400).json({ message: "Informe o ticker do ativo." });
     if (!Number.isFinite(quantity) || quantity <= 0) return res.status(400).json({ message: "Quantidade inválida." });
     if (!Number.isFinite(buyPrice) || buyPrice <= 0) return res.status(400).json({ message: "Preço de compra inválido." });
     if (!Number.isFinite(currentPrice) || currentPrice <= 0) return res.status(400).json({ message: "Preço atual inválido." });
-
     const id = randomUUID();
-    await query(
-      `INSERT INTO investment_assets (id,user_id,ticker,type,quantity,buy_price,current_price,market,currency,buy_price_brl,current_price_brl)
-       VALUES (?,?,?,?,?,?,?,?,?,?,?)`,
-      [id, req.user.id, ticker, normalizeType(b.type), quantity, buyPrice, currentPrice, market, currency, buyPriceBRL, currentPriceBRL],
-    );
-
+    await query(`INSERT INTO investment_assets (id,user_id,ticker,type,market,currency,quantity,buy_price,current_price) VALUES (?,?,?,?,?,?,?,?,?)`, [id, req.user.id, ticker, normalizeType(b.type), market, currency, quantity, buyPrice, currentPrice]);
     const rows = await query(`SELECT * FROM investment_assets WHERE id = ? AND user_id = ?`, [id, req.user.id]);
     return res.status(201).json({ investment: mapInvestment(rows[0]) });
   } catch (error) {
@@ -208,19 +216,15 @@ export async function updateInvestment(req, res) {
     const params = [];
     if (Object.prototype.hasOwnProperty.call(b, "ticker")) { fields.push("ticker = ?"); params.push(String(b.ticker).trim().toUpperCase()); }
     if (Object.prototype.hasOwnProperty.call(b, "type")) { fields.push("type = ?"); params.push(normalizeType(b.type)); }
+    if (Object.prototype.hasOwnProperty.call(b, "market")) { fields.push("market = ?"); params.push(normalizeMarket(b.market)); }
+    if (Object.prototype.hasOwnProperty.call(b, "currency")) { fields.push("currency = ?"); params.push(String(b.currency).toUpperCase()); }
     if (Object.prototype.hasOwnProperty.call(b, "quantity")) { fields.push("quantity = ?"); params.push(Number(b.quantity)); }
     if (Object.prototype.hasOwnProperty.call(b, "buyPrice")) { fields.push("buy_price = ?"); params.push(Number(b.buyPrice)); }
     if (Object.prototype.hasOwnProperty.call(b, "currentPrice")) { fields.push("current_price = ?"); params.push(Number(b.currentPrice)); }
-    if (Object.prototype.hasOwnProperty.call(b, "market")) { fields.push("market = ?"); params.push(normalizeMarket(b.market)); }
-    if (Object.prototype.hasOwnProperty.call(b, "currency")) { fields.push("currency = ?"); params.push(normalizeCurrency(b.currency)); }
-    if (Object.prototype.hasOwnProperty.call(b, "buyPriceBRL")) { fields.push("buy_price_brl = ?"); params.push(Number(b.buyPriceBRL)); }
-    if (Object.prototype.hasOwnProperty.call(b, "currentPriceBRL")) { fields.push("current_price_brl = ?"); params.push(Number(b.currentPriceBRL)); }
     if (!fields.length) return res.status(400).json({ message: "Nenhuma alteração informada." });
-
     params.push(req.params.id, req.user.id);
     const result = await query(`UPDATE investment_assets SET ${fields.join(", ")} WHERE id = ? AND user_id = ?`, params);
-    if (!result.affectedRows) return res.status(404).json({ message: "Investimento não encontrado." });
-
+    if (!result.affectedRows) return res.status(404).json({ message: "Investimento não encontrado. Atualize a carteira para sincronizar os IDs." });
     const rows = await query(`SELECT * FROM investment_assets WHERE id = ? AND user_id = ?`, [req.params.id, req.user.id]);
     return res.json({ investment: mapInvestment(rows[0]) });
   } catch (error) {
@@ -233,7 +237,7 @@ export async function deleteInvestment(req, res) {
   try {
     await ensureInvestmentSchema();
     const result = await query(`DELETE FROM investment_assets WHERE id = ? AND user_id = ?`, [req.params.id, req.user.id]);
-    if (!result.affectedRows) return res.status(404).json({ message: "Investimento não encontrado." });
+    if (!result.affectedRows) return res.status(404).json({ message: "Investimento não encontrado. A carteira pode estar usando um ID antigo." });
     return res.status(204).send();
   } catch (error) {
     console.error(error);
@@ -245,20 +249,13 @@ export async function saveSnapshot(req, res) {
   try {
     await ensureInvestmentSchema();
     const b = req.body || {};
-    const date = String(b.date || "").slice(0, 10);
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return res.status(400).json({ message: "Data inválida." });
-    const invested = finiteNonNegative(b.invested);
-    const value = finiteNonNegative(b.value);
-    const profit = Number(b.profit ?? value - invested);
-    if (!Number.isFinite(profit)) return res.status(400).json({ message: "Lucro/prejuízo inválido." });
-
-    await query(
-      `INSERT INTO investment_snapshots (id,user_id,snapshot_date,invested,value,profit)
-       VALUES (?,?,?,?,?,?)
-       ON DUPLICATE KEY UPDATE invested=VALUES(invested), value=VALUES(value), profit=VALUES(profit)`,
-      [randomUUID(), req.user.id, date, invested, value, profit],
-    );
-
+    const date = normalizeDate(b.date ?? b.snapshotDate ?? b.snapshot_date);
+    if (!date) return res.status(400).json({ message: "Data inválida. Use YYYY-MM-DD." });
+    const invested = Number(b.invested ?? 0);
+    const value = Number(b.value ?? 0);
+    const profit = Number(b.profit ?? (value - invested));
+    if (![invested, value, profit].every(Number.isFinite) || invested < 0 || value < 0) return res.status(400).json({ message: "Dados do histórico inválidos." });
+    await query(`INSERT INTO investment_snapshots (id,user_id,snapshot_date,invested,value,profit) VALUES (?,?,?,?,?,?) ON DUPLICATE KEY UPDATE invested=VALUES(invested), value=VALUES(value), profit=VALUES(profit)`, [randomUUID(), req.user.id, date, invested, value, profit]);
     const rows = await query(`SELECT * FROM investment_snapshots WHERE user_id = ? ORDER BY snapshot_date ASC LIMIT 365`, [req.user.id]);
     return res.json({ portfolioHistory: rows.map(mapSnapshot) });
   } catch (error) {
@@ -272,12 +269,7 @@ export async function saveSettings(req, res) {
     await ensureInvestmentSchema();
     const allocation = req.body?.targetAllocation;
     if (!allocation || typeof allocation !== "object") return res.status(400).json({ message: "Alocação inválida." });
-    await query(
-      `INSERT INTO investment_settings (user_id,target_allocation)
-       VALUES (?,?)
-       ON DUPLICATE KEY UPDATE target_allocation=VALUES(target_allocation)`,
-      [req.user.id, JSON.stringify(allocation)],
-    );
+    await query(`INSERT INTO investment_settings (user_id,target_allocation) VALUES (?,?) ON DUPLICATE KEY UPDATE target_allocation=VALUES(target_allocation)`, [req.user.id, JSON.stringify(allocation)]);
     return res.json({ targetAllocation: allocation });
   } catch (error) {
     console.error(error);
@@ -289,41 +281,20 @@ export async function migrateLocalInvestments(req, res) {
   try {
     await ensureInvestmentSchema();
     const b = req.body || {};
-    const [existing] = await Promise.all([
-      query(`SELECT COUNT(*) AS count FROM investment_assets WHERE user_id = ?`, [req.user.id]),
-    ]);
+    const existing = await query(`SELECT COUNT(*) AS count FROM investment_assets WHERE user_id = ?`, [req.user.id]);
     if (Number(existing[0]?.count || 0) > 0) return res.json({ migrated: false, reason: "already_has_data" });
-
     const investments = Array.isArray(b.investments) ? b.investments : [];
     for (const item of investments) {
-      const id = randomUUID();
-      await query(
-        `INSERT INTO investment_assets (id,user_id,ticker,type,quantity,buy_price,current_price,market,currency,buy_price_brl,current_price_brl,created_at,updated_at)
-         VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)`,
-        [id, req.user.id, String(item.ticker || "").trim().toUpperCase(), normalizeType(item.type), Number(item.quantity || 0), Number(item.buyPrice || 0), Number(item.currentPrice || item.buyPrice || 0), normalizeMarket(item.market), normalizeCurrency(item.currency), Number(item.buyPriceBRL || item.buyPrice || 0), Number(item.currentPriceBRL || item.currentPrice || item.buyPrice || 0), item.createdAt || new Date(), item.updatedAt || new Date()],
-      );
+      const market = normalizeMarket(item.market);
+      await query(`INSERT INTO investment_assets (id,user_id,ticker,type,market,currency,quantity,buy_price,current_price,created_at,updated_at) VALUES (?,?,?,?,?,?,?,?,?,?,?)`, [randomUUID(), req.user.id, String(item.ticker || "").trim().toUpperCase(), normalizeType(item.type), market, String(item.currency || (market === "US" ? "USD" : "BRL")).toUpperCase(), Number(item.quantity || 0), Number(item.buyPrice || 0), Number(item.currentPrice || item.buyPrice || 0), item.createdAt || new Date(), item.updatedAt || new Date()]);
     }
-
     const history = Array.isArray(b.portfolioHistory) ? b.portfolioHistory : [];
     for (const item of history.slice(-365)) {
-      const date = String(item.date || "").slice(0, 10);
-      if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) continue;
-      await query(
-        `INSERT INTO investment_snapshots (id,user_id,snapshot_date,invested,value,profit)
-         VALUES (?,?,?,?,?,?)
-         ON DUPLICATE KEY UPDATE invested=VALUES(invested), value=VALUES(value), profit=VALUES(profit)`,
-        [randomUUID(), req.user.id, date, Number(item.invested || 0), Number(item.value || 0), Number(item.profit || 0)],
-      );
+      const date = normalizeDate(item.date);
+      if (!date) continue;
+      await query(`INSERT INTO investment_snapshots (id,user_id,snapshot_date,invested,value,profit) VALUES (?,?,?,?,?,?) ON DUPLICATE KEY UPDATE invested=VALUES(invested), value=VALUES(value), profit=VALUES(profit)`, [randomUUID(), req.user.id, date, Number(item.invested || 0), Number(item.value || 0), Number(item.profit || 0)]);
     }
-
-    if (b.targetAllocation && typeof b.targetAllocation === "object") {
-      await query(
-        `INSERT INTO investment_settings (user_id,target_allocation) VALUES (?,?)
-         ON DUPLICATE KEY UPDATE target_allocation=VALUES(target_allocation)`,
-        [req.user.id, JSON.stringify(b.targetAllocation)],
-      );
-    }
-
+    if (b.targetAllocation && typeof b.targetAllocation === "object") await query(`INSERT INTO investment_settings (user_id,target_allocation) VALUES (?,?) ON DUPLICATE KEY UPDATE target_allocation=VALUES(target_allocation)`, [req.user.id, JSON.stringify(b.targetAllocation)]);
     return res.json({ migrated: true, investments: investments.length, snapshots: history.length });
   } catch (error) {
     console.error(error);
