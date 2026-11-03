@@ -4,138 +4,28 @@ import './Sidebar.css';
 import brandIcon from '../../resources/icon-only.png';
 
 const SECTIONS = [
-  {
-    id: 'dashboard',
-    icon: '🏠',
-    fallback: 'Dashboard',
-    module: 'dashboard',
-  },
-  {
-    id: 'tasks',
-    icon: '✅',
-    fallback: 'Tarefas',
-    module: 'tasks',
-  },
-  {
-    id: 'processos',
-    icon: '⚙️',
-    fallback: 'Processos',
-    module: 'processos',
-  },
-  {
-    id: 'calendar',
-    icon: '📅',
-    fallback: 'Calendário',
-    module: 'calendar',
-  },
-  {
-    id: 'diario',
-    icon: '📔',
-    fallback: 'Diário',
-    module: 'diario',
-  },
-  {
-    id: 'estudos',
-    icon: '📚',
-    fallback: 'Estudos',
-    module: 'estudos',
-  },
-  {
-    id: 'goals',
-    icon: '🎯',
-    fallback: 'Metas',
-    module: 'goals',
-  },
-  {
-    id: 'habits',
-    icon: '🔁',
-    fallback: 'Hábitos',
-    module: 'habits',
-  },
-  {
-    id: 'evolucao',
-    icon: '📈',
-    fallback: 'Evolução',
-    module: 'evolucao',
-  },
-  {
-    id: 'projects',
-    icon: '🚀',
-    fallback: 'Projetos',
-    module: 'projects',
-  },
-  {
-    id: 'groups',
-    icon: '👥',
-    fallback: 'Grupos',
-    module: 'groups',
-  },
-  {
-    id: 'collections',
-    icon: '🗂️',
-    fallback: 'Coleções',
-    module: 'collections',
-  },
-  {
-    id: 'dataScience',
-    icon: '📊',
-    fallback: 'Dados',
-    module: 'dataScience',
-  },
-  {
-    id: 'reports',
-    icon: '📑',
-    fallback: 'Relatórios',
-    module: 'reports',
-  },
-  {
-    id: 'tags',
-    icon: '🏷️',
-    fallback: 'Tags',
-    module: 'tags',
-  },
-  {
-    id: 'gamification',
-    icon: '🎮',
-    fallback: 'Gamificação',
-    module: 'gamification',
-  },
-  {
-    id: 'finance',
-    icon: '💰',
-    fallback: 'Finanças',
-    module: 'finance',
-  },
-  {
-    id: 'investments',
-    icon: '📈',
-    fallback: 'Investimentos',
-    module: 'investments',
-  },
-  {
-    id: 'connections',
-    icon: '🤝',
-    fallback: 'Conexões',
-    module: 'connections',
-  },
-  {
-    id: 'foguinho',
-    icon: '🔥',
-    fallback: 'Sequência',
-    module: 'foguinho',
-  },
-  {
-    id: 'assistant',
-    icon: '🤖',
-    fallback: 'Assistente',
-    module: 'assistant',
-  },
-  {
-    id: 'profile',
-    icon: '👤',
-    fallback: 'Perfil',
-    module: 'profile',
-  },
+  { id: 'dashboard', icon: '🏠', fallback: 'Dashboard' },
+  { id: 'tasks', icon: '✅', fallback: 'Tarefas' },
+  { id: 'processos', icon: '⚙️', fallback: 'Processos' },
+  { id: 'calendar', icon: '📅', fallback: 'Calendário' },
+  { id: 'diario', icon: '📔', fallback: 'Diário' },
+  { id: 'estudos', icon: '📚', fallback: 'Estudos' },
+  { id: 'goals', icon: '🎯', fallback: 'Metas' },
+  { id: 'habits', icon: '🔁', fallback: 'Hábitos' },
+  { id: 'evolucao', icon: '📈', fallback: 'Evolução' },
+  { id: 'projects', icon: '🚀', fallback: 'Projetos' },
+  { id: 'groups', icon: '👥', fallback: 'Grupos' },
+  { id: 'collections', icon: '🗂️', fallback: 'Coleções' },
+  { id: 'dataScience', icon: '📊', fallback: 'Dados' },
+  { id: 'reports', icon: '📑', fallback: 'Relatórios' },
+  { id: 'tags', icon: '🏷️', fallback: 'Tags' },
+  { id: 'gamification', icon: '🎮', fallback: 'Gamificação' },
+  { id: 'finance', icon: '💰', fallback: 'Finanças' },
+  { id: 'investments', icon: '📈', fallback: 'Investimentos' },
+  { id: 'connections', icon: '🤝', fallback: 'Conexões' },
+  { id: 'foguinho', icon: '🔥', fallback: 'Sequência' },
+  { id: 'assistant', icon: '🤖', fallback: 'Assistente' },
+  { id: 'profile', icon: '👤', fallback: 'Meu Perfil' },
 ];
 
 const DEFAULT_VISIBLE = {
@@ -160,35 +50,12 @@ const DEFAULT_VISIBLE = {
   connections: false,
   foguinho: false,
   assistant: false,
-  profile: true,
+  profile: false,
 };
 
-const DEFAULT_SEARCH_VISIBLE = true;
-
-const DEFAULT_REFERENCES = {
-  dashboard: true,
-  tasks: true,
-  processos: true,
-  calendar: true,
-  diario: true,
-  estudos: true,
-  goals: true,
-  habits: true,
-  evolucao: true,
-  projects: true,
-  groups: true,
-  collections: true,
-  dataScience: true,
-  reports: true,
-  tags: true,
-  gamification: true,
-  finance: true,
-  investments: true,
-  connections: true,
-  foguinho: true,
-  assistant: true,
-  profile: true,
-};
+const DEFAULT_REFERENCES = Object.fromEntries(
+  SECTIONS.map((section) => [section.id, true]),
+);
 
 const STORAGE_PREFIX = 'meu-assistente-sidebar-config-';
 
@@ -202,62 +69,34 @@ function safeParse(value, fallback) {
   try {
     const parsed = JSON.parse(value);
 
-    if (!parsed || typeof parsed !== 'object') {
-      return fallback;
-    }
-
-    return parsed;
+    return parsed && typeof parsed === 'object' ? parsed : fallback;
   } catch {
     return fallback;
   }
 }
 
 function getInitialConfig(user) {
-  const key = getStorageKey(user);
-
   try {
-    const saved = localStorage.getItem(key);
-
-    if (!saved) {
-      return {
-        visible: DEFAULT_VISIBLE,
-        references: DEFAULT_REFERENCES,
-        searchVisible: DEFAULT_SEARCH_VISIBLE,
-      };
-    }
-
-    const parsed = safeParse(saved, {});
+    const saved = localStorage.getItem(getStorageKey(user));
+    const parsed = saved ? safeParse(saved, {}) : {};
 
     return {
       visible: {
         ...DEFAULT_VISIBLE,
         ...(parsed.visible || {}),
+        dashboard: true,
       },
-      references: {
-        ...DEFAULT_REFERENCES,
-        ...(parsed.references || {}),
-      },
-      // Compatibilidade: versões antigas ainda não tinham essa preferência.
       searchVisible:
-        typeof parsed.searchVisible === 'boolean'
-          ? parsed.searchVisible
-          : DEFAULT_SEARCH_VISIBLE,
+        typeof parsed.searchVisible === 'boolean' ? parsed.searchVisible : true,
     };
   } catch {
     return {
-      visible: DEFAULT_VISIBLE,
-      references: DEFAULT_REFERENCES,
-      searchVisible: DEFAULT_SEARCH_VISIBLE,
+      visible: { ...DEFAULT_VISIBLE },
+      searchVisible: true,
     };
   }
 }
 
-function getAriaLabel(section, label) {
-  return label;
-}
-
-// O ícone já é renderizado separadamente. Remove emojis antigos do dicionário
-// para impedir que cada item apareça com dois símbolos.
 function cleanNavLabel(value) {
   return String(value || '')
     .replace(/^(?:\p{Extended_Pictographic}\uFE0F?\s*)+/u, '')
@@ -269,6 +108,8 @@ export default function Sidebar({
   setActiveSection,
   onNavigate,
   currentUser,
+  data,
+  save,
   darkMode = false,
   setDarkMode,
   onLogout,
@@ -283,45 +124,58 @@ export default function Sidebar({
   const [showCustomizer, setShowCustomizer] = useState(false);
   const [customizerTab, setCustomizerTab] = useState('visibility');
 
+  // REFERÊNCIAS: fonte única de dados = useAppData.
+  const references = useMemo(
+    () => ({
+      ...DEFAULT_REFERENCES,
+      ...(data?.settings?.moduleReferences || {}),
+    }),
+    [data?.settings?.moduleReferences],
+  );
+
+  // Atualiza as configurações quando a conta muda.
   useEffect(() => {
     setConfig(getInitialConfig(currentUser));
+    setSearch('');
   }, [currentUser]);
 
-  // Permite sair da personalização pelo teclado, sem ficar preso na camada modal.
+  // Persiste somente visibilidade e pesquisa no armazenamento local.
+  // Referências são armazenadas no appData, não aqui.
   useEffect(() => {
-    if (!showCustomizer) return undefined;
+    try {
+      localStorage.setItem(getStorageKey(currentUser), JSON.stringify(config));
+    } catch {
+      // Ignora falhas de armazenamento.
+    }
+  }, [config, currentUser]);
+
+  // Fecha a janela com ESC.
+  useEffect(() => {
+    if (!showCustomizer) return;
 
     const handleKeyDown = (event) => {
       if (event.key === 'Escape') {
-        event.preventDefault();
         setShowCustomizer(false);
       }
     };
 
     window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [showCustomizer]);
 
-  useEffect(() => {
-    try {
-      localStorage.setItem(getStorageKey(currentUser), JSON.stringify(config));
-    } catch {
-      // Ignora falhas de localStorage
-    }
-  }, [config, currentUser]);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [showCustomizer]);
 
   const text = (key, fallback) => {
     try {
       const value = t(key);
 
-      if (value && typeof value === 'string' && value !== key) {
-        return value;
-      }
+      return value && typeof value === 'string' && value !== key
+        ? value
+        : fallback;
     } catch {
-      // usa fallback
+      return fallback;
     }
-
-    return fallback;
   };
 
   const getLabel = (section) =>
@@ -331,57 +185,45 @@ export default function Sidebar({
     const normalizedSearch = search.trim().toLowerCase();
 
     return SECTIONS.filter((section) => {
-      // O Dashboard é a página inicial fixa e nunca pode desaparecer.
       if (section.id !== 'dashboard' && !config.visible[section.id]) {
         return false;
       }
 
-      if (!normalizedSearch) {
-        return true;
-      }
-
-      const label = getLabel(section).toLowerCase();
+      if (!normalizedSearch) return true;
 
       return (
-        label.includes(normalizedSearch) ||
+        getLabel(section).toLowerCase().includes(normalizedSearch) ||
         section.id.toLowerCase().includes(normalizedSearch)
       );
     });
   }, [search, config.visible, t]);
 
-  const allSections = useMemo(() => {
-    return SECTIONS.map((section) => ({
-      ...section,
-      label: getLabel(section),
-    }));
-  }, [t]);
+  const allSections = useMemo(
+    () =>
+      SECTIONS.map((section) => ({
+        ...section,
+        label: getLabel(section),
+      })),
+    [t],
+  );
 
   function handleNavigate(sectionId) {
-    // Fecha a personalização antes de trocar de página, evitando a sensação de
-    // que a aplicação ficou presa na tela de configuração.
     setShowCustomizer(false);
 
-    // Compatível com as duas APIs usadas pelo App: onNavigate e setActiveSection.
     const navigate = onNavigate || setActiveSection;
 
     if (typeof navigate === 'function') {
       navigate(sectionId);
-    } else {
-      console.error('[Sidebar] Nenhuma função de navegação foi fornecida.');
     }
 
-    // Em telas pequenas, a navegação fecha a gaveta. No desktop,
-    // o menu permanece aberto para facilitar a troca entre páginas.
-    if (
-      onClose &&
-      typeof window !== 'undefined' &&
-      window.matchMedia('(max-width: 900px)').matches
-    ) {
+    if (onClose && window.matchMedia('(max-width: 900px)').matches) {
       onClose();
     }
   }
 
   function updateVisibility(sectionId, value) {
+    if (sectionId === 'dashboard') return;
+
     setConfig((previous) => ({
       ...previous,
       visible: {
@@ -391,26 +233,39 @@ export default function Sidebar({
     }));
   }
 
+  // IMPORTANTE:
+  // Salva as referências diretamente no useAppData.
   function updateReference(sectionId, value) {
-    setConfig((previous) => ({
-      ...previous,
-      references: {
-        ...previous.references,
-        [sectionId]: value,
+    if (typeof save !== 'function' || !data) {
+      console.error(
+        '[Sidebar] Passe as propriedades data e save do useAppData.',
+      );
+      return;
+    }
+
+    const currentSettings = data.settings || {};
+
+    const currentReferences = {
+      ...DEFAULT_REFERENCES,
+      ...(currentSettings.moduleReferences || {}),
+    };
+
+    const updatedData = {
+      ...data,
+      settings: {
+        ...currentSettings,
+        moduleReferences: {
+          ...currentReferences,
+          [sectionId]: value,
+        },
       },
-    }));
+    };
+
+    save(updatedData);
   }
 
-  function restoreDefaults() {
-    setConfig({
-      visible: {
-        ...DEFAULT_VISIBLE,
-      },
-      references: {
-        ...DEFAULT_REFERENCES,
-      },
-      searchVisible: DEFAULT_SEARCH_VISIBLE,
-    });
+  function toggleReference(sectionId) {
+    updateReference(sectionId, !references[sectionId]);
   }
 
   function updateSearchVisibility(value) {
@@ -419,35 +274,45 @@ export default function Sidebar({
       searchVisible: value,
     }));
 
-    if (!value) {
-      setSearch('');
-    }
+    if (!value) setSearch('');
   }
 
   function showAll() {
-    const nextVisible = {};
+    const visible = {};
 
     SECTIONS.forEach((section) => {
-      nextVisible[section.id] = true;
+      visible[section.id] = true;
     });
 
     setConfig((previous) => ({
       ...previous,
-      visible: nextVisible,
+      visible,
     }));
   }
 
   function hideOptional() {
     setConfig((previous) => ({
       ...previous,
-      visible: {
-        ...DEFAULT_VISIBLE,
-      },
+      visible: { ...DEFAULT_VISIBLE },
     }));
   }
 
-  function toggleReference(sectionId) {
-    updateReference(sectionId, !config.references[sectionId]);
+  function restoreDefaults() {
+    setConfig({
+      visible: { ...DEFAULT_VISIBLE },
+      searchVisible: true,
+    });
+
+    // Restaura as referências no appData.
+    if (typeof save === 'function' && data) {
+      save({
+        ...data,
+        settings: {
+          ...(data.settings || {}),
+          moduleReferences: { ...DEFAULT_REFERENCES },
+        },
+      });
+    }
   }
 
   const visibleCount = SECTIONS.filter(
@@ -455,15 +320,13 @@ export default function Sidebar({
   ).length;
 
   const referenceCount = SECTIONS.filter(
-    (section) => config.references[section.id],
+    (section) => references[section.id],
   ).length;
 
   const sidebarClassName = [
     'sidebar',
     isOpen ? 'sidebar-open' : 'sidebar-closed',
-  ]
-    .filter(Boolean)
-    .join(' ');
+  ].join(' ');
 
   return (
     <>
@@ -471,25 +334,23 @@ export default function Sidebar({
         <button
           type='button'
           className='sidebar-overlay'
-          aria-label={text('sidebar.close', 'Fechar menu')}
+          aria-label='Fechar menu'
           onClick={onClose}
         />
       )}
 
       <aside className={sidebarClassName}>
         <div className='sidebar-inner'>
-          {/* =====================================================
-              BRAND
-          ====================================================== */}
+          {/* IDENTIDADE */}
 
           <div className='sidebar-brand'>
             <button
               type='button'
               className='sidebar-brand-button'
               onClick={() => handleNavigate('dashboard')}
-              aria-label={text('brand.openDashboard', 'Abrir Dashboard')}
+              aria-label='Abrir Dashboard'
             >
-              <div className='logo' aria-label='Meu Assistente'>
+              <div className='logo'>
                 <img src={brandIcon} alt='Meu Assistente' />
               </div>
 
@@ -503,20 +364,18 @@ export default function Sidebar({
               type='button'
               className='sidebar-mobile-close'
               onClick={onClose}
-              aria-label={text('sidebar.close', 'Fechar menu')}
+              aria-label='Fechar menu'
             >
               ×
             </button>
           </div>
 
-          {/* =====================================================
-              SEARCH
-          ====================================================== */}
+          {/* PESQUISA */}
 
           {config.searchVisible && (
             <div className='sidebar-search'>
               <label htmlFor='sidebar-search' className='sr-only'>
-                {text('sidebar.searchLabel', 'Pesquisar no menu')}
+                Pesquisar no menu
               </label>
 
               <span className='sidebar-search-icon' aria-hidden='true'>
@@ -540,8 +399,7 @@ export default function Sidebar({
                   type='button'
                   className='sidebar-search-clear'
                   onClick={() => setSearch('')}
-                  aria-label={text('sidebar.clearSearch', 'Limpar pesquisa')}
-                  title={text('sidebar.clearSearch', 'Limpar pesquisa')}
+                  aria-label='Limpar pesquisa'
                 >
                   ×
                 </button>
@@ -549,36 +407,28 @@ export default function Sidebar({
             </div>
           )}
 
-          {/* =====================================================
-              NAVIGATION
-          ====================================================== */}
+          {/* NAVEGAÇÃO */}
 
-          <nav
-            className='sidebar-nav'
-            aria-label={text('sidebar.navigation', 'Navegação principal')}
-          >
+          <nav className='sidebar-nav' aria-label='Navegação principal'>
             {filteredSections.length > 0 ? (
               <div className='sidebar-section-list'>
                 {filteredSections.map((section) => {
                   const label = getLabel(section);
-
                   const isActive = activeSection === section.id;
 
                   return (
                     <button
                       key={section.id}
                       type='button'
-                      className={['sidebar-nav-item', isActive ? 'active' : '']
-                        .filter(Boolean)
-                        .join(' ')}
+                      className={[
+                        'sidebar-nav-item',
+                        isActive ? 'active' : '',
+                      ].join(' ')}
                       onClick={() => handleNavigate(section.id)}
                       aria-current={isActive ? 'page' : undefined}
-                      aria-label={getAriaLabel(section, label)}
                       title={label}
                     >
-                      <span className='sidebar-nav-icon' aria-hidden='true'>
-                        {section.icon}
-                      </span>
+                      <span className='sidebar-nav-icon'>{section.icon}</span>
 
                       <span className='sidebar-nav-label'>{label}</span>
                     </button>
@@ -587,25 +437,14 @@ export default function Sidebar({
               </div>
             ) : (
               <div className='sidebar-empty'>
-                <span className='sidebar-empty-icon' aria-hidden='true'>
-                  🔎
-                </span>
-
-                <strong>{text('sidebar.noResults', 'Nenhum resultado')}</strong>
-
-                <span>
-                  {text(
-                    'sidebar.tryAnotherSearch',
-                    'Tente outro termo de pesquisa.',
-                  )}
-                </span>
+                <span>🔎</span>
+                <strong>Nenhum resultado</strong>
+                <span>Tente outro termo de pesquisa.</span>
               </div>
             )}
           </nav>
 
-          {/* =====================================================
-              CUSTOMIZATION BUTTON
-          ====================================================== */}
+          {/* PERSONALIZAÇÃO */}
 
           <div className='sidebar-customize'>
             <button
@@ -616,28 +455,21 @@ export default function Sidebar({
                 setShowCustomizer(true);
               }}
             >
-              <span className='sidebar-customize-icon' aria-hidden='true'>
-                ⚙️
-              </span>
-
-              <span>{text('sidebar.customizeMenu', 'Personalizar menu')}</span>
+              <span className='sidebar-customize-icon'>⚙️</span>
+              <span>Personalizar menu</span>
             </button>
           </div>
 
-          {/* =====================================================
-              FOOTER
-          ====================================================== */}
+          {/* RODAPÉ */}
 
           <div className='sidebar-footer'>
             <div className='sidebar-footer-stats'>
               <span>
-                {visibleCount}/{SECTIONS.length}{' '}
-                {text('sidebar.visible', 'visíveis')}
+                {visibleCount}/{SECTIONS.length} visíveis
               </span>
 
               <span>
-                {referenceCount}/{SECTIONS.length}{' '}
-                {text('sidebar.references', 'referências')}
+                {referenceCount}/{SECTIONS.length} referências
               </span>
             </div>
 
@@ -647,36 +479,26 @@ export default function Sidebar({
                 className='sidebar-theme-toggle'
                 onClick={() => setDarkMode?.(!darkMode)}
                 aria-pressed={Boolean(darkMode)}
-                title={
-                  darkMode
-                    ? text('sidebar.lightMode', 'Ativar modo claro')
-                    : text('sidebar.darkMode', 'Ativar modo escuro')
-                }
               >
-                <span aria-hidden='true'>{darkMode ? '☀️' : '🌙'}</span>
-                <span>
-                  {darkMode
-                    ? text('sidebar.lightModeLabel', 'Modo claro')
-                    : text('sidebar.darkModeLabel', 'Modo escuro')}
-                </span>
+                <span>{darkMode ? '☀️' : '🌙'}</span>
+                <span>{darkMode ? 'Modo claro' : 'Modo escuro'}</span>
               </button>
+
               <button
                 type='button'
                 className='sidebar-logout-button'
                 onClick={onLogout}
                 disabled={!onLogout}
               >
-                <span aria-hidden='true'>↪</span>
-                <span>{text('sidebar.logout', 'Sair da conta')}</span>
+                <span>↪</span>
+                <span>Sair da conta</span>
               </button>
             </div>
           </div>
         </div>
       </aside>
 
-      {/* =========================================================
-          CUSTOMIZATION MODAL
-      ========================================================== */}
+      {/* PERSONALIZADOR */}
 
       {showCustomizer && (
         <div
@@ -694,38 +516,33 @@ export default function Sidebar({
             aria-modal='true'
             aria-labelledby='sidebar-customizer-title'
           >
-            {/* HEADER */}
+            {/* CABEÇALHO */}
 
             <div className='sidebar-customizer-header'>
               <div>
                 <span className='sidebar-customizer-eyebrow'>
-                  {text('sidebar.customizer.eyebrow', 'PERSONALIZAÇÃO')}
+                  PERSONALIZAÇÃO
                 </span>
 
-                <h2 id='sidebar-customizer-title'>
-                  {text('sidebar.customizer.title', 'Personalizar menu')}
-                </h2>
+                <h2 id='sidebar-customizer-title'>Personalizar menu</h2>
 
                 <p>
-                  {text(
-                    'sidebar.customizer.subtitle',
-                    'Escolha como os módulos aparecem no seu menu. Feche esta janela para voltar à navegação.',
-                  )}
+                  Escolha como os módulos aparecem no seu menu. Feche esta
+                  janela para voltar à navegação.
                 </p>
               </div>
 
               <button
                 type='button'
                 className='sidebar-customizer-close'
-                title={text('sidebar.backToMenu', 'Voltar ao menu')}
                 onClick={() => setShowCustomizer(false)}
-                aria-label={text('sidebar.close', 'Fechar')}
+                aria-label='Fechar'
               >
                 ×
               </button>
             </div>
 
-            {/* TABS */}
+            {/* ABAS */}
 
             <div className='sidebar-customizer-tabs'>
               <button
@@ -733,7 +550,7 @@ export default function Sidebar({
                 className={customizerTab === 'visibility' ? 'active' : ''}
                 onClick={() => setCustomizerTab('visibility')}
               >
-                👁️ {text('sidebar.customizer.visibility', 'Visibilidade')}
+                👁️ Visibilidade
               </button>
 
               <button
@@ -741,31 +558,18 @@ export default function Sidebar({
                 className={customizerTab === 'references' ? 'active' : ''}
                 onClick={() => setCustomizerTab('references')}
               >
-                🔗 {text('sidebar.customizer.references', 'Referências')}
+                🔗 Referências
               </button>
             </div>
 
-            {/* ===================================================
-                VISIBILITY
-            ==================================================== */}
+            {/* VISIBILIDADE */}
 
             {customizerTab === 'visibility' && (
               <div className='sidebar-customizer-content'>
                 <div className='sidebar-customizer-info'>
                   <div>
-                    <strong>
-                      {text(
-                        'sidebar.customizer.visibilityTitle',
-                        'Visibilidade dos módulos',
-                      )}
-                    </strong>
-
-                    <p>
-                      {text(
-                        'sidebar.customizer.visibilityDescription',
-                        'Defina quais áreas aparecem no menu lateral.',
-                      )}
-                    </p>
+                    <strong>Visibilidade dos módulos</strong>
+                    <p>Defina quais áreas aparecem no menu lateral.</p>
                   </div>
 
                   <span className='sidebar-customizer-counter'>
@@ -773,15 +577,18 @@ export default function Sidebar({
                   </span>
                 </div>
 
+                {/* CONTROLE DA PESQUISA */}
+
                 <div className='sidebar-search-setting'>
                   <div className='sidebar-search-setting-info'>
                     <div className='sidebar-search-setting-icon'>
-                      <span className='sidebar-search-setting-icon-symbol' aria-hidden='true'>
-                        <svg viewBox='0 0 24 24' focusable='false'>
+                      <span className='sidebar-search-setting-icon-symbol'>
+                        <svg viewBox='0 0 24 24'>
                           <circle cx='10.8' cy='10.8' r='6.8' />
                           <path d='m16 16 4.2 4.2' />
                         </svg>
                       </span>
+
                       <span>
                         <strong>Barra de pesquisa</strong>
                         <small>
@@ -796,16 +603,13 @@ export default function Sidebar({
                   <label className='sidebar-switch-label'>
                     <input
                       type='checkbox'
-                      checked={Boolean(config.searchVisible)}
+                      checked={config.searchVisible}
                       onChange={(event) =>
                         updateSearchVisibility(event.target.checked)
                       }
-                      aria-label={
-                        config.searchVisible
-                          ? 'Ocultar barra de pesquisa'
-                          : 'Mostrar barra de pesquisa'
-                      }
+                      aria-label='Mostrar barra de pesquisa'
                     />
+
                     <span className='sidebar-switch'>
                       <span />
                     </span>
@@ -814,14 +618,11 @@ export default function Sidebar({
 
                 <div className='sidebar-customizer-actions'>
                   <button type='button' onClick={showAll}>
-                    {text('sidebar.customizer.showAll', 'Mostrar todos')}
+                    Mostrar todos
                   </button>
 
                   <button type='button' onClick={hideOptional}>
-                    {text(
-                      'sidebar.customizer.restoreDefault',
-                      'Restaurar padrão',
-                    )}
+                    Restaurar padrão
                   </button>
                 </div>
 
@@ -829,8 +630,8 @@ export default function Sidebar({
                   {allSections.map((section) => {
                     const enabled = Boolean(config.visible[section.id]);
 
-                    const isRequired =
-                      section.id === 'dashboard' || section.id === 'profile';
+                    // Somente o Dashboard é obrigatório.
+                    const isRequired = section.id === 'dashboard';
 
                     return (
                       <div
@@ -838,15 +639,10 @@ export default function Sidebar({
                         className={[
                           'sidebar-customizer-row',
                           enabled ? 'enabled' : 'disabled',
-                        ]
-                          .filter(Boolean)
-                          .join(' ')}
+                        ].join(' ')}
                       >
                         <div className='sidebar-customizer-row-main'>
-                          <span
-                            className='sidebar-customizer-row-icon'
-                            aria-hidden='true'
-                          >
+                          <span className='sidebar-customizer-row-icon'>
                             {section.icon}
                           </span>
 
@@ -855,47 +651,23 @@ export default function Sidebar({
 
                             <small>
                               {isRequired
-                                ? text(
-                                    'sidebar.customizer.alwaysVisible',
-                                    'Sempre disponível',
-                                  )
+                                ? 'Sempre disponível'
                                 : enabled
-                                  ? text(
-                                      'sidebar.customizer.visible',
-                                      'Visível no menu',
-                                    )
-                                  : text(
-                                      'sidebar.customizer.hidden',
-                                      'Oculto do menu',
-                                    )}
+                                  ? 'Visível no menu'
+                                  : 'Oculto do menu'}
                             </small>
                           </div>
                         </div>
 
                         <button
                           type='button'
-                          className={['sidebar-switch', enabled ? 'on' : 'off']
-                            .filter(Boolean)
-                            .join(' ')}
+                          className={[
+                            'sidebar-switch',
+                            enabled ? 'on' : 'off',
+                          ].join(' ')}
                           disabled={isRequired}
                           onClick={() => updateVisibility(section.id, !enabled)}
                           aria-pressed={enabled}
-                          aria-label={
-                            enabled
-                              ? text(
-                                  'sidebar.customizer.hide',
-                                  `Ocultar ${section.label}`,
-                                )
-                              : text(
-                                  'sidebar.customizer.show',
-                                  `Mostrar ${section.label}`,
-                                )
-                          }
-                          title={
-                            enabled
-                              ? text('sidebar.customizer.hide', 'Ocultar')
-                              : text('sidebar.customizer.show', 'Mostrar')
-                          }
                         >
                           <span />
                         </button>
@@ -906,26 +678,17 @@ export default function Sidebar({
               </div>
             )}
 
-            {/* ===================================================
-                REFERENCES
-            ==================================================== */}
+            {/* REFERÊNCIAS */}
 
             {customizerTab === 'references' && (
               <div className='sidebar-customizer-content'>
                 <div className='sidebar-customizer-info'>
                   <div>
-                    <strong>
-                      {text(
-                        'sidebar.customizer.referencesTitle',
-                        'Referências entre módulos',
-                      )}
-                    </strong>
+                    <strong>Referências entre módulos</strong>
 
                     <p>
-                      {text(
-                        'sidebar.customizer.referencesDescription',
-                        'Controle quais módulos podem aparecer como referência em outras áreas.',
-                      )}
+                      Controle quais módulos podem aparecer como referência em
+                      outras áreas.
                     </p>
                   </div>
 
@@ -936,7 +699,7 @@ export default function Sidebar({
 
                 <div className='sidebar-customizer-list'>
                   {allSections.map((section) => {
-                    const enabled = Boolean(config.references[section.id]);
+                    const enabled = Boolean(references[section.id]);
 
                     return (
                       <div
@@ -944,15 +707,10 @@ export default function Sidebar({
                         className={[
                           'sidebar-customizer-row',
                           enabled ? 'enabled' : 'disabled',
-                        ]
-                          .filter(Boolean)
-                          .join(' ')}
+                        ].join(' ')}
                       >
                         <div className='sidebar-customizer-row-main'>
-                          <span
-                            className='sidebar-customizer-row-icon'
-                            aria-hidden='true'
-                          >
+                          <span className='sidebar-customizer-row-icon'>
                             {section.icon}
                           </span>
 
@@ -961,35 +719,24 @@ export default function Sidebar({
 
                             <small>
                               {enabled
-                                ? text(
-                                    'sidebar.customizer.referenceEnabled',
-                                    'Pode ser usado como referência',
-                                  )
-                                : text(
-                                    'sidebar.customizer.referenceDisabled',
-                                    'Referência desativada',
-                                  )}
+                                ? 'Pode ser usado como referência'
+                                : 'Referência desativada'}
                             </small>
                           </div>
                         </div>
 
                         <button
                           type='button'
-                          className={['sidebar-switch', enabled ? 'on' : 'off']
-                            .filter(Boolean)
-                            .join(' ')}
+                          className={[
+                            'sidebar-switch',
+                            enabled ? 'on' : 'off',
+                          ].join(' ')}
                           onClick={() => toggleReference(section.id)}
                           aria-pressed={enabled}
                           aria-label={
                             enabled
-                              ? text(
-                                  'sidebar.customizer.disableReference',
-                                  `Desativar referência de ${section.label}`,
-                                )
-                              : text(
-                                  'sidebar.customizer.enableReference',
-                                  `Ativar referência de ${section.label}`,
-                                )
+                              ? `Desativar referência de ${section.label}`
+                              : `Ativar referência de ${section.label}`
                           }
                         >
                           <span />
@@ -1001,7 +748,7 @@ export default function Sidebar({
               </div>
             )}
 
-            {/* FOOTER */}
+            {/* RODAPÉ */}
 
             <div className='sidebar-customizer-footer'>
               <button
@@ -1009,8 +756,7 @@ export default function Sidebar({
                 className='sidebar-customizer-reset'
                 onClick={restoreDefaults}
               >
-                ↺{' '}
-                {text('sidebar.customizer.restore', 'Restaurar configurações')}
+                ↺ Restaurar configurações
               </button>
 
               <button
@@ -1018,7 +764,7 @@ export default function Sidebar({
                 className='sidebar-customizer-done'
                 onClick={() => setShowCustomizer(false)}
               >
-                {text('sidebar.customizer.done', 'Concluir')}
+                Concluir
               </button>
             </div>
           </div>
