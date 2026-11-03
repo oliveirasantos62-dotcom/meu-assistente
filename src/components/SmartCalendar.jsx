@@ -299,12 +299,9 @@ export default function SmartCalendar({ data, save, completeTask }) {
     };
 
     return tasks
+      .filter((task) => !isTaskCancelled(task, new Date()))
       .map((task) => {
-        const rawFrequency = String(task.frequency || task.recurrence || '').trim().toLowerCase();
-        const isDaily = [
-          'diária', 'diaria', 'diário', 'diario', 'daily', 'todos os dias',
-        ].includes(rawFrequency);
-        const recurrence = task.recurrence || frequencyMap[task.frequency] || (isDaily ? 'daily' : 'none');
+        const recurrence = task.recurrence || frequencyMap[task.frequency] || 'none';
         const date = task.deadline || task.date || formatDate(new Date());
 
         return {
@@ -314,7 +311,7 @@ export default function SmartCalendar({ data, save, completeTask }) {
           date,
           type: 'task',
           sourceTask: true,
-          scheduledTime: task.scheduledTime || task.time || '',
+          scheduledTime: task.scheduledTime || '',
           duration: Number(task.duration || 0),
           recurrence,
           recurrenceEnd: task.recurrenceEnd || '',
@@ -436,7 +433,7 @@ export default function SmartCalendar({ data, save, completeTask }) {
 
     const rangeEnd = new Date(yearForExpansion, monthForExpansion + 2, 0);
 
-    const expandedEvents = baseEvents.flatMap((event) => {
+    return baseEvents.flatMap((event) => {
       if (!event.recurrence || event.recurrence === 'none' || !event.date) {
         return [event];
       }
@@ -501,17 +498,6 @@ export default function SmartCalendar({ data, save, completeTask }) {
 
       return validOccurrences.length ? validOccurrences : (event.sourceTask && !isTaskCancelled(event, event.date) ? [event] : []);
     });
-
-    // Uma tarefa pode existir tanto em calendarEvents quanto no registro central de tarefas.
-    // Mantemos apenas uma ocorrência por tarefa/data para evitar duplicações na Agenda.
-    const unique = new Map();
-    expandedEvents.forEach((event) => {
-      const key = event.sourceTask
-        ? `task:${event.masterId || event.id}:${event.date}`
-        : `${event.type}:${event.id}:${event.date}`;
-      if (!unique.has(key)) unique.set(key, event);
-    });
-    return Array.from(unique.values());
   }, [
     events,
     legacyTasks,

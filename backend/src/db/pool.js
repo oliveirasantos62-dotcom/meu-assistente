@@ -53,4 +53,48 @@ export async function initializeDatabase() {
         ON DELETE CASCADE
     )
   `);
+
+  // Investimentos precisam existir no primeiro deploy também.
+  // Antes, essas tabelas dependiam de uma execução manual de phase7.sql,
+  // causando 500 no dashboard mesmo com a API publicada.
+  await query(`
+    CREATE TABLE IF NOT EXISTS investment_assets (
+      id CHAR(36) NOT NULL PRIMARY KEY,
+      user_id CHAR(36) NOT NULL,
+      ticker VARCHAR(20) NOT NULL,
+      type VARCHAR(40) NOT NULL DEFAULT 'Ações',
+      quantity DECIMAL(20,8) NOT NULL,
+      buy_price DECIMAL(20,8) NOT NULL,
+      current_price DECIMAL(20,8) NOT NULL,
+      created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      CONSTRAINT fk_investment_assets_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+      INDEX idx_investment_assets_user (user_id),
+      INDEX idx_investment_assets_ticker (user_id, ticker)
+    )
+  `);
+
+  await query(`
+    CREATE TABLE IF NOT EXISTS investment_snapshots (
+      id CHAR(36) NOT NULL PRIMARY KEY,
+      user_id CHAR(36) NOT NULL,
+      snapshot_date DATE NOT NULL,
+      invested DECIMAL(20,8) NOT NULL DEFAULT 0,
+      value DECIMAL(20,8) NOT NULL DEFAULT 0,
+      profit DECIMAL(20,8) NOT NULL DEFAULT 0,
+      created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      UNIQUE KEY unique_investment_snapshot_day (user_id, snapshot_date),
+      INDEX idx_investment_snapshots_user_date (user_id, snapshot_date),
+      CONSTRAINT fk_investment_snapshots_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    )
+  `);
+
+  await query(`
+    CREATE TABLE IF NOT EXISTS investment_settings (
+      user_id CHAR(36) NOT NULL PRIMARY KEY,
+      target_allocation JSON NOT NULL,
+      updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      CONSTRAINT fk_investment_settings_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    )
+  `);
 }

@@ -279,7 +279,14 @@ export default function Investments({ data, save }) {
     if (!investment) return;
     if (!window.confirm(`Excluir ${investment.ticker} da carteira?`)) return;
     try {
-      await deleteInvestment(id);
+      try {
+        await deleteInvestment(id);
+      } catch (remoteError) {
+        // IDs legados/localmente criados podem não existir na carteira remota.
+        // Nesse caso, removemos o registro local em vez de deixar o usuário preso
+        // em um 404. Erros reais do servidor continuam sendo exibidos.
+        if (remoteError?.status !== 404) throw remoteError;
+      }
       const updatedInvestments = investments.filter(item => item.id !== id);
       const history = savePortfolioSnapshot(updatedInvestments);
       const savedHistory = history.length ? await saveInvestmentSnapshot(history[history.length - 1]) : [];

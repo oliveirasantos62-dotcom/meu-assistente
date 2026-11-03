@@ -114,7 +114,7 @@ export default function Tasks({ data, save, completeTask }) {
           .includes(query) ||
         taskTagNames.toLocaleLowerCase('pt-BR').includes(query);
 
-      const cancelled = isTaskCancelled(task, new Date());
+      const cancelled = task.status === 'cancelled' || task.cancelled === true;
 
       const matchesFilter =
         filter === 'all' ||
@@ -265,7 +265,7 @@ export default function Tasks({ data, save, completeTask }) {
   };
 
   const toggleTask = (task) => {
-    if (isTaskCancelled(task, new Date())) return;
+    if (task.status === 'cancelled' || task.cancelled === true) return;
 
     if (completeTask) {
       completeTask(task.id);
@@ -606,7 +606,7 @@ export default function Tasks({ data, save, completeTask }) {
   const cancelledCount = tasksList.filter((task) => task.status === 'cancelled' || task.cancelled === true).length;
 
   const overdueCount = tasksList.filter(
-    (task) => !task.done && !isTaskCancelled(task, new Date()) && task.deadline && task.deadline < localDate(),
+    (task) => !task.done && task.status !== 'cancelled' && !task.cancelled && task.deadline && task.deadline < localDate(),
   ).length;
 
   const recurringTasks = tasksList.filter(
@@ -773,8 +773,7 @@ export default function Tasks({ data, save, completeTask }) {
 
               const area = getTaskArea(task);
 
-              const cancelled = isTaskCancelled(task, new Date());
-              const indefinitelySuspended = task?.status === 'cancelled' || task?.cancelled === true || task?.cancellationScope === 'indefinite';
+              const cancelled = task.status === 'cancelled' || task.cancelled === true;
 
               const overdue =
                 !task.done && !cancelled && task.deadline && task.deadline < localDate();
@@ -827,7 +826,7 @@ export default function Tasks({ data, save, completeTask }) {
                   <div className='task-content'>
                     <strong className='task-name'>
                       {task.name}
-                      {cancelled && <span className='status-chip status-cancelled'>{indefinitelySuspended ? '⏸️ Suspensa' : '⏸️ Cancelada hoje'}</span>}
+                      {cancelled && <span className='status-chip status-cancelled'>⏸️ Cancelada</span>}
                     </strong>
 
                     {task.description && (
