@@ -17277,3 +17277,46 @@ body.dark .reset-achievements-btn{color:#a99cff;border-color:rgba(169,156,255,.3
   object-fit: cover !important;
   border-radius: inherit;
 }
+
+/* ============================================================
+   IDIOMA DO APLICATIVO / PERFIL
+   ============================================================ */
+.profile-language-select {
+  width: 100%;
+  min-height: 46px;
+  padding: 10px 42px 10px 13px;
+  border: 1px solid var(--site-border);
+  border-radius: 12px;
+  background: var(--site-input-bg, var(--site-card-bg));
+  color: var(--site-on-background);
+  font: inherit;
+  cursor: pointer;
+}
+
+.profile-language-select:hover {
+  border-color: var(--site-primary, #7d6bff);
+}
+
+.profile-language-select:focus {
+  outline: none;
+  border-color: var(--site-primary, #7d6bff);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--site-primary, #7d6bff) 18%, transparent);
+}
+
+body.dark .profile-language-select {
+  background: var(--site-input-bg, #15182a);
+  color: var(--site-on-background, #f4f5ff);
+}
+
+@media (max-width: 700px) {
+  .profile-language-select {
+    min-height: 48px;
+    font-size: 16px;
+  }
+}
+
+/* Espaço seguro para Android/iOS quando o app roda via Capacitor. */
+html.capacitor-native body {
+  padding-top: env(safe-area-inset-top, 0px);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}

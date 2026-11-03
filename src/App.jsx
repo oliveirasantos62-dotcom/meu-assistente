@@ -45,8 +45,11 @@ import Grupos from './components/Grupos';
 import Processos from './components/Processos';
 import { getReferenceData } from './utils/moduleReferences';
 import { isTaskCancelled } from './utils/taskStatus';
+import { useLanguage } from './context/LanguageContext.jsx';
 
 export default function App() {
+  const { t } = useLanguage();
+
   // =========================================================
   // AUTENTICAÇÃO
   // =========================================================
@@ -731,7 +734,7 @@ export default function App() {
               <span className='main-header-eyebrow'>Meu Assistente</span>
 
               <h1>
-                {activeSection === 'dashboard' ? 'Visão geral' : activeSection}
+                {activeSection === 'dashboard' ? t('header.overview') : t(`nav.${activeSection}`)}
               </h1>
 
               <p>{todayLabel}</p>
@@ -746,7 +749,7 @@ export default function App() {
               className='header-focus-button'
               onClick={openFocusMode}
             >
-              🎯 Modo foco
+              {t('header.focus')}
             </button>
           </div>
         </header>
@@ -839,7 +842,7 @@ export default function App() {
         ===================================================== */}
 
         {activeSection === 'profile' && (
-          <Perfil currentUser={currentUser} setCurrentUser={setCurrentUser} />
+          <Perfil currentUser={currentUser} onUserUpdated={setCurrentUser} />
         )}
 
         {/* =====================================================

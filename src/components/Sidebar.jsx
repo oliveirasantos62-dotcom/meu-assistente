@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { useLanguage } from '../context/LanguageContext.jsx';
 
 const SECTIONS = [
   { id: 'dashboard', label: '🏠 Painel Principal', fixed: true },
@@ -147,7 +148,10 @@ export default function Sidebar({
   data,
   save,
 }) {
+  const { t } = useLanguage();
   const storageKey = getStorageKey(currentUser);
+
+  const labelFor = (section) => t(`nav.${section.id}`);
 
   const [configState, setConfigState] = useState(() => ({
     owner: storageKey,
@@ -362,7 +366,7 @@ export default function Sidebar({
   // Aplica a pesquisa somente quando ela está ativada.
   const filteredSections = showSearch
     ? menuSections.filter((section) =>
-        section.label
+        labelFor(section)
           .toLocaleLowerCase('pt-BR')
           .includes(searchTerm.trim().toLocaleLowerCase('pt-BR')),
       )
@@ -464,7 +468,7 @@ export default function Sidebar({
                 onClick={() => setActiveSection(section.id)}
                 aria-current={isActive ? 'page' : undefined}
               >
-                <span className='nav-item-label'>{section.label}</span>
+                <span className='nav-item-label'>{labelFor(section)}</span>
               </button>
             );
           })}
@@ -683,7 +687,7 @@ export default function Sidebar({
                     {/* NOME DA PÁGINA */}
                     <div className='sidebar-option-left'>
                       <span className='sidebar-option-label'>
-                        {section.label}
+                        {labelFor(section)}
                       </span>
 
                       {section.fixed && (
@@ -705,7 +709,7 @@ export default function Sidebar({
                           checked={checked}
                           disabled={section.fixed}
                           onChange={() => toggleSection(section.id)}
-                          aria-label={`Visibilidade de ${section.label}`}
+                          aria-label={`Visibilidade de ${labelFor(section)}`}
                         />
                         <span className='sidebar-switch'><span /></span>
                       </label>
@@ -716,7 +720,7 @@ export default function Sidebar({
                             type='checkbox'
                             checked={isReferenceEnabled(section.id)}
                             onChange={() => toggleReference(section.id)}
-                            aria-label={`Referências de ${section.label}`}
+                            aria-label={`Referências de ${labelFor(section)}`}
                           />
                           <span className='sidebar-switch sidebar-reference-switch'><span /></span>
                         </label>

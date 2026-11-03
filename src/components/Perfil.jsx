@@ -1,10 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import { updateProfile } from '../services/api';
+import { useLanguage } from '../context/LanguageContext';
 
 export default function Perfil({ currentUser, onUserUpdated }) {
   const [name, setName] = useState(currentUser?.name || '');
 
   const [username, setUsername] = useState(currentUser?.username || '');
+
+  const { language, setLanguage, languages, t } = useLanguage();
 
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
@@ -33,7 +36,7 @@ export default function Perfil({ currentUser, onUserUpdated }) {
      * Validação do nome
      */
     if (!cleanName) {
-      setError('Informe seu nome.');
+      setError(t('profile.nameRequired'));
       return;
     }
 
@@ -42,7 +45,7 @@ export default function Perfil({ currentUser, onUserUpdated }) {
      */
     if (cleanUsername && !/^[a-z0-9._]{3,30}$/.test(cleanUsername)) {
       setError(
-        'O @ deve ter de 3 a 30 caracteres e usar apenas letras, números, ponto ou underline.',
+        t('profile.usernameInvalid'),
       );
 
       return;
@@ -67,9 +70,9 @@ export default function Perfil({ currentUser, onUserUpdated }) {
       setName(user.name || '');
       setUsername(user.username || '');
 
-      setMessage('Perfil atualizado com sucesso.');
+      setMessage(t('profile.saved'));
     } catch (err) {
-      setError(err.message || 'Não foi possível atualizar o perfil.');
+      setError(err.message || t('profile.updateError'));
     } finally {
       setLoading(false);
     }
@@ -88,14 +91,11 @@ export default function Perfil({ currentUser, onUserUpdated }) {
           <div className='profile-avatar'>{avatarLetter}</div>
 
           <div>
-            <span className='profile-eyebrow'>MINHA CONTA</span>
+            <span className='profile-eyebrow'>{t('profile.account')}</span>
 
-            <h2>Perfil</h2>
+            <h2>{t('profile.title')}</h2>
 
-            <p>
-              Altere seu nome e seu @ sem perder conexões, projetos, grupos ou
-              Foguinho.
-            </p>
+            <p>{t('profile.description')}</p>
           </div>
         </div>
 
@@ -107,7 +107,7 @@ export default function Perfil({ currentUser, onUserUpdated }) {
           {/* NOME */}
 
           <div className='profile-field'>
-            <label htmlFor='profile-name'>Nome</label>
+            <label htmlFor='profile-name'>{t('profile.name')}</label>
 
             <input
               id='profile-name'
@@ -116,7 +116,7 @@ export default function Perfil({ currentUser, onUserUpdated }) {
               onChange={(event) => setName(event.target.value)}
               maxLength={120}
               autoComplete='name'
-              placeholder='Seu nome'
+              placeholder={t('profile.namePlaceholder')}
               required
             />
           </div>
@@ -124,7 +124,7 @@ export default function Perfil({ currentUser, onUserUpdated }) {
           {/* USERNAME */}
 
           <div className='profile-field'>
-            <label htmlFor='profile-username'>Nome de usuário / @</label>
+            <label htmlFor='profile-username'>{t('profile.username')}</label>
 
             <div className='username-input'>
               <span>@</span>
@@ -143,14 +143,14 @@ export default function Perfil({ currentUser, onUserUpdated }) {
             </div>
 
             <small className='profile-help'>
-              3–30 caracteres: letras, números, ponto ou underline.
+              {t('profile.usernameHelp')}
             </small>
           </div>
 
           {/* E-MAIL */}
 
           <div className='profile-field'>
-            <label htmlFor='profile-email'>E-mail</label>
+            <label htmlFor='profile-email'>{t('profile.email')}</label>
 
             <input
               id='profile-email'
@@ -160,8 +160,29 @@ export default function Perfil({ currentUser, onUserUpdated }) {
             />
 
             <small className='profile-help'>
-              O e-mail não é alterado nesta tela.
+              {t('profile.emailHelp')}
             </small>
+          </div>
+
+          {/* IDIOMA */}
+
+          <div className='profile-field'>
+            <label htmlFor='profile-language'>{t('profile.language')}</label>
+
+            <select
+              id='profile-language'
+              className='profile-language-select'
+              value={language}
+              onChange={(event) => setLanguage(event.target.value)}
+            >
+              {languages.map((item) => (
+                <option key={item.code} value={item.code}>
+                  {item.flag} {item.label}
+                </option>
+              ))}
+            </select>
+
+            <small className='profile-help'>{t('profile.languageHelp')}</small>
           </div>
 
           {/* MENSAGEM DE ERRO */}
@@ -192,7 +213,7 @@ export default function Perfil({ currentUser, onUserUpdated }) {
 
           <div className='profile-actions'>
             <button type='submit' className='primary' disabled={loading}>
-              {loading ? 'Salvando...' : 'Salvar alterações'}
+              {loading ? t('profile.saving') : t('profile.save')}
             </button>
           </div>
         </form>
