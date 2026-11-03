@@ -3,7 +3,6 @@ import {
   createInvestment,
   deleteInvestment,
   getInvestmentDashboard,
-  getInvestmentQuote,
   migrateLocalInvestments,
   saveInvestmentSnapshot,
   updateInvestment,
@@ -29,11 +28,11 @@ const formatPercent = (value) => {
 const today = () => new Date().toISOString().slice(0, 10);
 
 const getAssetValue = (investment) =>
-  Number(investment.quantity || 0) *
-  Number(investment.currentPrice || investment.buyPrice || 0);
+  Number(investment?.quantity || 0) *
+  Number(investment?.currentPrice || investment?.buyPrice || 0);
 
 const getInvestedValue = (investment) =>
-  Number(investment.quantity || 0) * Number(investment.buyPrice || 0);
+  Number(investment?.quantity || 0) * Number(investment?.buyPrice || 0);
 
 export default function Investments({ data, save }) {
   const [ticker, setTicker] = useState('');
@@ -47,7 +46,9 @@ export default function Investments({ data, save }) {
   const [error, setError] = useState('');
   const [remoteReady, setRemoteReady] = useState(false);
 
-  const investments = data?.investments || [];
+  const investments = Array.isArray(data?.investments)
+    ? data.investments.filter((item) => item && typeof item === 'object')
+    : [];
 
   useEffect(() => {
     let cancelled = false;
@@ -109,16 +110,30 @@ export default function Investments({ data, save }) {
    * =========================================================
    */
 
-  const detectMarket = (symbol) => (/\d/.test(String(symbol || '')) ? 'BR' : 'US');
-
   const fetchRealPrice = async (symbol) => {
     const cleanSymbol = symbol.trim().toUpperCase();
+
     if (!cleanSymbol) return null;
 
     try {
-      const market = detectMarket(cleanSymbol);
-      const result = await getInvestmentQuote(cleanSymbol, market);
-      const price = Number(result?.price);
+      const response = await fetch(
+        `${API_BASE}/${encodeURIComponent(cleanSymbol)}`,
+      );
+
+      if (!response.ok) {
+        throw new Error('Falha ao consultar a cotação.');
+      }
+
+      const apiData = await response.json();
+
+      const result = apiData?.results?.[0];
+
+      if (!result) {
+        return null;
+      }
+
+      const price = Number(result.regularMarketPrice);
+
       return Number.isFinite(price) && price > 0 ? price : null;
     } catch (err) {
       console.error('Erro ao consultar cotação:', err);
@@ -145,9 +160,11 @@ export default function Investments({ data, save }) {
       0,
     );
 
-    const history = data.portfolioHistory || [];
+    const history = Array.isArray(data?.portfolioHistory)
+      ? data.portfolioHistory.filter((item) => item && typeof item === 'object' && item.date)
+      : [];
 
-    const existing = history.find((item) => item.date === date);
+    const existing = history.find((item) => item?.date === date);
 
     let updatedHistory;
 
@@ -160,14 +177,14 @@ export default function Investments({ data, save }) {
 
     if (existing) {
       updatedHistory = history.map((item) =>
-        item.date === date ? snapshot : item,
+        item?.date === date ? snapshot : item,
       );
     } else {
       updatedHistory = [...history, snapshot];
     }
 
     return updatedHistory
-      .sort((a, b) => a.date.localeCompare(b.date))
+      .sort((a, b) => String(a?.date || '').localeCompare(String(b?.date || '')))
       .slice(-365);
   };
 
@@ -192,17 +209,14 @@ export default function Investments({ data, save }) {
     setLoading(true);
     try {
       const realPrice = await fetchRealPrice(symbol);
-      if (realPrice === null) {
-        throw new Error(`Cotação indisponível para ${symbol}. O ativo não foi adicionado para evitar usar o preço de compra como cotação falsa.`);
-      }
-      const currentPrice = realPrice;
+      const currentPrice = realPrice ?? bPrice;
       const created = await createInvestment({ ticker: symbol, type, quantity: q, buyPrice: bPrice, currentPrice });
       const updatedInvestments = [...investments, created];
       const history = savePortfolioSnapshot(updatedInvestments);
       const savedHistory = await saveInvestmentSnapshot(history[history.length - 1]);
       save({ ...data, investments: updatedInvestments, portfolioHistory: savedHistory, xp: (data.xp || 0) + 20, coins: (data.coins || 0) + 10 });
       setTicker(''); setQuantity(''); setBuyPrice('');
-      setMessage(`${symbol} adicionado com cotação atualizada.`);
+      setMessage(realPrice ? `${symbol} adicionado. Cotação atualizada.` : `${symbol} adicionado usando o preço de compra como referência.`);
     } catch (err) {
       console.error(err);
       setError(err.message || 'Erro ao salvar investimento.');
@@ -221,13 +235,13 @@ export default function Investments({ data, save }) {
     setError(''); setMessage(''); setLoadingTicker(investment.ticker);
     try {
       const realPrice = await fetchRealPrice(investment.ticker);
-      if (realPrice === null) throw new Error(`Não foi possível atualizar ${investment.ticker}.`);
+      if (realPrice === null) throw new Error(`Não foi possível atualizar ${investment?.ticker || 'Ativo'}.`);
       const updated = await updateInvestment(investment.id, { currentPrice: realPrice });
       const updatedInvestments = investments.map(item => item.id === investment.id ? updated : item);
       const history = savePortfolioSnapshot(updatedInvestments);
       const savedHistory = await saveInvestmentSnapshot(history[history.length - 1]);
       save({ ...data, investments: updatedInvestments, portfolioHistory: savedHistory });
-      setMessage(`${investment.ticker} atualizado com sucesso.`);
+      setMessage(`${investment?.ticker || 'Ativo'} atualizado com sucesso.`);
     } catch (err) {
       setError(err.message || 'Erro ao atualizar investimento.');
     } finally { setLoadingTicker(''); }
@@ -267,7 +281,7 @@ export default function Investments({ data, save }) {
   const removeInvestment = async (id) => {
     const investment = investments.find((item) => item.id === id);
     if (!investment) return;
-    if (!window.confirm(`Excluir ${investment.ticker} da carteira?`)) return;
+    if (!window.confirm(`Excluir ${investment?.ticker || 'Ativo'} da carteira?`)) return;
     try {
       await deleteInvestment(id);
     } catch (err) {
@@ -287,7 +301,7 @@ export default function Investments({ data, save }) {
         ? await saveInvestmentSnapshot(history[history.length - 1])
         : [];
       save({ ...data, investments: updatedInvestments, portfolioHistory: savedHistory });
-      setMessage(`${investment.ticker} removido.`);
+      setMessage(`${investment?.ticker || 'Ativo'} removido.`);
     } catch (err) {
       // A exclusão do ativo já foi feita; não reintroduzir o item por causa de
       // uma falha secundária ao salvar o histórico.
@@ -389,7 +403,7 @@ export default function Investments({ data, save }) {
     const groups = {};
 
     investments.forEach((investment) => {
-      const type = investment.type || 'Outros';
+      const type = investment?.type || 'Outros';
 
       groups[type] = (groups[type] || 0) + getAssetValue(investment);
     });
@@ -412,11 +426,17 @@ export default function Investments({ data, save }) {
    * =========================================================
    */
 
-  const portfolioHistory = data.portfolioHistory || [];
+  // Dados antigos podem conter itens nulos no histórico.
+  // Normalizamos antes de qualquer .map/.find para a tela nunca quebrar.
+  const portfolioHistory = Array.isArray(data?.portfolioHistory)
+    ? data.portfolioHistory.filter(
+        (item) => item && typeof item === 'object' && item.date,
+      )
+    : [];
 
   const historyMax = Math.max(
     1,
-    ...portfolioHistory.map((item) => Number(item.value) || 0),
+    ...portfolioHistory.map((item) => Number(item?.value) || 0),
   );
 
   return (
@@ -604,7 +624,7 @@ export default function Investments({ data, save }) {
         ) : (
           <div className='invest-line-chart-wrap'>
             {(() => {
-              const values = portfolioHistory.map((item) => Number(item.value) || 0);
+              const values = portfolioHistory.map((item) => Number(item?.value) || 0);
               const minValue = Math.min(...values) * 0.96;
               const maxValue = Math.max(...values) * 1.04 || 1;
               const range = maxValue - minValue || 1;
@@ -691,7 +711,7 @@ export default function Investments({ data, save }) {
                       fontSize: 13,
                     }}
                   >
-                    <strong>{investment.ticker}</strong>
+                    <strong>{investment?.ticker || 'Ativo'}</strong>
 
                     <span>
                       {percentage.toFixed(1)}% · {formatMoney(value)}
@@ -839,7 +859,7 @@ export default function Investments({ data, save }) {
             color: 'var(--site-text-muted)',
           }}
         >
-          A cotação atual é consultada no servidor. Para ações dos EUA, o valor é convertido para BRL automaticamente.
+          A cotação atual será buscada automaticamente quando disponível.
         </small>
       </div>
 
@@ -918,10 +938,10 @@ export default function Investments({ data, save }) {
           return (
             <div className='task investment-row' key={investment.id}>
               <div style={{ flex: 1 }}>
-                <strong>{investment.ticker}</strong>
+                <strong>{investment?.ticker || 'Ativo'}</strong>
 
                 <span className='tag' style={{ marginLeft: 6 }}>
-                  {investment.type}
+                  {investment?.type}
                 </span>
 
                 <div
@@ -931,11 +951,11 @@ export default function Investments({ data, save }) {
                     marginTop: 5,
                   }}
                 >
-                  {investment.quantity} un. · PM{' '}
-                  {formatMoney(investment.buyPrice)}
+                  {investment?.quantity} un. · PM{' '}
+                  {formatMoney(investment?.buyPrice)}
                   {' · '}
                   Atual{' '}
-                  {formatMoney(investment.currentPrice || investment.buyPrice)}
+                  {formatMoney(investment?.currentPrice || investment?.buyPrice)}
                 </div>
 
                 {investment.updatedAt && (
