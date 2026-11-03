@@ -393,6 +393,10 @@ export async function getInvestmentDashboard() {
   return request('/api/investments/dashboard');
 }
 
+export async function getInvestmentQuote(symbol, market = "BR") {
+  return request(`/api/investments/quote/${encodeURIComponent(symbol)}?market=${encodeURIComponent(market)}`);
+}
+
 export async function migrateLocalInvestments(payload) {
   return request('/api/investments/migrate', {
     method: 'POST',

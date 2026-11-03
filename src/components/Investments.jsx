@@ -3,13 +3,12 @@ import {
   createInvestment,
   deleteInvestment,
   getInvestmentDashboard,
+  getInvestmentQuote,
   migrateLocalInvestments,
   saveInvestmentSnapshot,
   updateInvestment,
 } from '../services/api';
 import { storageService } from '../services/storage';
-
-const API_BASE = 'https://brapi.dev/api/quote';
 
 const TYPES = ['Ações', 'FIIs', 'Cripto', 'Renda Fixa'];
 
@@ -25,18 +24,19 @@ const formatPercent = (value) => {
   return `${number >= 0 ? '+' : ''}${number.toFixed(2)}%`;
 };
 
-const today = () => new Date().toISOString().slice(0, 10);
+const today = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; };
 
 const getAssetValue = (investment) =>
-  Number(investment.quantity || 0) *
-  Number(investment.currentPrice || investment.buyPrice || 0);
+  Number(investment.quantity || 0) * Number(investment.currentPriceBRL ?? investment.currentPrice ?? investment.buyPriceBRL ?? investment.buyPrice ?? 0);
 
 const getInvestedValue = (investment) =>
-  Number(investment.quantity || 0) * Number(investment.buyPrice || 0);
+  Number(investment.quantity || 0) * Number(investment.buyPriceBRL ?? investment.buyPrice ?? 0);
 
 export default function Investments({ data, save }) {
   const [ticker, setTicker] = useState('');
   const [type, setType] = useState('Ações');
+  const [market, setMarket] = useState('BR');
+  const [currency, setCurrency] = useState('BRL');
   const [quantity, setQuantity] = useState('');
   const [buyPrice, setBuyPrice] = useState('');
 
@@ -108,31 +108,11 @@ export default function Investments({ data, save }) {
    * =========================================================
    */
 
-  const fetchRealPrice = async (symbol) => {
+  const fetchRealPrice = async (symbol, selectedMarket = market) => {
     const cleanSymbol = symbol.trim().toUpperCase();
-
     if (!cleanSymbol) return null;
-
     try {
-      const response = await fetch(
-        `${API_BASE}/${encodeURIComponent(cleanSymbol)}`,
-      );
-
-      if (!response.ok) {
-        throw new Error('Falha ao consultar a cotação.');
-      }
-
-      const apiData = await response.json();
-
-      const result = apiData?.results?.[0];
-
-      if (!result) {
-        return null;
-      }
-
-      const price = Number(result.regularMarketPrice);
-
-      return Number.isFinite(price) && price > 0 ? price : null;
+      return await getInvestmentQuote(cleanSymbol, selectedMarket);
     } catch (err) {
       console.error('Erro ao consultar cotação:', err);
       return null;
@@ -204,15 +184,20 @@ export default function Investments({ data, save }) {
 
     setLoading(true);
     try {
-      const realPrice = await fetchRealPrice(symbol);
-      const currentPrice = realPrice ?? bPrice;
-      const created = await createInvestment({ ticker: symbol, type, quantity: q, buyPrice: bPrice, currentPrice });
+      const quote = await fetchRealPrice(symbol, market);
+      const currentPrice = quote?.price ?? bPrice;
+      const assetCurrency = quote?.currency || currency;
+      const fxToBrl = Number(quote?.fxToBrl || 1);
+      const buyPriceBRL = bPrice * fxToBrl;
+      const currentPriceBRL = Number(quote?.priceBRL || currentPrice * fxToBrl);
+      const created = await createInvestment({ ticker: symbol, type, market, currency: assetCurrency, quantity: q, buyPrice: bPrice, currentPrice, buyPriceBRL, currentPriceBRL });
       const updatedInvestments = [...investments, created];
       const history = savePortfolioSnapshot(updatedInvestments);
       const savedHistory = await saveInvestmentSnapshot(history[history.length - 1]);
       save({ ...data, investments: updatedInvestments, portfolioHistory: savedHistory, xp: (data.xp || 0) + 20, coins: (data.coins || 0) + 10 });
       setTicker(''); setQuantity(''); setBuyPrice('');
-      setMessage(realPrice ? `${symbol} adicionado. Cotação atualizada.` : `${symbol} adicionado usando o preço de compra como referência.`);
+      setCurrency(assetCurrency);
+      setMessage(quote ? `${symbol} adicionado. Cotação atualizada (${assetCurrency}).` : `${symbol} adicionado usando o preço de compra como referência.`);
     } catch (err) {
       console.error(err);
       setError(err.message || 'Erro ao salvar investimento.');
@@ -230,9 +215,9 @@ export default function Investments({ data, save }) {
   const refreshInvestment = async (investment) => {
     setError(''); setMessage(''); setLoadingTicker(investment.ticker);
     try {
-      const realPrice = await fetchRealPrice(investment.ticker);
-      if (realPrice === null) throw new Error(`Não foi possível atualizar ${investment.ticker}.`);
-      const updated = await updateInvestment(investment.id, { currentPrice: realPrice });
+      const quote = await fetchRealPrice(investment.ticker, investment.market || 'BR');
+      if (!quote) throw new Error(`Não foi possível atualizar ${investment.ticker}.`);
+      const updated = await updateInvestment(investment.id, { currentPrice: quote.price, currency: quote.currency, currentPriceBRL: quote.priceBRL ?? quote.price });
       const updatedInvestments = investments.map(item => item.id === investment.id ? updated : item);
       const history = savePortfolioSnapshot(updatedInvestments);
       const savedHistory = await saveInvestmentSnapshot(history[history.length - 1]);
@@ -255,9 +240,9 @@ export default function Investments({ data, save }) {
     try {
       const updatedInvestments = [];
       for (const investment of investments) {
-        const realPrice = await fetchRealPrice(investment.ticker);
-        if (realPrice === null) updatedInvestments.push(investment);
-        else updatedInvestments.push(await updateInvestment(investment.id, { currentPrice: realPrice }));
+        const quote = await fetchRealPrice(investment.ticker, investment.market || 'BR');
+        if (!quote) updatedInvestments.push(investment);
+        else updatedInvestments.push(await updateInvestment(investment.id, { currentPrice: quote.price, currency: quote.currency, currentPriceBRL: quote.priceBRL ?? quote.price }));
       }
       const history = savePortfolioSnapshot(updatedInvestments);
       const savedHistory = await saveInvestmentSnapshot(history[history.length - 1]);
@@ -783,10 +768,19 @@ export default function Investments({ data, save }) {
           }}
         >
           <input
-            placeholder='Ticker: PETR4'
+            placeholder={market === 'BR' ? 'Ticker: PETR4' : market === 'US' ? 'Ticker: TSLA' : 'Ticker: AAPL ou SAP.DE'}
             value={ticker}
             onChange={(event) => setTicker(event.target.value.toUpperCase())}
           />
+
+          <select
+            value={market}
+            onChange={(event) => setMarket(event.target.value)}
+          >
+            <option value='BR'>🇧🇷 Brasil (B3)</option>
+            <option value='US'>🇺🇸 Estados Unidos</option>
+            <option value='GLOBAL'>🌎 Global</option>
+          </select>
 
           <select
             value={type}
@@ -919,7 +913,7 @@ export default function Investments({ data, save }) {
                 <strong>{investment.ticker}</strong>
 
                 <span className='tag' style={{ marginLeft: 6 }}>
-                  {investment.type}
+                  {investment.type} · {investment.market || 'BR'} · {investment.currency || 'BRL'}
                 </span>
 
                 <div
