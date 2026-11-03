@@ -317,19 +317,41 @@ export default function PainelPrincipal({
    * ============================================================
    */
 
-  const todayEvents = useMemo(
-    () =>
-      calendarEvents
-        .filter((event) => event?.date === todayString)
-        .sort((a, b) => {
-          if (!a?.scheduledTime) return 1;
+  const todayEvents = useMemo(() => {
+    const dailyTaskEvents = tasks
+      .filter((task) => {
+        const frequency = String(task?.frequency || task?.recurrence || '').trim().toLowerCase();
+        const isDaily = ['diária', 'diaria', 'diário', 'diario', 'daily', 'todos os dias'].includes(frequency);
+        return isDaily && !task.done && !isTaskCancelled(task, todayString);
+      })
+      .map((task) => ({
+        id: `dashboard-daily-task:${task.id}:${todayString}`,
+        taskId: task.id,
+        name: task.title || task.name || 'Tarefa diária',
+        description: task.description || '',
+        date: todayString,
+        type: 'task',
+        scheduledTime: task.scheduledTime || task.time || '',
+        duration: Number(task.duration || 0),
+        sourceTask: true,
+        isDailyTask: true,
+      }));
 
-          if (!b?.scheduledTime) return -1;
+    const merged = [...calendarEvents.filter((event) => event?.date === todayString), ...dailyTaskEvents];
+    const unique = new Map();
+    merged.forEach((event) => {
+      const key = event?.sourceTask && event?.taskId
+        ? `task:${event.taskId}:${event.date}`
+        : `${event?.type || 'event'}:${event?.id}:${event?.date}`;
+      if (!unique.has(key)) unique.set(key, event);
+    });
 
-          return String(a.scheduledTime).localeCompare(String(b.scheduledTime));
-        }),
-    [calendarEvents, todayString],
-  );
+    return Array.from(unique.values()).sort((a, b) => {
+      if (!a?.scheduledTime) return 1;
+      if (!b?.scheduledTime) return -1;
+      return String(a.scheduledTime).localeCompare(String(b.scheduledTime));
+    });
+  }, [calendarEvents, tasks, todayString]);
 
   const todayStudyEvents = useMemo(() => todayEvents.filter((event) => event?.type === 'study'), [todayEvents]);
   const nextStudyEvents = useMemo(() => calendarEvents.filter((event) => event?.type === 'study' && event?.date >= todayString).sort((a,b) => String(a.date).localeCompare(String(b.date)) || String(a.scheduledTime || '').localeCompare(String(b.scheduledTime || ''))).slice(0, 5), [calendarEvents, todayString]);
@@ -561,6 +583,29 @@ export default function PainelPrincipal({
       onToggleHabit(habit.id);
     }
   };
+
+  const weekData = useMemo(() => {
+    const result = [];
+    const base = new Date();
+    base.setHours(0, 0, 0, 0);
+    const dayNames = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
+
+    for (let offset = 6; offset >= 0; offset -= 1) {
+      const date = new Date(base);
+      date.setDate(base.getDate() - offset);
+      const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+      const taskCount = tasks.filter((task) => {
+        const completed = task?.completedAt || task?.completedDate || task?.doneAt || '';
+        return String(completed).slice(0, 10) === key;
+      }).length;
+      const studyMinutes = (Array.isArray(data?.studySessions) ? data.studySessions : []).reduce((sum, session) => {
+        const sessionDate = session?.date || session?.startedAt || session?.createdAt || '';
+        return String(sessionDate).slice(0, 10) === key ? sum + Number(session?.minutes || session?.duration || 0) : sum;
+      }, 0);
+      result.push({ label: dayNames[date.getDay()], date: key, value: Math.max(taskCount * 20, Math.min(100, Math.round(studyMinutes / 3))), taskCount, studyMinutes });
+    }
+    return result;
+  }, [tasks, data?.studySessions]);
 
   /*
    * ============================================================
@@ -795,6 +840,69 @@ export default function PainelPrincipal({
             <span>XP do dia</span>
             <strong>{dailyXpDone} / {dailyXpMax} XP</strong>
           </div>
+        </div>
+      </section>
+
+      <section className='dashboard-command-grid'>
+        <div className='card dashboard-weekly-panel'>
+          <div className='dashboard-panel-heading'>
+            <div>
+              <span className='section-label'>DESTAQUES DA SEMANA</span>
+              <h3>🚀 Seu ritmo recente</h3>
+            </div>
+            <span className='dashboard-panel-caption'>últimos 7 dias</span>
+          </div>
+          <div className='dashboard-chart'>
+            {weekData.map((day) => (
+              <div className='dashboard-chart-day' key={day.date} title={`${day.taskCount} tarefas · ${day.studyMinutes} min de estudo`}>
+                <div className='dashboard-chart-track'><span style={{ height: `${Math.max(8, day.value)}%` }} /></div>
+                <strong>{day.value}</strong>
+                <small>{day.label}</small>
+              </div>
+            ))}
+          </div>
+          <div className='dashboard-weekly-metrics'>
+            <span>🔥 {data?.gamification?.streak || 0} dias de sequência</span>
+            <span>⏱️ {studyMinutesToday} min de estudo hoje</span>
+            <span>✓ {completedTasksCount} tarefas concluídas</span>
+          </div>
+        </div>
+
+        <div className='card dashboard-agenda-preview'>
+          <div className='dashboard-panel-heading'>
+            <div>
+              <span className='section-label'>AGENDA</span>
+              <h3>📅 Hoje</h3>
+            </div>
+            <span className='dashboard-agenda-count'>{todayEvents.length}</span>
+          </div>
+          <div className='dashboard-agenda-preview-list'>
+            {todayEvents.slice(0, 5).map((event) => (
+              <div className='dashboard-agenda-preview-item' key={`${event.id}-${event.date}`}>
+                <span className={`agenda-dot agenda-${event.type || 'event'}`} />
+                <div><strong>{event.name || event.title || 'Evento'}</strong><small>{event.scheduledTime || 'Hoje'}{event.duration ? ` · ${event.duration} min` : ''}{event.isDailyTask ? ' · diária' : ''}</small></div>
+              </div>
+            ))}
+            {todayEvents.length === 0 && <div className='dashboard-agenda-empty'>Agenda livre por enquanto.</div>}
+          </div>
+        </div>
+      </section>
+
+      <section className='dashboard-highlight-grid'>
+        <div className='card dashboard-highlight-card'>
+          <div className='highlight-icon'>🎯</div>
+          <div className='highlight-main'><span>Próxima meta</span><strong>{activeGoals[0]?.title || activeGoals[0]?.name || 'Defina um objetivo'}</strong><small>{activeGoals[0] ? `${Math.max(0, Math.min(100, Number(activeGoals[0].progress ?? activeGoals[0].percentage ?? 0)))}% concluído` : 'Transforme uma intenção em meta.'}</small></div>
+          <div className='highlight-progress'><span style={{ width: `${activeGoals[0] ? Math.max(0, Math.min(100, Number(activeGoals[0].progress ?? activeGoals[0].percentage ?? 0))) : 0}%` }} /></div>
+        </div>
+        <div className='card dashboard-highlight-card'>
+          <div className='highlight-icon'>🔥</div>
+          <div className='highlight-main'><span>Hábitos de hoje</span><strong>{habitsDoneCount}/{totalHabits} concluídos</strong><small>{totalHabits ? 'Mantenha a sequência' : 'Cadastre seus hábitos principais'}</small></div>
+          <div className='highlight-progress'><span style={{ width: `${totalHabits ? Math.round((habitsDoneCount / totalHabits) * 100) : 0}%` }} /></div>
+        </div>
+        <div className='card dashboard-highlight-card dashboard-gami-highlight'>
+          <div className='highlight-icon'>🏆</div>
+          <div className='highlight-main'><span>Gamificação</span><strong>Nível {level}</strong><small>{Number(data?.xp || 0).toLocaleString('pt-BR')} XP · {Number(data?.coins || 0).toLocaleString('pt-BR')} moedas</small></div>
+          <div className='highlight-progress'><span style={{ width: `${Math.max(0, Math.min(100, Number(progress) || 0))}%` }} /></div>
         </div>
       </section>
 

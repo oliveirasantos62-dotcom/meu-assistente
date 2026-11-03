@@ -45,10 +45,6 @@ export default function Gamification({ data = {}, completedTasks = [], save }) {
     );
     if (!confirmed) return;
 
-    const resetAchievements = window.confirm(
-      'Também deseja REINICIAR AS CONQUISTAS?\n\nOK = sim, começar as conquistas do zero\nCancelar = manter o progresso das conquistas'
-    );
-
     save({
       ...data,
       xp: 0,
@@ -58,8 +54,22 @@ export default function Gamification({ data = {}, completedTasks = [], save }) {
         missions: [],
         rewards: [],
         streak: 0,
-        achievements: resetAchievements ? [] : (Array.isArray(data.gamification?.achievements) ? data.gamification.achievements : []),
-        achievementBaseline: resetAchievements ? achievementMetrics : (data.gamification?.achievementBaseline || {}),
+      },
+    });
+  };
+
+  const resetAchievements = () => {
+    const confirmed = window.confirm(
+      'Reiniciar todas as conquistas?\n\nO progresso das conquistas será zerado e as atividades antigas deixarão de contar para os próximos marcos. XP, moedas, tarefas e estudos não serão apagados.'
+    );
+    if (!confirmed) return;
+
+    save({
+      ...data,
+      gamification: {
+        ...(data.gamification || {}),
+        achievements: [],
+        achievementBaseline: achievementMetrics,
       },
     });
   };
@@ -138,8 +148,11 @@ export default function Gamification({ data = {}, completedTasks = [], save }) {
             <span>🏆</span>
             <div><small>NÍVEL ATUAL</small><strong>{level}</strong></div>
           </div>
-          <button type="button" className="reset-gamification-btn" onClick={resetGamification} title="Zerar o progresso da gamificação">
-            ↻ Reiniciar gamificação
+          <button type="button" className="reset-gamification-btn" onClick={resetGamification} title="Zerar XP, moedas, sequência, missões e recompensas">
+            ↻ Reiniciar progresso
+          </button>
+          <button type="button" className="reset-achievements-btn" onClick={resetAchievements} title="Zerar somente as conquistas">
+            🏆 Reiniciar conquistas
           </button>
         </div>
       </header>
@@ -452,6 +465,8 @@ const styles = `
 .gamification-actions{display:flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:flex-end}
 .reset-gamification-btn{border:1px solid rgba(220,70,70,.28);background:transparent;color:#c53f4b;border-radius:12px;padding:10px 13px;font-weight:700;cursor:pointer;transition:.2s}
 .reset-gamification-btn:hover{background:rgba(220,70,70,.08);transform:translateY(-1px)}
+.reset-achievements-btn{border:1px solid rgba(109,93,252,.35);background:rgba(109,93,252,.08);color:#6d5dfc;border-radius:12px;padding:10px 13px;font-weight:800;cursor:pointer;transition:.2s}.reset-achievements-btn:hover{background:rgba(109,93,252,.15);transform:translateY(-1px)}
+body.dark .reset-achievements-btn{color:#a99cff;border-color:rgba(169,156,255,.35);background:rgba(109,93,252,.12)}
 body.dark .reset-gamification-btn{color:#ff8d98;border-color:rgba(255,141,152,.32)}
 body.dark .reset-gamification-btn:hover{background:rgba(255,141,152,.1)}
 @media(max-width:600px){.gamification-page{padding:14px}.gamification-header{align-items:flex-start;flex-direction:column}.gamification-actions{width:100%;justify-content:stretch}.gamification-actions .level-badge{flex:1}.reset-gamification-btn{flex:1}.level-badge{width:100%}.gami-panel{padding:16px}.achievement-grid{grid-template-columns:1fr}.achievement-status{display:none}.section-heading{align-items:flex-start}.section-heading>strong,.achievement-count{white-space:normal;text-align:right}.difficulty-row{gap:7px;flex-wrap:wrap}.difficulty-task{flex-basis:100%}.shop-panel .shop-form{grid-template-columns:1fr}.shop-panel .task{align-items:flex-start}.shop-panel .task>div{width:100%}}
@@ -465,6 +480,8 @@ body.dark .reset-gamification-btn:hover{background:rgba(255,141,152,.1)}
 .gamification-actions{display:flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:flex-end}
 .reset-gamification-btn{border:1px solid rgba(220,70,70,.28);background:transparent;color:#c53f4b;border-radius:12px;padding:10px 13px;font-weight:700;cursor:pointer;transition:.2s}
 .reset-gamification-btn:hover{background:rgba(220,70,70,.08);transform:translateY(-1px)}
+.reset-achievements-btn{border:1px solid rgba(109,93,252,.35);background:rgba(109,93,252,.08);color:#6d5dfc;border-radius:12px;padding:10px 13px;font-weight:800;cursor:pointer;transition:.2s}.reset-achievements-btn:hover{background:rgba(109,93,252,.15);transform:translateY(-1px)}
+body.dark .reset-achievements-btn{color:#a99cff;border-color:rgba(169,156,255,.35);background:rgba(109,93,252,.12)}
 body.dark .reset-gamification-btn{color:#ff8d98;border-color:rgba(255,141,152,.32)}
 body.dark .reset-gamification-btn:hover{background:rgba(255,141,152,.1)}
 @media(max-width:600px){.rpg-rule-grid{grid-template-columns:1fr}.rpg-rank{white-space:normal;text-align:center}}

@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { storageService, emptyAppData } from '../services/storage';
+import { isTaskCancelled } from '../utils/taskStatus';
 import { loadAppData, saveAppData } from '../services/api';
 import {
   getTodayDate,
@@ -509,7 +510,7 @@ export function useAppData(user) {
   const tasks = Array.isArray(safeData.tasks) ? safeData.tasks : [];
 
   const pendingTasks = useMemo(
-    () => tasks.filter((task) => !task.done && task.status !== 'cancelled' && !task.cancelled),
+    () => tasks.filter((task) => !task.done && !isTaskCancelled(task, new Date())),
     [tasks],
   );
 
@@ -570,7 +571,7 @@ export function useAppData(user) {
     (id) => {
       const task = tasks.find((item) => String(item.id) === String(id));
 
-      if (!task || task.status === 'cancelled' || task.cancelled === true) return;
+      if (!task || isTaskCancelled(task, new Date())) return;
 
       const now = new Date();
 
