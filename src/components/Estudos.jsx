@@ -16,6 +16,7 @@ import {
 
 const TABS = [
   ['overview', '📚 Visão geral'],
+  ['statistics', '📊 Estatísticas'],
   ['organization', '🗓️ Planejamento'],
   ['sessions', '⏱️ Sessões'],
   ['reading', '📖 Leitura'],
@@ -95,7 +96,92 @@ function accuracyClass(value) {
   if (value >= 60) return 'study-accuracy-medium';
   return 'study-accuracy-low';
 }
+function getLocalDate(value) {
+  if (!value) return null;
 
+  const date = String(value).slice(0, 10);
+  const [year, month, day] = date.split('-').map(Number);
+
+  if (!year || !month || !day) return null;
+
+  return new Date(year, month - 1, day);
+}
+
+function getWeekStart(date) {
+  const result = new Date(date);
+  const day = result.getDay();
+
+  result.setDate(result.getDate() - (day === 0 ? 6 : day - 1));
+  result.setHours(0, 0, 0, 0);
+
+  return result;
+}
+
+function formatHours(minutes) {
+  const total = Number(minutes || 0);
+
+  const hours = Math.floor(total / 60);
+  const remaining = total % 60;
+
+  if (hours === 0) return `${remaining}min`;
+
+  return `${hours}h ${remaining}min`;
+}
+
+function getStudyPeriod(date, period) {
+  const now = new Date();
+  const current = getLocalDate(date);
+
+  if (!current) return false;
+
+  now.setHours(0, 0, 0, 0);
+
+  switch (period) {
+    case 'today':
+      return current.getTime() === now.getTime();
+
+    case 'week': {
+      const start = getWeekStart(now);
+      const end = new Date(start);
+
+      end.setDate(end.getDate() + 7);
+
+      return current >= start && current < end;
+    }
+
+    case 'month':
+      return (
+        current.getMonth() === now.getMonth() &&
+        current.getFullYear() === now.getFullYear()
+      );
+
+    case 'year':
+      return current.getFullYear() === now.getFullYear();
+
+    case 'all':
+      return true;
+
+    default:
+      return true;
+  }
+}
+
+function getChartDateLabel(date, period) {
+  const parsed = getLocalDate(date);
+
+  if (!parsed) return '';
+
+  if (period === 'year') {
+    return parsed.toLocaleDateString('pt-BR', {
+      month: 'short',
+    });
+  }
+
+  return parsed.toLocaleDateString('pt-BR', {
+    day: '2-digit',
+    month: '2-digit',
+  });
+}
 export default function Estudos({ data: appData, save: saveAppData }) {
   const [tab, setTab] = useState('overview');
 
@@ -116,8 +202,16 @@ export default function Estudos({ data: appData, save: saveAppData }) {
   const [studyError, setStudyError] = useState(initialError);
 
   const [expandedDisciplines, setExpandedDisciplines] = useState({});
-  const studyCycles = Array.isArray(appData?.studyCycles) ? appData.studyCycles : [];
+  const studyCycles = Array.isArray(appData?.studyCycles)
+    ? appData.studyCycles
+    : [];
+  const [statisticsPeriod, setStatisticsPeriod] = useState('week');
 
+  const [selectedDisciplines, setSelectedDisciplines] = useState([]);
+
+  const [statisticsMetric, setStatisticsMetric] = useState('questions');
+
+  const [showAllDisciplines, setShowAllDisciplines] = useState(true);
   async function load() {
     setLoading(true);
     setError('');
@@ -301,7 +395,123 @@ export default function Estudos({ data: appData, save: saveAppData }) {
   }, [data.sessions]);
 
   const performanceMax = 100;
+  const availableDisciplines = useMemo(() => {
+    return [
+      ...new Set(
+        data.sessions
+          .map((s) => String(s.discipline || '').trim())
+          .filter(Boolean),
+      ),
+    ].sort();
+  }, [data.sessions]);
 
+  const statisticsSessions = useMemo(() => {
+    return data.sessions.filter((session) => {
+      const date = session.study_date || session.date;
+
+      const matchesPeriod = getStudyPeriod(date, statisticsPeriod);
+
+      const matchesDiscipline =
+        showAllDisciplines ||
+        selectedDisciplines.includes(String(session.discipline || '').trim());
+
+      return matchesPeriod && matchesDiscipline;
+    });
+  }, [
+    data.sessions,
+    statisticsPeriod,
+    selectedDisciplines,
+    showAllDisciplines,
+  ]);
+
+  const statisticsTotals = useMemo(() => {
+    return statisticsSessions.reduce(
+      (total, session) => {
+        const questions = Number(session.exercises || 0);
+        const correct = Number(session.correct || 0);
+
+        total.questions += questions;
+        total.correct += correct;
+        total.errors += Math.max(0, questions - correct);
+        total.minutes += Number(session.minutes || 0);
+        total.sessions += 1;
+
+        return total;
+      },
+      {
+        questions: 0,
+        correct: 0,
+        errors: 0,
+        minutes: 0,
+        sessions: 0,
+      },
+    );
+  }, [statisticsSessions]);
+
+  const statisticsAccuracy = percentage(
+    statisticsTotals.correct,
+    statisticsTotals.questions,
+  );
+
+  const statisticsChartData = useMemo(() => {
+    const grouped = {};
+
+    statisticsSessions.forEach((session) => {
+      const date = String(session.study_date || session.date || '').slice(
+        0,
+        10,
+      );
+
+      if (!date) return;
+
+      if (!grouped[date]) {
+        grouped[date] = {
+          date,
+          questions: 0,
+          correct: 0,
+          errors: 0,
+          minutes: 0,
+        };
+      }
+
+      const questions = Number(session.exercises || 0);
+      const correct = Number(session.correct || 0);
+
+      grouped[date].questions += questions;
+      grouped[date].correct += correct;
+      grouped[date].errors += Math.max(0, questions - correct);
+      grouped[date].minutes += Number(session.minutes || 0);
+    });
+
+    return Object.values(grouped).sort((a, b) => a.date.localeCompare(b.date));
+  }, [statisticsSessions]);
+
+  const statisticsByDiscipline = useMemo(() => {
+    const grouped = {};
+
+    statisticsSessions.forEach((session) => {
+      const name = session.discipline || 'Sem disciplina';
+
+      if (!grouped[name]) {
+        grouped[name] = {
+          name,
+          questions: 0,
+          correct: 0,
+          minutes: 0,
+        };
+      }
+
+      grouped[name].questions += Number(session.exercises || 0);
+      grouped[name].correct += Number(session.correct || 0);
+      grouped[name].minutes += Number(session.minutes || 0);
+    });
+
+    return Object.values(grouped).map((item) => ({
+      ...item,
+      errors: Math.max(0, item.questions - item.correct),
+      accuracy: percentage(item.correct, item.questions),
+    }));
+  }, [statisticsSessions]);
   function toggleDiscipline(disciplineName) {
     setExpandedDisciplines((current) => ({
       ...current,
@@ -338,7 +548,19 @@ export default function Estudos({ data: appData, save: saveAppData }) {
       const created = await createStudySession(payload);
 
       if (appData && saveAppData) {
-        saveAppData({ ...appData, studySessions: [{ ...created, date: created.study_date || new Date().toISOString().slice(0,10), minutes: payload.minutes, subject: payload.subject, discipline: payload.discipline }, ...(appData.studySessions || [])] });
+        saveAppData({
+          ...appData,
+          studySessions: [
+            {
+              ...created,
+              date: created.study_date || new Date().toISOString().slice(0, 10),
+              minutes: payload.minutes,
+              subject: payload.subject,
+              discipline: payload.discipline,
+            },
+            ...(appData.studySessions || []),
+          ],
+        });
       }
 
       setData((current) => ({
@@ -528,7 +750,325 @@ export default function Estudos({ data: appData, save: saveAppData }) {
           </button>
         ))}
       </div>
+      {/* =====================================================
+    ESTATÍSTICAS DOS ESTUDOS
+===================================================== */}
 
+      {tab === 'statistics' && (
+        <div className='study-statistics'>
+          <div className='card'>
+            <div className='study-section-heading'>
+              <div>
+                <span className='eyebrow'>ANÁLISE DE DESEMPENHO</span>
+                <h3>📊 Estatísticas dos estudos</h3>
+                <p>
+                  Acompanhe sua evolução, produtividade e desempenho em
+                  questões.
+                </p>
+              </div>
+            </div>
+
+            <div className='study-statistics-filters'>
+              <label>
+                Período
+                <select
+                  value={statisticsPeriod}
+                  onChange={(e) => setStatisticsPeriod(e.target.value)}
+                >
+                  <option value='today'>Hoje</option>
+                  <option value='week'>Esta semana</option>
+                  <option value='month'>Este mês</option>
+                  <option value='year'>Este ano</option>
+                  <option value='all'>Todo o período</option>
+                </select>
+              </label>
+
+              <label>
+                Disciplinas
+                <select
+                  value={showAllDisciplines ? 'all' : 'selected'}
+                  onChange={(e) => {
+                    setShowAllDisciplines(e.target.value === 'all');
+                  }}
+                >
+                  <option value='all'>Todas as disciplinas</option>
+                  <option value='selected'>Selecionar disciplinas</option>
+                </select>
+              </label>
+            </div>
+
+            {!showAllDisciplines && (
+              <div className='study-statistics-disciplines'>
+                {availableDisciplines.map((discipline) => (
+                  <label key={discipline}>
+                    <input
+                      type='checkbox'
+                      checked={selectedDisciplines.includes(discipline)}
+                      onChange={(e) => {
+                        setSelectedDisciplines((current) =>
+                          e.target.checked
+                            ? [...current, discipline]
+                            : current.filter((item) => item !== discipline),
+                        );
+                      }}
+                    />
+                    {discipline}
+                  </label>
+                ))}
+
+                {availableDisciplines.length === 0 && (
+                  <p>Nenhuma disciplina cadastrada.</p>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* INDICADORES */}
+
+          <div className='diary-stats'>
+            <div className='diary-stat'>
+              <span>📝</span>
+              <div>
+                <strong>
+                  {statisticsTotals.questions.toLocaleString('pt-BR')}
+                </strong>
+                <small>Total de questões feitas</small>
+              </div>
+            </div>
+
+            <div className='diary-stat'>
+              <span>✅</span>
+              <div>
+                <strong>
+                  {statisticsTotals.correct.toLocaleString('pt-BR')}
+                </strong>
+                <small>Questões corretas</small>
+              </div>
+            </div>
+
+            <div className='diary-stat'>
+              <span>❌</span>
+              <div>
+                <strong>
+                  {statisticsTotals.errors.toLocaleString('pt-BR')}
+                </strong>
+                <small>Questões erradas</small>
+              </div>
+            </div>
+
+            <div className='diary-stat'>
+              <span>⏱️</span>
+              <div>
+                <strong>{formatHours(statisticsTotals.minutes)}</strong>
+                <small>Tempo estudado</small>
+              </div>
+            </div>
+
+            <div className='diary-stat'>
+              <span>🎯</span>
+              <div>
+                <strong>{statisticsAccuracy}%</strong>
+                <small>Taxa de acertos</small>
+              </div>
+            </div>
+
+            <div className='diary-stat'>
+              <span>📚</span>
+              <div>
+                <strong>{statisticsTotals.sessions}</strong>
+                <small>Sessões realizadas</small>
+              </div>
+            </div>
+          </div>
+
+          {/* SELEÇÃO DO GRÁFICO */}
+
+          <div className='card'>
+            <h3>📈 Evolução dos estudos</h3>
+
+            <div className='study-statistics-metric'>
+              <button
+                type='button'
+                className={
+                  statisticsMetric === 'questions'
+                    ? 'study-tab active'
+                    : 'study-tab'
+                }
+                onClick={() => setStatisticsMetric('questions')}
+              >
+                Questões
+              </button>
+
+              <button
+                type='button'
+                className={
+                  statisticsMetric === 'minutes'
+                    ? 'study-tab active'
+                    : 'study-tab'
+                }
+                onClick={() => setStatisticsMetric('minutes')}
+              >
+                Horas estudadas
+              </button>
+
+              <button
+                type='button'
+                className={
+                  statisticsMetric === 'accuracy'
+                    ? 'study-tab active'
+                    : 'study-tab'
+                }
+                onClick={() => setStatisticsMetric('accuracy')}
+              >
+                Aproveitamento
+              </button>
+            </div>
+
+            {statisticsChartData.length === 0 ? (
+              <div className='study-empty-performance'>
+                <div className='study-empty-icon'>📊</div>
+                <strong>Nenhum dado encontrado neste período.</strong>
+                <p>
+                  Registre sessões de estudo com questões ou tempo para
+                  visualizar sua evolução.
+                </p>
+              </div>
+            ) : (
+              <div className='study-statistics-chart'>
+                {statisticsChartData.map((item) => {
+                  const value =
+                    statisticsMetric === 'questions'
+                      ? item.questions
+                      : statisticsMetric === 'minutes'
+                        ? item.minutes
+                        : percentage(item.correct, item.questions);
+
+                  const maxValue = Math.max(
+                    1,
+                    ...statisticsChartData.map((entry) =>
+                      statisticsMetric === 'questions'
+                        ? entry.questions
+                        : statisticsMetric === 'minutes'
+                          ? entry.minutes
+                          : percentage(entry.correct, entry.questions),
+                    ),
+                  );
+
+                  return (
+                    <div className='study-chart-column' key={item.date}>
+                      <div className='study-chart-value'>
+                        {statisticsMetric === 'minutes'
+                          ? formatHours(value)
+                          : statisticsMetric === 'accuracy'
+                            ? `${value}%`
+                            : value}
+                      </div>
+
+                      <div className='study-chart-bar-area'>
+                        <div
+                          className={`study-chart-bar ${statisticsMetric}`}
+                          style={{
+                            height: `${Math.max(3, (value / maxValue) * 100)}%`,
+                          }}
+                        />
+                      </div>
+
+                      <small>
+                        {getChartDateLabel(item.date, statisticsPeriod)}
+                      </small>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+
+          {/* ACERTOS E ERROS */}
+
+          <div className='card'>
+            <h3>🎯 Acertos e erros</h3>
+
+            <div className='study-statistics-comparison'>
+              <div>
+                <span>Acertos</span>
+                <strong>{statisticsTotals.correct}</strong>
+                <div className='study-progress-track'>
+                  <div
+                    className='study-progress-fill study-accuracy-good'
+                    style={{
+                      width: `${statisticsAccuracy}%`,
+                    }}
+                  />
+                </div>
+              </div>
+
+              <div>
+                <span>Erros</span>
+                <strong>{statisticsTotals.errors}</strong>
+                <div className='study-progress-track'>
+                  <div
+                    className='study-progress-fill study-accuracy-low'
+                    style={{
+                      width: `${
+                        statisticsTotals.questions
+                          ? (statisticsTotals.errors /
+                              statisticsTotals.questions) *
+                            100
+                          : 0
+                      }%`,
+                    }}
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* DESEMPENHO POR DISCIPLINA */}
+
+          <div className='card'>
+            <h3>📚 Desempenho por disciplina</h3>
+
+            {statisticsByDiscipline.length === 0 ? (
+              <p>Nenhuma disciplina encontrada.</p>
+            ) : (
+              <div className='study-performance-list'>
+                {statisticsByDiscipline.map((discipline) => (
+                  <div className='study-discipline' key={discipline.name}>
+                    <div className='study-discipline-header'>
+                      <div>
+                        <strong>{discipline.name}</strong>
+                        <small>
+                          {discipline.questions} questões ·{' '}
+                          {formatHours(discipline.minutes)}
+                        </small>
+                      </div>
+
+                      <div className='study-discipline-score'>
+                        <strong>{discipline.accuracy}%</strong>
+                        <small>
+                          {discipline.correct} acertos · {discipline.errors}{' '}
+                          erros
+                        </small>
+                      </div>
+                    </div>
+
+                    <div className='study-progress-track'>
+                      <div
+                        className={`study-progress-fill ${accuracyClass(
+                          discipline.accuracy,
+                        )}`}
+                        style={{
+                          width: `${discipline.accuracy}%`,
+                        }}
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
       {tab === 'organization' && (
         <StudyPlanner
           data={appData}
