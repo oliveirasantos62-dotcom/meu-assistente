@@ -7,7 +7,6 @@ const SECTIONS = [
   { id: 'calendar', label: '📅 Calendário & Agenda' },
   { id: 'diario', label: '📔 Diário' },
   { id: 'estudos', label: '📚 Estudos' },
-  { id: 'study-cycle', label: '🔄 Ciclo de Estudos' },
   { id: 'goals', label: '🎯 Objetivos' },
   { id: 'habits', label: '🔥 Hábitos' },
 
@@ -30,7 +29,6 @@ const SECTIONS = [
   { id: 'assistant', label: '🤖 Assistente' },
 
   // PERFIL
-  { id: 'personalization', label: '⚙️ Personalização' },
   { id: 'profile', label: '👤 Meu Perfil' },
 ];
 
@@ -44,7 +42,6 @@ const DEFAULT_VISIBLE = {
   calendar: true,
   diario: true,
   estudos: true,
-  'study-cycle': true,
   goals: true,
   habits: true,
 
@@ -65,7 +62,6 @@ const DEFAULT_VISIBLE = {
   foguinho: false,
   assistant: false,
 
-  personalization: true,
   profile: true,
 };
 
@@ -149,6 +145,7 @@ export default function Sidebar({
   setDarkMode,
   onLogout,
   data,
+  save,
 }) {
   const storageKey = getStorageKey(currentUser);
 
@@ -172,10 +169,10 @@ export default function Sidebar({
   const visibleSections = config.visibleSections;
 
   const moduleMap = {
-    tasks: 'tasks', calendar: 'calendar', estudos: 'estudos', 'study-cycle': 'estudos',
-    goals: 'goals', habits: 'habits', projects: 'projects', collections: 'collections',
-    fase12: 'reports', reports: 'reports', tags: 'tags', fase13: 'finance', investments: 'investments',
-    assistant: 'assistant', gamification: 'gamification',
+    tasks: 'tasks', processos: 'processos', calendar: 'calendar', diario: 'diario', estudos: 'estudos',
+    goals: 'goals', habits: 'habits', evolucao: 'evolucao', projects: 'projects', groups: 'groups',
+    collections: 'collections', fase12: 'reports', reports: 'reports', tags: 'tags', gamification: 'gamification',
+    fase13: 'finance', investments: 'investments', connections: 'connections', foguinho: 'foguinho', assistant: 'assistant',
   };
 
   const moduleEnabled = (id) => {
@@ -240,6 +237,29 @@ export default function Sidebar({
         [id]: !current.visibleSections[id],
       },
     }));
+  }
+
+  function isReferenceEnabled(id) {
+    if (id === 'dashboard') return false;
+    return data?.settings?.moduleReferences?.[moduleMap[id] || id] !== false;
+  }
+
+  function toggleReference(id) {
+    if (id === 'dashboard' || typeof save !== 'function') return;
+
+    const key = moduleMap[id] || id;
+    const references = {
+      ...(data?.settings?.moduleReferences || {}),
+      [key]: !isReferenceEnabled(id),
+    };
+
+    save({
+      ...data,
+      settings: {
+        ...(data?.settings || {}),
+        moduleReferences: references,
+      },
+    });
   }
 
   // Ativa ou desativa a pesquisa de páginas.
@@ -331,9 +351,12 @@ export default function Sidebar({
     .map((id) => SECTIONS.find((section) => section.id === id))
     .filter(Boolean);
 
-  // Exibe somente as páginas ativadas.
+  // A visibilidade do menu é controlada exclusivamente por
+  // "Personalizar menu". O estado de módulos é independente:
+  // se o usuário marcou uma página como visível, ela deve aparecer
+  // no menu mesmo que o módulo tenha sido desativado em outra configuração.
   const menuSections = orderedSections.filter(
-    (section) => visibleSections[section.id] && moduleEnabled(section.id),
+    (section) => visibleSections[section.id],
   );
 
   // Aplica a pesquisa somente quando ela está ativada.
@@ -394,9 +417,7 @@ export default function Sidebar({
       >
         {/* IDENTIDADE */}
         <div className='sidebar-brand'>
-          <div className='logo' aria-label='Meu Assistente' title='Meu Assistente'>
-            <img src='/fav-icon.svg' alt='' aria-hidden='true' />
-          </div>
+          <div className='logo'><img src='/favicon-tech.svg?v=2' alt='' aria-hidden='true' /></div>
 
           <div className='sidebar-brand-text'>
             <h3>Meu Assistente</h3>
@@ -530,10 +551,9 @@ export default function Sidebar({
             {/* INSTRUÇÕES */}
             <div className='sidebar-settings-info'>
               <span>⠿ Arraste as páginas para reorganizar.</span>
-
               <span>↕ Solte entre duas páginas para escolher a posição.</span>
-
-              <span>✓ Ative somente os recursos que deseja visualizar.</span>
+              <span><strong>Visibilidade</strong> — mostra ou oculta a página no menu.</span>
+              <span><strong>Referências</strong> — permite ou bloqueia menções, cards, análises e sugestões em outras páginas.</span>
             </div>
 
             {/* PESQUISA DO MENU */}
@@ -569,6 +589,13 @@ export default function Sidebar({
                   <span />
                 </span>
               </label>
+            </div>
+
+            {/* CABEÇALHO DOS CONTROLES */}
+            <div className='sidebar-settings-columns' aria-hidden='true'>
+              <span></span>
+              <strong>MENU</strong>
+              <strong>REF.</strong>
             </div>
 
             {/* LISTA DE PÁGINAS */}
@@ -670,21 +697,30 @@ export default function Sidebar({
                       )}
                     </div>
 
-                    {/* INTERRUPTOR */}
+                    {/* CONTROLES */}
                     <div className='sidebar-option-actions'>
-                      <label className='sidebar-switch-label'>
+                      <label className='sidebar-switch-label' title='Visibilidade: mostrar ou ocultar no menu'>
                         <input
                           type='checkbox'
                           checked={checked}
                           disabled={section.fixed}
                           onChange={() => toggleSection(section.id)}
-                          aria-label={`Ativar ${section.label}`}
+                          aria-label={`Visibilidade de ${section.label}`}
                         />
-
-                        <span className='sidebar-switch'>
-                          <span />
-                        </span>
+                        <span className='sidebar-switch'><span /></span>
                       </label>
+
+                      {!section.fixed && (
+                        <label className='sidebar-switch-label' title='Referências: permitir ou bloquear aparições em outras páginas'>
+                          <input
+                            type='checkbox'
+                            checked={isReferenceEnabled(section.id)}
+                            onChange={() => toggleReference(section.id)}
+                            aria-label={`Referências de ${section.label}`}
+                          />
+                          <span className='sidebar-switch sidebar-reference-switch'><span /></span>
+                        </label>
+                      )}
                     </div>
                   </div>
                 );
