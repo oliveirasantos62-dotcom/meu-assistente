@@ -907,10 +907,13 @@ export default function Estudos({
             </div>
           </div>
 
-          {/* SELEÇÃO DO GRÁFICO */}
-
+          {/* DISTRIBUIÇÃO POR DISCIPLINA */}
           <div className='card'>
-            <h3>📈 Evolução dos estudos</h3>
+            <h3>🥧 Distribuição por disciplina</h3>
+            <p>
+              Compare quanto cada disciplina representa no seu volume de estudos
+              dentro do período selecionado.
+            </p>
 
             <div className='study-statistics-metric'>
               <button
@@ -924,7 +927,6 @@ export default function Estudos({
               >
                 Questões
               </button>
-
               <button
                 type='button'
                 className={
@@ -934,78 +936,140 @@ export default function Estudos({
                 }
                 onClick={() => setStatisticsMetric('minutes')}
               >
-                Horas estudadas
-              </button>
-
-              <button
-                type='button'
-                className={
-                  statisticsMetric === 'accuracy'
-                    ? 'study-tab active'
-                    : 'study-tab'
-                }
-                onClick={() => setStatisticsMetric('accuracy')}
-              >
-                Aproveitamento
+                Tempo estudado
               </button>
             </div>
 
-            {statisticsChartData.length === 0 ? (
+            {statisticsByDiscipline.length === 0 ||
+            statisticsByDiscipline.every(
+              (item) =>
+                Number(
+                  statisticsMetric === 'questions'
+                    ? item.questions
+                    : item.minutes,
+                ) <= 0,
+            ) ? (
               <div className='study-empty-performance'>
-                <div className='study-empty-icon'>📊</div>
+                <div className='study-empty-icon'>🥧</div>
                 <strong>Nenhum dado encontrado neste período.</strong>
                 <p>
-                  Registre sessões de estudo com questões ou tempo para
-                  visualizar sua evolução.
+                  Registre sessões com questões ou tempo estudado para
+                  visualizar a distribuição por disciplina.
                 </p>
               </div>
             ) : (
-              <div className='study-statistics-chart'>
-                {statisticsChartData.map((item) => {
-                  const value =
+              (() => {
+                const colors = [
+                  '#6366f1',
+                  '#14b8a6',
+                  '#f59e0b',
+                  '#ec4899',
+                  '#3b82f6',
+                  '#8b5cf6',
+                  '#ef4444',
+                  '#84cc16',
+                  '#06b6d4',
+                  '#f97316',
+                ];
+                const valueFor = (item) =>
+                  Number(
                     statisticsMetric === 'questions'
                       ? item.questions
-                      : statisticsMetric === 'minutes'
-                        ? item.minutes
-                        : percentage(item.correct, item.questions);
+                      : item.minutes,
+                  ) || 0;
+                const chartItems = statisticsByDiscipline.filter(
+                  (item) => valueFor(item) > 0,
+                );
+                const total = chartItems.reduce(
+                  (sum, item) => sum + valueFor(item),
+                  0,
+                );
+                let currentAngle = 0;
+                const slices = chartItems.map((item, index) => {
+                  const startAngle = currentAngle;
+                  currentAngle += (valueFor(item) / total) * 360;
+                  return `${colors[index % colors.length]} ${startAngle}deg ${currentAngle}deg`;
+                });
 
-                  const maxValue = Math.max(
-                    1,
-                    ...statisticsChartData.map((entry) =>
-                      statisticsMetric === 'questions'
-                        ? entry.questions
-                        : statisticsMetric === 'minutes'
-                          ? entry.minutes
-                          : percentage(entry.correct, entry.questions),
-                    ),
-                  );
-
-                  return (
-                    <div className='study-chart-column' key={item.date}>
-                      <div className='study-chart-value'>
-                        {statisticsMetric === 'minutes'
-                          ? formatHours(value)
-                          : statisticsMetric === 'accuracy'
-                            ? `${value}%`
-                            : value}
-                      </div>
-
-                      <div className='study-chart-bar-area'>
+                return (
+                  <div
+                    className='study-pie-layout'
+                    style={{
+                      display: 'grid',
+                      gridTemplateColumns:
+                        'minmax(180px, 260px) minmax(0, 1fr)',
+                      alignItems: 'center',
+                      gap: '24px',
+                      marginTop: '20px',
+                    }}
+                  >
+                    <div
+                      className='study-pie-chart'
+                      role='img'
+                      aria-label={`Gráfico de pizza da distribuição por disciplina: ${chartItems
+                        .map(
+                          (item) =>
+                            `${item.name}, ${Math.round((valueFor(item) / total) * 100)}%`,
+                        )
+                        .join('; ')}`}
+                      style={{
+                        background: `conic-gradient(${slices.join(', ')})`,
+                        width: 'min(100%, 250px)',
+                        aspectRatio: '1 / 1',
+                        borderRadius: '50%',
+                        justifySelf: 'center',
+                      }}
+                    />
+                    <div
+                      className='study-pie-legend'
+                      style={{ display: 'grid', gap: '12px' }}
+                    >
+                      {chartItems.map((item, index) => (
                         <div
-                          className={`study-chart-bar ${statisticsMetric}`}
+                          className='study-pie-legend-item'
+                          key={item.name}
                           style={{
-                            height: `${Math.max(3, (value / maxValue) * 100)}%`,
+                            display: 'flex',
+                            alignItems: 'flex-start',
+                            gap: '10px',
                           }}
-                        />
-                      </div>
-
-                      <small>
-                        {getChartDateLabel(item.date, statisticsPeriod)}
-                      </small>
+                        >
+                          <span
+                            className='study-pie-dot'
+                            style={{
+                              backgroundColor: colors[index % colors.length],
+                              width: '12px',
+                              height: '12px',
+                              borderRadius: '50%',
+                              flexShrink: 0,
+                              marginTop: '5px',
+                            }}
+                          />
+                          <div
+                            className='study-pie-legend-text'
+                            style={{
+                              display: 'flex',
+                              flexDirection: 'column',
+                              gap: '3px',
+                            }}
+                          >
+                            <strong>{item.name}</strong>
+                            <small>
+                              {statisticsMetric === 'questions'
+                                ? `${valueFor(item).toLocaleString('pt-BR')} questões`
+                                : formatHours(valueFor(item))}
+                              {' · '}
+                              {Math.round((valueFor(item) / total) * 100)}% do
+                              total
+                            </small>
+                            <small>{item.accuracy}% de acertos</small>
+                          </div>
+                        </div>
+                      ))}
                     </div>
-                  );
-                })}
-              </div>
+                  </div>
+                );
+              })()
             )}
           </div>
 
