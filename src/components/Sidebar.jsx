@@ -248,7 +248,9 @@ function getAriaLabel(section, label) {
 // O ícone já é renderizado separadamente. Remove emojis antigos do dicionário
 // para impedir que cada item apareça com dois símbolos.
 function cleanNavLabel(value) {
-  return String(value || '').replace(/^(?:\p{Extended_Pictographic}\uFE0F?\s*)+/u, '').trim();
+  return String(value || '')
+    .replace(/^(?:\p{Extended_Pictographic}\uFE0F?\s*)+/u, '')
+    .trim();
 }
 
 export default function Sidebar({
@@ -274,6 +276,21 @@ export default function Sidebar({
     setConfig(getInitialConfig(currentUser));
   }, [currentUser]);
 
+  // Permite sair da personalização pelo teclado, sem ficar preso na camada modal.
+  useEffect(() => {
+    if (!showCustomizer) return undefined;
+
+    const handleKeyDown = (event) => {
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        setShowCustomizer(false);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [showCustomizer]);
+
   useEffect(() => {
     try {
       localStorage.setItem(getStorageKey(currentUser), JSON.stringify(config));
@@ -296,7 +313,8 @@ export default function Sidebar({
     return fallback;
   };
 
-  const getLabel = (section) => cleanNavLabel(text(`nav.${section.id}`, section.fallback));
+  const getLabel = (section) =>
+    cleanNavLabel(text(`nav.${section.id}`, section.fallback));
 
   const filteredSections = useMemo(() => {
     const normalizedSearch = search.trim().toLowerCase();
@@ -328,16 +346,26 @@ export default function Sidebar({
   }, [t]);
 
   function handleNavigate(sectionId) {
+    // Fecha a personalização antes de trocar de página, evitando a sensação de
+    // que a aplicação ficou presa na tela de configuração.
+    setShowCustomizer(false);
+
     // Compatível com as duas APIs usadas pelo App: onNavigate e setActiveSection.
     const navigate = onNavigate || setActiveSection;
 
     if (typeof navigate === 'function') {
       navigate(sectionId);
+    } else {
+      console.error('[Sidebar] Nenhuma função de navegação foi fornecida.');
     }
 
     // Em telas pequenas, a navegação fecha a gaveta. No desktop,
     // o menu permanece aberto para facilitar a troca entre páginas.
-    if (onClose && typeof window !== 'undefined' && window.matchMedia('(max-width: 900px)').matches) {
+    if (
+      onClose &&
+      typeof window !== 'undefined' &&
+      window.matchMedia('(max-width: 900px)').matches
+    ) {
       onClose();
     }
   }
@@ -407,7 +435,10 @@ export default function Sidebar({
     (section) => config.references[section.id],
   ).length;
 
-  const sidebarClassName = ['sidebar', isOpen ? 'sidebar-open' : 'sidebar-closed']
+  const sidebarClassName = [
+    'sidebar',
+    isOpen ? 'sidebar-open' : 'sidebar-closed',
+  ]
     .filter(Boolean)
     .join(' ');
 
@@ -588,10 +619,18 @@ export default function Sidebar({
                 className='sidebar-theme-toggle'
                 onClick={() => setDarkMode?.(!darkMode)}
                 aria-pressed={Boolean(darkMode)}
-                title={darkMode ? text('sidebar.lightMode', 'Ativar modo claro') : text('sidebar.darkMode', 'Ativar modo escuro')}
+                title={
+                  darkMode
+                    ? text('sidebar.lightMode', 'Ativar modo claro')
+                    : text('sidebar.darkMode', 'Ativar modo escuro')
+                }
               >
                 <span aria-hidden='true'>{darkMode ? '☀️' : '🌙'}</span>
-                <span>{darkMode ? text('sidebar.lightModeLabel', 'Modo claro') : text('sidebar.darkModeLabel', 'Modo escuro')}</span>
+                <span>
+                  {darkMode
+                    ? text('sidebar.lightModeLabel', 'Modo claro')
+                    : text('sidebar.darkModeLabel', 'Modo escuro')}
+                </span>
               </button>
               <button
                 type='button'
@@ -642,7 +681,7 @@ export default function Sidebar({
                 <p>
                   {text(
                     'sidebar.customizer.subtitle',
-                    'Escolha como os módulos aparecem no seu menu.',
+                    'Escolha como os módulos aparecem no seu menu. Feche esta janela para voltar à navegação.',
                   )}
                 </p>
               </div>
@@ -650,6 +689,7 @@ export default function Sidebar({
               <button
                 type='button'
                 className='sidebar-customizer-close'
+                title={text('sidebar.backToMenu', 'Voltar ao menu')}
                 onClick={() => setShowCustomizer(false)}
                 aria-label={text('sidebar.close', 'Fechar')}
               >
