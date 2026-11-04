@@ -59,7 +59,6 @@ export default function PainelPrincipal({
     }));
   };
 
-
   /*
    * ============================================================
    * MURAL DE AVISOS
@@ -69,11 +68,34 @@ export default function PainelPrincipal({
    * semelhantes aos itens das Coleções, mas voltados para lembretes
    * e avisos rápidos.
    */
-  const noticeBoard = data?.noticeBoard && typeof data.noticeBoard === 'object'
-    ? data.noticeBoard
-    : { enabled: false, items: [] };
+  const noticeBoard =
+    data?.noticeBoard && typeof data.noticeBoard === 'object'
+      ? data.noticeBoard
+      : { enabled: false, items: [] };
 
-  const noticeItems = Array.isArray(noticeBoard.items) ? noticeBoard.items : [];
+  // Migração compatível: murais antigos (com apenas `items`) viram um mural Geral.
+  const noticeBoards =
+    Array.isArray(noticeBoard.boards) && noticeBoard.boards.length
+      ? noticeBoard.boards.map((board, index) => ({
+          id: board?.id || `notice-board-${index}`,
+          name: String(board?.name || `Mural ${index + 1}`),
+          items: Array.isArray(board?.items) ? board.items : [],
+        }))
+      : [
+          {
+            id: 'notice-board-default',
+            name: 'Geral',
+            items: Array.isArray(noticeBoard.items) ? noticeBoard.items : [],
+          },
+        ];
+
+  const [activeNoticeBoardId, setActiveNoticeBoardId] = useState(
+    noticeBoards[0]?.id || 'notice-board-default',
+  );
+  const activeNoticeBoard =
+    noticeBoards.find((board) => board.id === activeNoticeBoardId) ||
+    noticeBoards[0];
+  const noticeItems = activeNoticeBoard?.items || [];
 
   const [noticeModalOpen, setNoticeModalOpen] = useState(false);
   const [editingNoticeId, setEditingNoticeId] = useState(null);
@@ -100,25 +122,77 @@ export default function PainelPrincipal({
 
     const current = {
       enabled: Boolean(noticeBoard.enabled),
-      items: noticeItems,
+      boards: noticeBoards,
+      activeBoardId: activeNoticeBoard?.id || noticeBoards[0]?.id,
     };
-
     const next = typeof updater === 'function' ? updater(current) : updater;
 
     save({
       ...(sourceData || data),
-      noticeBoard: {
-        ...current,
-        ...next,
-      },
+      noticeBoard: { ...current, ...next },
     });
   };
 
   const toggleNoticeBoard = () => {
+    updateNoticeBoard((current) => ({ ...current, enabled: !current.enabled }));
+  };
+
+  const createNoticeBoard = () => {
+    const name = window.prompt(
+      'Nome do novo mural (ex.: Saúde, Concurso, Estudos):',
+    );
+    if (!name || !name.trim()) return;
+    const board = {
+      id: `notice-board-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+      name: name.trim().slice(0, 40),
+      items: [],
+    };
     updateNoticeBoard((current) => ({
       ...current,
-      enabled: !current.enabled,
+      enabled: true,
+      boards: [...current.boards, board],
+      activeBoardId: board.id,
     }));
+    setActiveNoticeBoardId(board.id);
+  };
+
+  const renameNoticeBoard = () => {
+    if (!activeNoticeBoard) return;
+    const name = window.prompt('Novo nome do mural:', activeNoticeBoard.name);
+    if (!name || !name.trim()) return;
+    updateNoticeBoard((current) => ({
+      ...current,
+      boards: current.boards.map((board) =>
+        board.id === activeNoticeBoard.id
+          ? { ...board, name: name.trim().slice(0, 40) }
+          : board,
+      ),
+    }));
+  };
+
+  const deleteNoticeBoard = () => {
+    if (!activeNoticeBoard || noticeBoards.length <= 1) {
+      window.alert(
+        'Mantenha pelo menos um mural. Você pode renomear o mural atual.',
+      );
+      return;
+    }
+    if (
+      !window.confirm(
+        `Excluir o mural "${activeNoticeBoard.name}" e todos os avisos dele?`,
+      )
+    )
+      return;
+    const remaining = noticeBoards.filter(
+      (board) => board.id !== activeNoticeBoard.id,
+    );
+    const nextActiveId = remaining[0].id;
+    updateNoticeBoard((current) => ({
+      ...current,
+      boards: remaining,
+      activeBoardId: nextActiveId,
+    }));
+    setActiveNoticeBoardId(nextActiveId);
   };
 
   const openNewNotice = () => {
@@ -154,7 +228,9 @@ export default function PainelPrincipal({
 
     const now = new Date().toISOString();
     const item = {
-      id: editingNoticeId || `${Date.now()}-${Math.random().toString(36).slice(2)}`,
+      id:
+        editingNoticeId ||
+        `${Date.now()}-${Math.random().toString(36).slice(2)}`,
       title: title || 'Aviso',
       content,
       backgroundColor: noticeForm.backgroundColor || '#fff3a6',
@@ -163,7 +239,8 @@ export default function PainelPrincipal({
       borderEnabled: Boolean(noticeForm.borderEnabled),
       borderMode: noticeForm.borderMode === 'top' ? 'top' : 'all',
       createdAt: editingNoticeId
-        ? noticeItems.find((notice) => notice.id === editingNoticeId)?.createdAt || now
+        ? noticeItems.find((notice) => notice.id === editingNoticeId)
+            ?.createdAt || now
         : now,
       updatedAt: now,
     };
@@ -171,9 +248,20 @@ export default function PainelPrincipal({
     updateNoticeBoard((current) => ({
       ...current,
       enabled: true,
-      items: editingNoticeId
-        ? current.items.map((notice) => notice.id === editingNoticeId ? { ...notice, ...item } : notice)
-        : [item, ...current.items],
+      boards: current.boards.map((board) =>
+        board.id !== activeNoticeBoard?.id
+          ? board
+          : {
+              ...board,
+              items: editingNoticeId
+                ? board.items.map((notice) =>
+                    notice.id === editingNoticeId
+                      ? { ...notice, ...item }
+                      : notice,
+                  )
+                : [item, ...board.items],
+            },
+      ),
     }));
 
     setNoticeModalOpen(false);
@@ -185,7 +273,14 @@ export default function PainelPrincipal({
 
     updateNoticeBoard((current) => ({
       ...current,
-      items: current.items.filter((notice) => notice.id !== id),
+      boards: current.boards.map((board) =>
+        board.id !== activeNoticeBoard?.id
+          ? board
+          : {
+              ...board,
+              items: board.items.filter((notice) => notice.id !== id),
+            },
+      ),
     }));
   };
 
@@ -224,7 +319,9 @@ export default function PainelPrincipal({
    * ============================================================
    */
 
-  const activeTasks = tasks.filter((task) => !task.done && !isTaskCancelled(task, new Date()));
+  const activeTasks = tasks.filter(
+    (task) => !task.done && !isTaskCancelled(task, new Date()),
+  );
 
   const pendingTasksCount =
     pendingTasks.length > 0
@@ -233,9 +330,21 @@ export default function PainelPrincipal({
 
   const completedTasksCount = tasks.filter((task) => task.done).length;
 
-  const activeGoals = goals.filter((goal) => !goal.done && goal.status !== 'completed' && goal.status !== 'concluido' && goal.status !== 'concluida');
+  const activeGoals = goals.filter(
+    (goal) =>
+      !goal.done &&
+      goal.status !== 'completed' &&
+      goal.status !== 'concluido' &&
+      goal.status !== 'concluida',
+  );
 
-  const completedGoals = goals.filter((goal) => goal.done || goal.status === 'completed' || goal.status === 'concluido' || goal.status === 'concluida');
+  const completedGoals = goals.filter(
+    (goal) =>
+      goal.done ||
+      goal.status === 'completed' ||
+      goal.status === 'concluido' ||
+      goal.status === 'concluida',
+  );
 
   const totalInvestmentValue = investments.reduce((total, investment) => {
     const quantity = Number(investment?.quantity || 0);
@@ -244,9 +353,18 @@ export default function PainelPrincipal({
   }, 0);
 
   const goalProgress = goals.length
-    ? Math.round(goals.reduce((sum, goal) => sum + Math.max(0, Math.min(100, Number(goal?.progress ?? goal?.percentage ?? 0))), 0) / goals.length)
+    ? Math.round(
+        goals.reduce(
+          (sum, goal) =>
+            sum +
+            Math.max(
+              0,
+              Math.min(100, Number(goal?.progress ?? goal?.percentage ?? 0)),
+            ),
+          0,
+        ) / goals.length,
+      )
     : 0;
-
 
   /*
    * Tarefas relacionadas especificamente a hoje.
@@ -275,7 +393,9 @@ export default function PainelPrincipal({
      * mostramos as tarefas pendentes.
      */
     if (result.length === 0) {
-      return tasks.filter((task) => !task.done && !isTaskCancelled(task, todayString));
+      return tasks.filter(
+        (task) => !task.done && !isTaskCancelled(task, todayString),
+      );
     }
 
     return result;
@@ -320,8 +440,17 @@ export default function PainelPrincipal({
   const todayEvents = useMemo(() => {
     const dailyTaskEvents = tasks
       .filter((task) => {
-        const frequency = String(task?.frequency || task?.recurrence || '').trim().toLowerCase();
-        const isDaily = ['diária', 'diaria', 'diário', 'diario', 'daily', 'todos os dias'].includes(frequency);
+        const frequency = String(task?.frequency || task?.recurrence || '')
+          .trim()
+          .toLowerCase();
+        const isDaily = [
+          'diária',
+          'diaria',
+          'diário',
+          'diario',
+          'daily',
+          'todos os dias',
+        ].includes(frequency);
         return isDaily && !task.done && !isTaskCancelled(task, todayString);
       })
       .map((task) => ({
@@ -337,12 +466,16 @@ export default function PainelPrincipal({
         isDailyTask: true,
       }));
 
-    const merged = [...calendarEvents.filter((event) => event?.date === todayString), ...dailyTaskEvents];
+    const merged = [
+      ...calendarEvents.filter((event) => event?.date === todayString),
+      ...dailyTaskEvents,
+    ];
     const unique = new Map();
     merged.forEach((event) => {
-      const key = event?.sourceTask && event?.taskId
-        ? `task:${event.taskId}:${event.date}`
-        : `${event?.type || 'event'}:${event?.id}:${event?.date}`;
+      const key =
+        event?.sourceTask && event?.taskId
+          ? `task:${event.taskId}:${event.date}`
+          : `${event?.type || 'event'}:${event?.id}:${event?.date}`;
       if (!unique.has(key)) unique.set(key, event);
     });
 
@@ -353,9 +486,30 @@ export default function PainelPrincipal({
     });
   }, [calendarEvents, tasks, todayString]);
 
-  const todayStudyEvents = useMemo(() => todayEvents.filter((event) => event?.type === 'study'), [todayEvents]);
-  const nextStudyEvents = useMemo(() => calendarEvents.filter((event) => event?.type === 'study' && event?.date >= todayString).sort((a,b) => String(a.date).localeCompare(String(b.date)) || String(a.scheduledTime || '').localeCompare(String(b.scheduledTime || ''))).slice(0, 5), [calendarEvents, todayString]);
-  const studyMinutesToday = todayStudyEvents.reduce((sum, event) => sum + Number(event?.duration || 0), 0);
+  const todayStudyEvents = useMemo(
+    () => todayEvents.filter((event) => event?.type === 'study'),
+    [todayEvents],
+  );
+  const nextStudyEvents = useMemo(
+    () =>
+      calendarEvents
+        .filter(
+          (event) => event?.type === 'study' && event?.date >= todayString,
+        )
+        .sort(
+          (a, b) =>
+            String(a.date).localeCompare(String(b.date)) ||
+            String(a.scheduledTime || '').localeCompare(
+              String(b.scheduledTime || ''),
+            ),
+        )
+        .slice(0, 5),
+    [calendarEvents, todayString],
+  );
+  const studyMinutesToday = todayStudyEvents.reduce(
+    (sum, event) => sum + Number(event?.duration || 0),
+    0,
+  );
 
   /*
    * ============================================================
@@ -595,14 +749,29 @@ export default function PainelPrincipal({
       date.setDate(base.getDate() - offset);
       const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
       const taskCount = tasks.filter((task) => {
-        const completed = task?.completedAt || task?.completedDate || task?.doneAt || '';
+        const completed =
+          task?.completedAt || task?.completedDate || task?.doneAt || '';
         return String(completed).slice(0, 10) === key;
       }).length;
-      const studyMinutes = (Array.isArray(data?.studySessions) ? data.studySessions : []).reduce((sum, session) => {
-        const sessionDate = session?.date || session?.startedAt || session?.createdAt || '';
-        return String(sessionDate).slice(0, 10) === key ? sum + Number(session?.minutes || session?.duration || 0) : sum;
+      const studyMinutes = (
+        Array.isArray(data?.studySessions) ? data.studySessions : []
+      ).reduce((sum, session) => {
+        const sessionDate =
+          session?.date || session?.startedAt || session?.createdAt || '';
+        return String(sessionDate).slice(0, 10) === key
+          ? sum + Number(session?.minutes || session?.duration || 0)
+          : sum;
       }, 0);
-      result.push({ label: dayNames[date.getDay()], date: key, value: Math.max(taskCount * 20, Math.min(100, Math.round(studyMinutes / 3))), taskCount, studyMinutes });
+      result.push({
+        label: dayNames[date.getDay()],
+        date: key,
+        value: Math.max(
+          taskCount * 20,
+          Math.min(100, Math.round(studyMinutes / 3)),
+        ),
+        taskCount,
+        studyMinutes,
+      });
     }
     return result;
   }, [tasks, data?.studySessions]);
@@ -623,7 +792,10 @@ export default function PainelPrincipal({
         <div>
           <span className='section-label'>MURAL</span>
           <strong>📌 Mural de avisos</strong>
-          <span>Crie lembretes e avisos rápidos para aparecerem no seu Painel Principal.</span>
+          <span>
+            Crie lembretes e avisos rápidos para aparecerem no seu Painel
+            Principal.
+          </span>
         </div>
         <div className='dashboard-notice-actions'>
           <button
@@ -635,9 +807,22 @@ export default function PainelPrincipal({
             {noticeBoard.enabled ? '🟢 Mural ativado' : '⚪ Mural desativado'}
           </button>
           {noticeBoard.enabled && (
-            <button type='button' className='dashboard-notice-add' onClick={openNewNotice}>
-              + Novo aviso
-            </button>
+            <>
+              <button
+                type='button'
+                className='dashboard-notice-add'
+                onClick={createNoticeBoard}
+              >
+                + Novo mural
+              </button>
+              <button
+                type='button'
+                className='dashboard-notice-add'
+                onClick={openNewNotice}
+              >
+                + Novo aviso
+              </button>
+            </>
           )}
         </div>
       </section>
@@ -647,19 +832,110 @@ export default function PainelPrincipal({
           <div className='dashboard-notice-header'>
             <div>
               <span className='section-label'>AVISOS</span>
-              <h3>Seu mural</h3>
+              <h3>{activeNoticeBoard?.name || 'Seu mural'}</h3>
+              <div
+                className='dashboard-notice-board-tabs'
+                role='tablist'
+                aria-label='Selecionar mural'
+                style={{
+                  display: 'flex',
+                  flexWrap: 'wrap',
+                  gap: 8,
+                  marginTop: 12,
+                }}
+              >
+                {noticeBoards.map((board) => (
+                  <button
+                    type='button'
+                    key={board.id}
+                    role='tab'
+                    aria-selected={board.id === activeNoticeBoard?.id}
+                    className={
+                      board.id === activeNoticeBoard?.id ? 'active' : ''
+                    }
+                    style={{
+                      border:
+                        '1px solid var(--border-color, rgba(128,128,128,.3))',
+                      borderRadius: 999,
+                      padding: '7px 12px',
+                      background:
+                        board.id === activeNoticeBoard?.id
+                          ? 'var(--primary-soft, rgba(99,102,241,.14))'
+                          : 'transparent',
+                      color: 'inherit',
+                      cursor: 'pointer',
+                    }}
+                    onClick={() => setActiveNoticeBoardId(board.id)}
+                  >
+                    {board.name} <span>{board.items.length}</span>
+                  </button>
+                ))}
+              </div>
+              <div
+                className='dashboard-notice-board-management'
+                style={{
+                  display: 'flex',
+                  gap: 8,
+                  flexWrap: 'wrap',
+                  marginTop: 8,
+                }}
+              >
+                <button
+                  type='button'
+                  onClick={renameNoticeBoard}
+                  style={{
+                    background: 'transparent',
+                    border: 0,
+                    color: 'var(--text-muted, inherit)',
+                    cursor: 'pointer',
+                    padding: '4px 0',
+                  }}
+                >
+                  Renomear mural
+                </button>
+                <button
+                  type='button'
+                  onClick={deleteNoticeBoard}
+                  disabled={noticeBoards.length <= 1}
+                  style={{
+                    background: 'transparent',
+                    border: 0,
+                    color: 'var(--text-muted, inherit)',
+                    cursor:
+                      noticeBoards.length <= 1 ? 'not-allowed' : 'pointer',
+                    padding: '4px 0',
+                    opacity: noticeBoards.length <= 1 ? 0.45 : 1,
+                  }}
+                >
+                  Excluir mural
+                </button>
+              </div>
             </div>
-            <span className='dashboard-notice-count'>{noticeItems.length} {noticeItems.length === 1 ? 'aviso' : 'avisos'}</span>
+            <span className='dashboard-notice-count'>
+              {noticeItems.length}{' '}
+              {noticeItems.length === 1 ? 'aviso' : 'avisos'}
+            </span>
           </div>
 
           {noticeItems.length === 0 ? (
             <div className='dashboard-notice-empty'>
               <span>📌</span>
               <div>
-                <strong>Seu mural está vazio</strong>
-                <p>Adicione um lembrete, uma ideia, uma prioridade ou qualquer aviso que queira manter à vista.</p>
+                <strong>
+                  O mural {activeNoticeBoard?.name || 'Geral'} está vazio
+                </strong>
+                <p>
+                  Adicione um lembrete, uma ideia, uma prioridade ou qualquer
+                  aviso que queira manter à vista.
+                </p>
               </div>
-              <button type='button' className='dashboard-notice-add' onClick={openNewNotice}>+ Criar primeiro aviso</button>
+              <button
+                type='button'
+                className='dashboard-notice-add'
+                onClick={openNewNotice}
+              >
+                + Criar primeiro aviso
+              </button>
             </div>
           ) : (
             <div className='dashboard-notice-grid'>
@@ -671,14 +947,33 @@ export default function PainelPrincipal({
                     '--notice-bg': normalizeNotice(notice).backgroundColor,
                     '--notice-text': normalizeNotice(notice).textColor,
                     '--notice-border': normalizeNotice(notice).borderColor,
-                    '--notice-rotation': `${((String(notice.id || '').split('').reduce((sum, char) => sum + char.charCodeAt(0), 0) % 5) - 2) * 0.45}deg`,
+                    '--notice-rotation': `${
+                      ((String(notice.id || '')
+                        .split('')
+                        .reduce((sum, char) => sum + char.charCodeAt(0), 0) %
+                        5) -
+                        2) *
+                      0.45
+                    }deg`,
                   }}
                 >
                   <div className='dashboard-notice-card-top'>
                     <span className='dashboard-notice-pin'>📌</span>
                     <div className='dashboard-notice-card-actions'>
-                      <button type='button' onClick={() => openEditNotice(notice)} aria-label='Editar aviso'>✎</button>
-                      <button type='button' onClick={() => deleteNotice(notice.id)} aria-label='Excluir aviso'>×</button>
+                      <button
+                        type='button'
+                        onClick={() => openEditNotice(notice)}
+                        aria-label='Editar aviso'
+                      >
+                        ✎
+                      </button>
+                      <button
+                        type='button'
+                        onClick={() => deleteNotice(notice.id)}
+                        aria-label='Excluir aviso'
+                      >
+                        ×
+                      </button>
                     </div>
                   </div>
                   <h4>{notice.title || 'Aviso'}</h4>
@@ -698,14 +993,25 @@ export default function PainelPrincipal({
                 <span className='section-label'>MURAL DE AVISOS</span>
                 <h3>{editingNoticeId ? 'Editar aviso' : 'Novo aviso'}</h3>
               </div>
-              <button type='button' onClick={() => setNoticeModalOpen(false)} aria-label='Fechar'>×</button>
+              <button
+                type='button'
+                onClick={() => setNoticeModalOpen(false)}
+                aria-label='Fechar'
+              >
+                ×
+              </button>
             </div>
 
             <label>
               Título
               <input
                 value={noticeForm.title}
-                onChange={(event) => setNoticeForm((current) => ({ ...current, title: event.target.value }))}
+                onChange={(event) =>
+                  setNoticeForm((current) => ({
+                    ...current,
+                    title: event.target.value,
+                  }))
+                }
                 placeholder='Ex.: Prova na sexta'
                 maxLength={80}
               />
@@ -715,7 +1021,12 @@ export default function PainelPrincipal({
               Aviso
               <textarea
                 value={noticeForm.content}
-                onChange={(event) => setNoticeForm((current) => ({ ...current, content: event.target.value }))}
+                onChange={(event) =>
+                  setNoticeForm((current) => ({
+                    ...current,
+                    content: event.target.value,
+                  }))
+                }
                 placeholder='Escreva o que precisa ficar visível...'
                 rows={5}
                 maxLength={500}
@@ -724,13 +1035,20 @@ export default function PainelPrincipal({
 
             <div className='dashboard-notice-customization'>
               <div className='dashboard-notice-color-field'>
-                <label htmlFor='notice-background-color'>Cor interna / fundo</label>
+                <label htmlFor='notice-background-color'>
+                  Cor interna / fundo
+                </label>
                 <div className='dashboard-notice-color-input'>
                   <input
                     id='notice-background-color'
                     type='color'
                     value={noticeForm.backgroundColor}
-                    onChange={(event) => setNoticeForm((current) => ({ ...current, backgroundColor: event.target.value }))}
+                    onChange={(event) =>
+                      setNoticeForm((current) => ({
+                        ...current,
+                        backgroundColor: event.target.value,
+                      }))
+                    }
                   />
                   <code>{noticeForm.backgroundColor}</code>
                 </div>
@@ -743,7 +1061,12 @@ export default function PainelPrincipal({
                     id='notice-text-color'
                     type='color'
                     value={noticeForm.textColor}
-                    onChange={(event) => setNoticeForm((current) => ({ ...current, textColor: event.target.value }))}
+                    onChange={(event) =>
+                      setNoticeForm((current) => ({
+                        ...current,
+                        textColor: event.target.value,
+                      }))
+                    }
                   />
                   <code>{noticeForm.textColor}</code>
                 </div>
@@ -756,7 +1079,12 @@ export default function PainelPrincipal({
                     id='notice-border-color'
                     type='color'
                     value={noticeForm.borderColor}
-                    onChange={(event) => setNoticeForm((current) => ({ ...current, borderColor: event.target.value }))}
+                    onChange={(event) =>
+                      setNoticeForm((current) => ({
+                        ...current,
+                        borderColor: event.target.value,
+                      }))
+                    }
                   />
                   <code>{noticeForm.borderColor}</code>
                 </div>
@@ -768,13 +1096,27 @@ export default function PainelPrincipal({
                   <button
                     type='button'
                     className={noticeForm.borderEnabled ? 'active' : ''}
-                    onClick={() => setNoticeForm((current) => ({ ...current, borderEnabled: true }))}
-                  >Com borda</button>
+                    onClick={() =>
+                      setNoticeForm((current) => ({
+                        ...current,
+                        borderEnabled: true,
+                      }))
+                    }
+                  >
+                    Com borda
+                  </button>
                   <button
                     type='button'
                     className={!noticeForm.borderEnabled ? 'active' : ''}
-                    onClick={() => setNoticeForm((current) => ({ ...current, borderEnabled: false }))}
-                  >Sem borda</button>
+                    onClick={() =>
+                      setNoticeForm((current) => ({
+                        ...current,
+                        borderEnabled: false,
+                      }))
+                    }
+                  >
+                    Sem borda
+                  </button>
                 </div>
               </div>
 
@@ -785,14 +1127,28 @@ export default function PainelPrincipal({
                     type='button'
                     disabled={!noticeForm.borderEnabled}
                     className={noticeForm.borderMode === 'top' ? 'active' : ''}
-                    onClick={() => setNoticeForm((current) => ({ ...current, borderMode: 'top' }))}
-                  >Só superior</button>
+                    onClick={() =>
+                      setNoticeForm((current) => ({
+                        ...current,
+                        borderMode: 'top',
+                      }))
+                    }
+                  >
+                    Só superior
+                  </button>
                   <button
                     type='button'
                     disabled={!noticeForm.borderEnabled}
                     className={noticeForm.borderMode === 'all' ? 'active' : ''}
-                    onClick={() => setNoticeForm((current) => ({ ...current, borderMode: 'all' }))}
-                  >Todo o contorno</button>
+                    onClick={() =>
+                      setNoticeForm((current) => ({
+                        ...current,
+                        borderMode: 'all',
+                      }))
+                    }
+                  >
+                    Todo o contorno
+                  </button>
                 </div>
               </div>
             </div>
@@ -808,13 +1164,23 @@ export default function PainelPrincipal({
               <span>📌</span>
               <div>
                 <strong>{noticeForm.title || 'Prévia do post-it'}</strong>
-                <p>{noticeForm.content || 'Assim seu aviso ficará no mural.'}</p>
+                <p>
+                  {noticeForm.content || 'Assim seu aviso ficará no mural.'}
+                </p>
               </div>
             </div>
 
             <div className='dashboard-notice-modal-footer'>
-              <button type='button' className='ghost' onClick={() => setNoticeModalOpen(false)}>Cancelar</button>
-              <button type='submit' className='primary'>Salvar aviso</button>
+              <button
+                type='button'
+                className='ghost'
+                onClick={() => setNoticeModalOpen(false)}
+              >
+                Cancelar
+              </button>
+              <button type='submit' className='primary'>
+                Salvar aviso
+              </button>
             </div>
           </form>
         </div>
@@ -838,7 +1204,9 @@ export default function PainelPrincipal({
 
           <div className='dashboard-daily-xp'>
             <span>XP do dia</span>
-            <strong>{dailyXpDone} / {dailyXpMax} XP</strong>
+            <strong>
+              {dailyXpDone} / {dailyXpMax} XP
+            </strong>
           </div>
         </div>
       </section>
@@ -854,8 +1222,14 @@ export default function PainelPrincipal({
           </div>
           <div className='dashboard-chart'>
             {weekData.map((day) => (
-              <div className='dashboard-chart-day' key={day.date} title={`${day.taskCount} tarefas · ${day.studyMinutes} min de estudo`}>
-                <div className='dashboard-chart-track'><span style={{ height: `${Math.max(8, day.value)}%` }} /></div>
+              <div
+                className='dashboard-chart-day'
+                key={day.date}
+                title={`${day.taskCount} tarefas · ${day.studyMinutes} min de estudo`}
+              >
+                <div className='dashboard-chart-track'>
+                  <span style={{ height: `${Math.max(8, day.value)}%` }} />
+                </div>
                 <strong>{day.value}</strong>
                 <small>{day.label}</small>
               </div>
@@ -878,12 +1252,28 @@ export default function PainelPrincipal({
           </div>
           <div className='dashboard-agenda-preview-list'>
             {todayEvents.slice(0, 5).map((event) => (
-              <div className='dashboard-agenda-preview-item' key={`${event.id}-${event.date}`}>
-                <span className={`agenda-dot agenda-${event.type || 'event'}`} />
-                <div><strong>{event.name || event.title || 'Evento'}</strong><small>{event.scheduledTime || 'Hoje'}{event.duration ? ` · ${event.duration} min` : ''}{event.isDailyTask ? ' · diária' : ''}</small></div>
+              <div
+                className='dashboard-agenda-preview-item'
+                key={`${event.id}-${event.date}`}
+              >
+                <span
+                  className={`agenda-dot agenda-${event.type || 'event'}`}
+                />
+                <div>
+                  <strong>{event.name || event.title || 'Evento'}</strong>
+                  <small>
+                    {event.scheduledTime || 'Hoje'}
+                    {event.duration ? ` · ${event.duration} min` : ''}
+                    {event.isDailyTask ? ' · diária' : ''}
+                  </small>
+                </div>
               </div>
             ))}
-            {todayEvents.length === 0 && <div className='dashboard-agenda-empty'>Agenda livre por enquanto.</div>}
+            {todayEvents.length === 0 && (
+              <div className='dashboard-agenda-empty'>
+                Agenda livre por enquanto.
+              </div>
+            )}
           </div>
         </div>
       </section>
@@ -891,18 +1281,65 @@ export default function PainelPrincipal({
       <section className='dashboard-highlight-grid'>
         <div className='card dashboard-highlight-card'>
           <div className='highlight-icon'>🎯</div>
-          <div className='highlight-main'><span>Próxima meta</span><strong>{activeGoals[0]?.title || activeGoals[0]?.name || 'Defina um objetivo'}</strong><small>{activeGoals[0] ? `${Math.max(0, Math.min(100, Number(activeGoals[0].progress ?? activeGoals[0].percentage ?? 0)))}% concluído` : 'Transforme uma intenção em meta.'}</small></div>
-          <div className='highlight-progress'><span style={{ width: `${activeGoals[0] ? Math.max(0, Math.min(100, Number(activeGoals[0].progress ?? activeGoals[0].percentage ?? 0))) : 0}%` }} /></div>
+          <div className='highlight-main'>
+            <span>Próxima meta</span>
+            <strong>
+              {activeGoals[0]?.title ||
+                activeGoals[0]?.name ||
+                'Defina um objetivo'}
+            </strong>
+            <small>
+              {activeGoals[0]
+                ? `${Math.max(0, Math.min(100, Number(activeGoals[0].progress ?? activeGoals[0].percentage ?? 0)))}% concluído`
+                : 'Transforme uma intenção em meta.'}
+            </small>
+          </div>
+          <div className='highlight-progress'>
+            <span
+              style={{
+                width: `${activeGoals[0] ? Math.max(0, Math.min(100, Number(activeGoals[0].progress ?? activeGoals[0].percentage ?? 0))) : 0}%`,
+              }}
+            />
+          </div>
         </div>
         <div className='card dashboard-highlight-card'>
           <div className='highlight-icon'>🔥</div>
-          <div className='highlight-main'><span>Hábitos de hoje</span><strong>{habitsDoneCount}/{totalHabits} concluídos</strong><small>{totalHabits ? 'Mantenha a sequência' : 'Cadastre seus hábitos principais'}</small></div>
-          <div className='highlight-progress'><span style={{ width: `${totalHabits ? Math.round((habitsDoneCount / totalHabits) * 100) : 0}%` }} /></div>
+          <div className='highlight-main'>
+            <span>Hábitos de hoje</span>
+            <strong>
+              {habitsDoneCount}/{totalHabits} concluídos
+            </strong>
+            <small>
+              {totalHabits
+                ? 'Mantenha a sequência'
+                : 'Cadastre seus hábitos principais'}
+            </small>
+          </div>
+          <div className='highlight-progress'>
+            <span
+              style={{
+                width: `${totalHabits ? Math.round((habitsDoneCount / totalHabits) * 100) : 0}%`,
+              }}
+            />
+          </div>
         </div>
         <div className='card dashboard-highlight-card dashboard-gami-highlight'>
           <div className='highlight-icon'>🏆</div>
-          <div className='highlight-main'><span>Gamificação</span><strong>Nível {level}</strong><small>{Number(data?.xp || 0).toLocaleString('pt-BR')} XP · {Number(data?.coins || 0).toLocaleString('pt-BR')} moedas</small></div>
-          <div className='highlight-progress'><span style={{ width: `${Math.max(0, Math.min(100, Number(progress) || 0))}%` }} /></div>
+          <div className='highlight-main'>
+            <span>Gamificação</span>
+            <strong>Nível {level}</strong>
+            <small>
+              {Number(data?.xp || 0).toLocaleString('pt-BR')} XP ·{' '}
+              {Number(data?.coins || 0).toLocaleString('pt-BR')} moedas
+            </small>
+          </div>
+          <div className='highlight-progress'>
+            <span
+              style={{
+                width: `${Math.max(0, Math.min(100, Number(progress) || 0))}%`,
+              }}
+            />
+          </div>
         </div>
       </section>
 
@@ -913,52 +1350,52 @@ export default function PainelPrincipal({
       <section className='dashboard-stats'>
         {/* TAREFAS */}
         {showTasks && (
-        <button
-          type='button'
-          className={`card dashboard-stat dashboard-stat-button ${
-            expandedSections.tasks ? 'dashboard-stat-active' : ''
-          }`}
-          onClick={() => toggleSection('tasks')}
-          aria-expanded={expandedSections.tasks}
-        >
-          <span className='dashboard-stat-icon'>📋</span>
+          <button
+            type='button'
+            className={`card dashboard-stat dashboard-stat-button ${
+              expandedSections.tasks ? 'dashboard-stat-active' : ''
+            }`}
+            onClick={() => toggleSection('tasks')}
+            aria-expanded={expandedSections.tasks}
+          >
+            <span className='dashboard-stat-icon'>📋</span>
 
-          <div>
-            <strong>{pendingTasksCount}</strong>
+            <div>
+              <strong>{pendingTasksCount}</strong>
 
-            <span>tarefas pendentes</span>
-          </div>
+              <span>tarefas pendentes</span>
+            </div>
 
-          <span className='dashboard-stat-chevron'>
-            {expandedSections.tasks ? '⌃' : '⌄'}
-          </span>
-        </button>
+            <span className='dashboard-stat-chevron'>
+              {expandedSections.tasks ? '⌃' : '⌄'}
+            </span>
+          </button>
         )}
 
         {/* HÁBITOS */}
         {showHabits && (
-        <button
-          type='button'
-          className={`card dashboard-stat dashboard-stat-button ${
-            expandedSections.habits ? 'dashboard-stat-active' : ''
-          }`}
-          onClick={() => toggleSection('habits')}
-          aria-expanded={expandedSections.habits}
-        >
-          <span className='dashboard-stat-icon'>🔥</span>
+          <button
+            type='button'
+            className={`card dashboard-stat dashboard-stat-button ${
+              expandedSections.habits ? 'dashboard-stat-active' : ''
+            }`}
+            onClick={() => toggleSection('habits')}
+            aria-expanded={expandedSections.habits}
+          >
+            <span className='dashboard-stat-icon'>🔥</span>
 
-          <div>
-            <strong>
-              {habitsDoneCount}/{totalHabits}
-            </strong>
+            <div>
+              <strong>
+                {habitsDoneCount}/{totalHabits}
+              </strong>
 
-            <span>hábitos hoje</span>
-          </div>
+              <span>hábitos hoje</span>
+            </div>
 
-          <span className='dashboard-stat-chevron'>
-            {expandedSections.habits ? '⌃' : '⌄'}
-          </span>
-        </button>
+            <span className='dashboard-stat-chevron'>
+              {expandedSections.habits ? '⌃' : '⌄'}
+            </span>
+          </button>
         )}
 
         {/* OBJETIVOS */}
@@ -976,7 +1413,9 @@ export default function PainelPrincipal({
               <strong>{activeGoals.length}</strong>
               <span>objetivos ativos</span>
             </div>
-            <span className='dashboard-stat-chevron'>{expandedSections.goals ? '⌃' : '⌄'}</span>
+            <span className='dashboard-stat-chevron'>
+              {expandedSections.goals ? '⌃' : '⌄'}
+            </span>
           </button>
         )}
 
@@ -995,7 +1434,9 @@ export default function PainelPrincipal({
               <strong>{investments.length}</strong>
               <span>investimentos</span>
             </div>
-            <span className='dashboard-stat-chevron'>{expandedSections.investments ? '⌃' : '⌄'}</span>
+            <span className='dashboard-stat-chevron'>
+              {expandedSections.investments ? '⌃' : '⌄'}
+            </span>
           </button>
         )}
 
@@ -1025,42 +1466,42 @@ export default function PainelPrincipal({
 
         {/* FINANCEIRO */}
         {showFinance && (
-        <button
-          type='button'
-          className={`card dashboard-stat dashboard-finance-stat dashboard-stat-button ${
-            expandedSections.finance ? 'dashboard-stat-active' : ''
-          }`}
-          onClick={() => toggleSection('finance')}
-          aria-expanded={expandedSections.finance}
-        >
-          <span className='dashboard-stat-icon'>💰</span>
+          <button
+            type='button'
+            className={`card dashboard-stat dashboard-finance-stat dashboard-stat-button ${
+              expandedSections.finance ? 'dashboard-stat-active' : ''
+            }`}
+            onClick={() => toggleSection('finance')}
+            aria-expanded={expandedSections.finance}
+          >
+            <span className='dashboard-stat-icon'>💰</span>
 
-          <div className='dashboard-finance-stat-content'>
-            <strong>{getFinanceMainText()}</strong>
+            <div className='dashboard-finance-stat-content'>
+              <strong>{getFinanceMainText()}</strong>
 
-            <span className='dashboard-finance-values'>
-              {todayIncomeTotal > 0 && (
-                <span className='dashboard-finance-income'>
-                  ↑ {formatCurrency(todayIncomeTotal)} a receber
-                </span>
-              )}
+              <span className='dashboard-finance-values'>
+                {todayIncomeTotal > 0 && (
+                  <span className='dashboard-finance-income'>
+                    ↑ {formatCurrency(todayIncomeTotal)} a receber
+                  </span>
+                )}
 
-              {todayExpenseTotal > 0 && (
-                <span className='dashboard-finance-expense'>
-                  ↓ {formatCurrency(todayExpenseTotal)} a pagar
-                </span>
-              )}
+                {todayExpenseTotal > 0 && (
+                  <span className='dashboard-finance-expense'>
+                    ↓ {formatCurrency(todayExpenseTotal)} a pagar
+                  </span>
+                )}
 
-              {todayFinanceCount === 0 && (
-                <span>Nenhum pagamento ou recebimento previsto</span>
-              )}
+                {todayFinanceCount === 0 && (
+                  <span>Nenhum pagamento ou recebimento previsto</span>
+                )}
+              </span>
+            </div>
+
+            <span className='dashboard-stat-chevron'>
+              {expandedSections.finance ? '⌃' : '⌄'}
             </span>
-          </div>
-
-          <span className='dashboard-stat-chevron'>
-            {expandedSections.finance ? '⌃' : '⌄'}
-          </span>
-        </button>
+          </button>
         )}
       </section>
 
@@ -1375,22 +1816,48 @@ export default function PainelPrincipal({
               <h3>Seus objetivos</h3>
               <p>Resumo dos objetivos que continuam ativos.</p>
             </div>
-            <button type='button' className='dashboard-collapse-button' onClick={() => toggleSection('goals')}>Ocultar</button>
+            <button
+              type='button'
+              className='dashboard-collapse-button'
+              onClick={() => toggleSection('goals')}
+            >
+              Ocultar
+            </button>
           </div>
           <div className='dashboard-inline-list'>
             {goals.length === 0 ? (
-              <div className='dashboard-empty-state'><span>🎯</span><div><strong>Nenhum objetivo cadastrado</strong><p>Crie um objetivo para acompanhar seu progresso aqui.</p></div></div>
+              <div className='dashboard-empty-state'>
+                <span>🎯</span>
+                <div>
+                  <strong>Nenhum objetivo cadastrado</strong>
+                  <p>Crie um objetivo para acompanhar seu progresso aqui.</p>
+                </div>
+              </div>
             ) : (
               goals.slice(0, 8).map((goal) => {
-                const value = Math.max(0, Math.min(100, Number(goal?.progress ?? goal?.percentage ?? 0)));
-                const done = Boolean(goal?.done) || ['completed','concluido','concluida'].includes(String(goal?.status || '').toLowerCase());
+                const value = Math.max(
+                  0,
+                  Math.min(
+                    100,
+                    Number(goal?.progress ?? goal?.percentage ?? 0),
+                  ),
+                );
+                const done =
+                  Boolean(goal?.done) ||
+                  ['completed', 'concluido', 'concluida'].includes(
+                    String(goal?.status || '').toLowerCase(),
+                  );
                 return (
                   <div key={goal.id} className='dashboard-list-item'>
                     <div className='dashboard-stat-icon'>🎯</div>
                     <div className='dashboard-list-main'>
-                      <strong>{goal.title || goal.name || 'Objetivo sem nome'}</strong>
+                      <strong>
+                        {goal.title || goal.name || 'Objetivo sem nome'}
+                      </strong>
                       <span>{done ? 'Concluído' : `${value}% concluído`}</span>
-                      <div className='dashboard-reference-progress'><span style={{ width: `${done ? 100 : value}%` }} /></div>
+                      <div className='dashboard-reference-progress'>
+                        <span style={{ width: `${done ? 100 : value}%` }} />
+                      </div>
                     </div>
                   </div>
                 );
@@ -1412,25 +1879,54 @@ export default function PainelPrincipal({
               <h3>Carteira</h3>
               <p>Resumo dos investimentos registrados.</p>
             </div>
-            <button type='button' className='dashboard-collapse-button' onClick={() => toggleSection('investments')}>Ocultar</button>
+            <button
+              type='button'
+              className='dashboard-collapse-button'
+              onClick={() => toggleSection('investments')}
+            >
+              Ocultar
+            </button>
           </div>
           <div className='dashboard-reference-investment-summary'>
-            <div><span>Ativos</span><strong>{investments.length}</strong></div>
-            <div><span>Valor atual</span><strong>{formatCurrency(totalInvestmentValue)}</strong></div>
+            <div>
+              <span>Ativos</span>
+              <strong>{investments.length}</strong>
+            </div>
+            <div>
+              <span>Valor atual</span>
+              <strong>{formatCurrency(totalInvestmentValue)}</strong>
+            </div>
           </div>
           <div className='dashboard-inline-list'>
             {investments.length === 0 ? (
-              <div className='dashboard-empty-state'><span>📈</span><div><strong>Nenhum investimento cadastrado</strong><p>Adicione ativos na área de investimentos.</p></div></div>
-            ) : investments.slice(0, 8).map((investment) => (
-              <div key={investment.id} className='dashboard-list-item'>
-                <div className='dashboard-stat-icon'>📈</div>
-                <div className='dashboard-list-main'>
-                  <strong>{investment.ticker || investment.name || 'Investimento'}</strong>
-                  <span>{investment.type || 'Ativo'}</span>
+              <div className='dashboard-empty-state'>
+                <span>📈</span>
+                <div>
+                  <strong>Nenhum investimento cadastrado</strong>
+                  <p>Adicione ativos na área de investimentos.</p>
                 </div>
-                <strong>{formatCurrency(Number(investment.quantity || 0) * Number(investment.currentPrice || investment.buyPrice || 0))}</strong>
               </div>
-            ))}
+            ) : (
+              investments.slice(0, 8).map((investment) => (
+                <div key={investment.id} className='dashboard-list-item'>
+                  <div className='dashboard-stat-icon'>📈</div>
+                  <div className='dashboard-list-main'>
+                    <strong>
+                      {investment.ticker || investment.name || 'Investimento'}
+                    </strong>
+                    <span>{investment.type || 'Ativo'}</span>
+                  </div>
+                  <strong>
+                    {formatCurrency(
+                      Number(investment.quantity || 0) *
+                        Number(
+                          investment.currentPrice || investment.buyPrice || 0,
+                        ),
+                    )}
+                  </strong>
+                </div>
+              ))
+            )}
           </div>
         </section>
       )}
@@ -1441,25 +1937,57 @@ export default function PainelPrincipal({
             <div>
               <span className='section-label'>ESTUDOS</span>
               <h3>📚 Estudos de hoje</h3>
-              <p>{studyMinutesToday > 0 ? `${studyMinutesToday} min planejados para hoje.` : 'Seu planejamento de estudos aparecerá aqui.'}</p>
+              <p>
+                {studyMinutesToday > 0
+                  ? `${studyMinutesToday} min planejados para hoje.`
+                  : 'Seu planejamento de estudos aparecerá aqui.'}
+              </p>
             </div>
-            <div className='dashboard-study-badge'>{todayStudyEvents.length} sessão(ões)</div>
+            <div className='dashboard-study-badge'>
+              {todayStudyEvents.length} sessão(ões)
+            </div>
           </div>
           {todayStudyEvents.length > 0 ? (
             <div className='dashboard-inline-list'>
               {todayStudyEvents.map((event) => (
                 <div key={event.id} className='dashboard-list-item'>
-                  <div className='dashboard-event-time'>{event.scheduledTime || '—'}</div>
-                  <div className='dashboard-list-main'><strong>{event.name}</strong><span>{event.duration || 0} min{event.description ? ` · ${event.description}` : ''}</span></div>
+                  <div className='dashboard-event-time'>
+                    {event.scheduledTime || '—'}
+                  </div>
+                  <div className='dashboard-list-main'>
+                    <strong>{event.name}</strong>
+                    <span>
+                      {event.duration || 0} min
+                      {event.description ? ` · ${event.description}` : ''}
+                    </span>
+                  </div>
                 </div>
               ))}
             </div>
           ) : nextStudyEvents.length > 0 ? (
             <div className='dashboard-inline-list'>
-              <div className='dashboard-study-next'><strong>Próximo estudo</strong><span>{nextStudyEvents[0].name} · {formatDate(nextStudyEvents[0].date)} {nextStudyEvents[0].scheduledTime ? `às ${nextStudyEvents[0].scheduledTime}` : ''}</span></div>
+              <div className='dashboard-study-next'>
+                <strong>Próximo estudo</strong>
+                <span>
+                  {nextStudyEvents[0].name} ·{' '}
+                  {formatDate(nextStudyEvents[0].date)}{' '}
+                  {nextStudyEvents[0].scheduledTime
+                    ? `às ${nextStudyEvents[0].scheduledTime}`
+                    : ''}
+                </span>
+              </div>
             </div>
           ) : (
-            <div className='dashboard-empty-state'><span>🗓️</span><div><strong>Planejamento ainda não gerado</strong><p>Abra Estudos → Planejamento para organizar sua rotina e enviar as sessões para a agenda.</p></div></div>
+            <div className='dashboard-empty-state'>
+              <span>🗓️</span>
+              <div>
+                <strong>Planejamento ainda não gerado</strong>
+                <p>
+                  Abra Estudos → Planejamento para organizar sua rotina e enviar
+                  as sessões para a agenda.
+                </p>
+              </div>
+            </div>
           )}
         </section>
       )}
@@ -1469,65 +1997,65 @@ export default function PainelPrincipal({
       ====================================================== */}
 
       {showCalendar && (
-      <section className='card dashboard-day-card'>
-        <div className='dashboard-inline-header'>
-          <div>
-            <span className='section-label'>VISÃO DO DIA</span>
+        <section className='card dashboard-day-card'>
+          <div className='dashboard-inline-header'>
+            <div>
+              <span className='section-label'>VISÃO DO DIA</span>
 
-            <h3>Agenda de hoje</h3>
+              <h3>Agenda de hoje</h3>
 
-            <p>Compromissos e eventos programados para hoje.</p>
+              <p>Compromissos e eventos programados para hoje.</p>
+            </div>
+
+            <button
+              type='button'
+              className='dashboard-collapse-button'
+              onClick={() => toggleSection('agenda')}
+            >
+              {expandedSections.agenda ? 'Ocultar' : 'Mostrar'}
+            </button>
           </div>
 
-          <button
-            type='button'
-            className='dashboard-collapse-button'
-            onClick={() => toggleSection('agenda')}
-          >
-            {expandedSections.agenda ? 'Ocultar' : 'Mostrar'}
-          </button>
-        </div>
+          {expandedSections.agenda && (
+            <div className='dashboard-inline-list'>
+              {todayEvents.length === 0 ? (
+                <div className='dashboard-empty-state'>
+                  <span>📅</span>
 
-        {expandedSections.agenda && (
-          <div className='dashboard-inline-list'>
-            {todayEvents.length === 0 ? (
-              <div className='dashboard-empty-state'>
-                <span>📅</span>
+                  <div>
+                    <strong>Nenhum compromisso hoje</strong>
 
-                <div>
-                  <strong>Nenhum compromisso hoje</strong>
-
-                  <p>Sua agenda está livre neste momento.</p>
-                </div>
-              </div>
-            ) : (
-              todayEvents.map((event) => (
-                <div
-                  key={
-                    event.id ||
-                    `${event.date}-${event.name}-${event.scheduledTime}`
-                  }
-                  className='dashboard-list-item'
-                >
-                  <div className='dashboard-event-time'>
-                    {event.scheduledTime || '—'}
+                    <p>Sua agenda está livre neste momento.</p>
                   </div>
+                </div>
+              ) : (
+                todayEvents.map((event) => (
+                  <div
+                    key={
+                      event.id ||
+                      `${event.date}-${event.name}-${event.scheduledTime}`
+                    }
+                    className='dashboard-list-item'
+                  >
+                    <div className='dashboard-event-time'>
+                      {event.scheduledTime || '—'}
+                    </div>
 
-                  <div className='dashboard-list-main'>
-                    <strong>{event.name || event.title || 'Evento'}</strong>
+                    <div className='dashboard-list-main'>
+                      <strong>{event.name || event.title || 'Evento'}</strong>
 
-                    {event.description && <span>{event.description}</span>}
+                      {event.description && <span>{event.description}</span>}
 
-                    <div className='dashboard-list-meta'>
-                      {event.type && <span>{event.type}</span>}
+                      <div className='dashboard-list-meta'>
+                        {event.type && <span>{event.type}</span>}
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))
-            )}
-          </div>
-        )}
-      </section>
+                ))
+              )}
+            </div>
+          )}
+        </section>
       )}
 
       {/* ======================================================
