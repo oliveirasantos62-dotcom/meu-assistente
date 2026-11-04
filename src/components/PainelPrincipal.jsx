@@ -1199,105 +1199,6 @@ export default function PainelPrincipal({
               />
             </label>
 
-            <div
-              className='dashboard-notice-checklist-editor'
-              style={{ display: 'grid', gap: 8, margin: '12px 0' }}
-            >
-              <div
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  gap: 8,
-                }}
-              >
-                <strong>
-                  Checklist{' '}
-                  <span style={{ fontWeight: 400, opacity: 0.65 }}>
-                    (opcional)
-                  </span>
-                </strong>
-                <button
-                  type='button'
-                  className='ghost'
-                  onClick={() =>
-                    setNoticeForm((current) => ({
-                      ...current,
-                      checklist: [
-                        ...(current.checklist || []),
-                        {
-                          id: `check-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
-                          text: '',
-                          done: false,
-                        },
-                      ],
-                    }))
-                  }
-                >
-                  + Adicionar item
-                </button>
-              </div>
-              {(noticeForm.checklist || []).map((item, index) => (
-                <div
-                  key={item.id}
-                  style={{ display: 'flex', alignItems: 'center', gap: 8 }}
-                >
-                  <input
-                    type='checkbox'
-                    checked={Boolean(item.done)}
-                    aria-label={`Concluir item ${index + 1}`}
-                    onChange={(event) =>
-                      setNoticeForm((current) => ({
-                        ...current,
-                        checklist: current.checklist.map((entry) =>
-                          entry.id === item.id
-                            ? { ...entry, done: event.target.checked }
-                            : entry,
-                        ),
-                      }))
-                    }
-                  />
-                  <input
-                    value={item.text}
-                    onChange={(event) =>
-                      setNoticeForm((current) => ({
-                        ...current,
-                        checklist: current.checklist.map((entry) =>
-                          entry.id === item.id
-                            ? { ...entry, text: event.target.value }
-                            : entry,
-                        ),
-                      }))
-                    }
-                    placeholder={`Item ${index + 1}`}
-                    maxLength={160}
-                    style={{ flex: 1, minWidth: 0 }}
-                  />
-                  <button
-                    type='button'
-                    className='ghost'
-                    aria-label={`Remover item ${index + 1}`}
-                    onClick={() =>
-                      setNoticeForm((current) => ({
-                        ...current,
-                        checklist: current.checklist.filter(
-                          (entry) => entry.id !== item.id,
-                        ),
-                      }))
-                    }
-                  >
-                    ×
-                  </button>
-                </div>
-              ))}
-              {(!noticeForm.checklist || noticeForm.checklist.length === 0) && (
-                <p style={{ margin: 0, opacity: 0.65, fontSize: '.85rem' }}>
-                  Adicione itens se quiser acompanhar tarefas dentro deste
-                  aviso. O aviso também pode ser apenas texto.
-                </p>
-              )}
-            </div>
-
             <div className='dashboard-notice-customization'>
               <div className='dashboard-notice-color-field'>
                 <label htmlFor='notice-board-background-color'>
@@ -1420,6 +1321,104 @@ export default function PainelPrincipal({
               />
             </label>
 
+            <div
+              className='dashboard-notice-checklist-editor'
+              style={{ display: 'grid', gap: 8, margin: '12px 0' }}
+            >
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  gap: 8,
+                }}
+              >
+                <strong>
+                  Checklist{' '}
+                  <span style={{ fontWeight: 400, opacity: 0.65 }}>
+                    (opcional)
+                  </span>
+                </strong>
+                <button
+                  type='button'
+                  className='ghost'
+                  onClick={() =>
+                    setNoticeForm((current) => ({
+                      ...current,
+                      checklist: [
+                        ...(current.checklist || []),
+                        {
+                          id: `check-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+                          text: '',
+                          done: false,
+                        },
+                      ],
+                    }))
+                  }
+                >
+                  + Adicionar item
+                </button>
+              </div>
+              {(noticeForm.checklist || []).map((item, index) => (
+                <div
+                  key={item.id}
+                  style={{ display: 'flex', alignItems: 'center', gap: 8 }}
+                >
+                  <input
+                    type='checkbox'
+                    checked={Boolean(item.done)}
+                    aria-label={`Concluir item ${index + 1}`}
+                    onChange={(event) =>
+                      setNoticeForm((current) => ({
+                        ...current,
+                        checklist: current.checklist.map((entry) =>
+                          entry.id === item.id
+                            ? { ...entry, done: event.target.checked }
+                            : entry,
+                        ),
+                      }))
+                    }
+                  />
+                  <input
+                    value={item.text}
+                    onChange={(event) =>
+                      setNoticeForm((current) => ({
+                        ...current,
+                        checklist: current.checklist.map((entry) =>
+                          entry.id === item.id
+                            ? { ...entry, text: event.target.value }
+                            : entry,
+                        ),
+                      }))
+                    }
+                    placeholder={`Item ${index + 1}`}
+                    maxLength={160}
+                    style={{ flex: 1, minWidth: 0 }}
+                  />
+                  <button
+                    type='button'
+                    className='ghost'
+                    aria-label={`Remover item ${index + 1}`}
+                    onClick={() =>
+                      setNoticeForm((current) => ({
+                        ...current,
+                        checklist: current.checklist.filter(
+                          (entry) => entry.id !== item.id,
+                        ),
+                      }))
+                    }
+                  >
+                    ×
+                  </button>
+                </div>
+              ))}
+              {(!noticeForm.checklist || noticeForm.checklist.length === 0) && (
+                <p style={{ margin: 0, opacity: 0.65, fontSize: '.85rem' }}>
+                  Adicione itens se quiser acompanhar tarefas dentro deste
+                  aviso. O aviso também pode ser apenas texto.
+                </p>
+              )}
+            </div>
             <div className='dashboard-notice-customization'>
               <div className='dashboard-notice-color-field'>
                 <label htmlFor='notice-background-color'>
@@ -1552,8 +1551,50 @@ export default function PainelPrincipal({
               <div>
                 <strong>{noticeForm.title || 'Prévia do post-it'}</strong>
                 <p>
-                  {noticeForm.content || 'Assim seu aviso ficará no mural.'}
+                  {noticeForm.content ||
+                    (noticeForm.checklist?.length
+                      ? 'Checklist do aviso:'
+                      : 'Assim seu aviso ficará no mural.')}
                 </p>
+                {Array.isArray(noticeForm.checklist) &&
+                  noticeForm.checklist.length > 0 && (
+                    <ul
+                      style={{
+                        listStyle: 'none',
+                        padding: 0,
+                        margin: '8px 0 0',
+                        display: 'grid',
+                        gap: 5,
+                      }}
+                    >
+                      {noticeForm.checklist
+                        .filter((item) => String(item.text || '').trim())
+                        .map((item) => (
+                          <li
+                            key={item.id}
+                            style={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: 7,
+                              fontSize: '.9em',
+                            }}
+                          >
+                            <span aria-hidden='true'>
+                              {item.done ? '☑' : '☐'}
+                            </span>
+                            <span
+                              style={{
+                                textDecoration: item.done
+                                  ? 'line-through'
+                                  : 'none',
+                              }}
+                            >
+                              {item.text}
+                            </span>
+                          </li>
+                        ))}
+                    </ul>
+                  )}
               </div>
             </div>
 
