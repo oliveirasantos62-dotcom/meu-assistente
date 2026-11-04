@@ -219,24 +219,10 @@ export default function PainelPrincipal({
     setBoardModalOpen(true);
   };
 
-  const renameNoticeBoard = () => {
-    if (!activeNoticeBoard) return;
-    const name = window.prompt('Novo nome do mural:', activeNoticeBoard.name);
-    if (!name || !name.trim()) return;
-    updateNoticeBoard((current) => ({
-      ...current,
-      boards: current.boards.map((board) =>
-        board.id === activeNoticeBoard.id
-          ? { ...board, name: name.trim().slice(0, 40) }
-          : board,
-      ),
-    }));
-  };
-
   const deleteNoticeBoard = () => {
     if (!activeNoticeBoard || noticeBoards.length <= 1) {
       window.alert(
-        'Mantenha pelo menos um mural. Você pode renomear o mural atual.',
+        'Mantenha pelo menos um mural. Você pode editar o mural atual.',
       );
       return;
     }
@@ -985,20 +971,7 @@ export default function PainelPrincipal({
                     padding: '4px 0',
                   }}
                 >
-                  Editar cores
-                </button>
-                <button
-                  type='button'
-                  onClick={renameNoticeBoard}
-                  style={{
-                    background: 'transparent',
-                    border: 0,
-                    color: 'var(--text-muted, inherit)',
-                    cursor: 'pointer',
-                    padding: '4px 0',
-                  }}
-                >
-                  Renomear mural
+                  Editar mural
                 </button>
                 <button
                   type='button'
@@ -1106,19 +1079,18 @@ export default function PainelPrincipal({
                               gap: 8,
                             }}
                           >
-                            <input
-                              type='checkbox'
-                              checked={Boolean(item.done)}
-                              onChange={(event) => {
+                            <button
+                              type='button'
+                              role='checkbox'
+                              aria-checked={Boolean(item.done)}
+                              aria-label={`Marcar ${item.text} como concluído`}
+                              onClick={() => {
                                 const updated = {
                                   ...notice,
                                   checklist: notice.checklist.map(
                                     (entry, entryIndex) =>
                                       entryIndex === index
-                                        ? {
-                                            ...entry,
-                                            done: event.target.checked,
-                                          }
+                                        ? { ...entry, done: !entry.done }
                                         : entry,
                                   ),
                                 };
@@ -1138,10 +1110,36 @@ export default function PainelPrincipal({
                                   ),
                                 }));
                               }}
-                              aria-label={`Marcar ${item.text} como concluído`}
-                            />
+                              style={{
+                                appearance: 'none',
+                                WebkitAppearance: 'none',
+                                flex: '0 0 17px',
+                                width: 17,
+                                minWidth: 17,
+                                height: 17,
+                                margin: '1px 0 0',
+                                padding: 0,
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                border: `1.5px solid ${item.done ? 'currentColor' : 'currentColor'}`,
+                                borderRadius: 3,
+                                background: item.done
+                                  ? 'rgba(99,102,241,.2)'
+                                  : 'transparent',
+                                color: 'inherit',
+                                fontSize: 12,
+                                lineHeight: 1,
+                                cursor: 'pointer',
+                              }}
+                            >
+                              {item.done ? '✓' : ''}
+                            </button>
                             <span
                               style={{
+                                flex: '1 1 auto',
+                                minWidth: 0,
+                                overflowWrap: 'anywhere',
                                 textDecoration: item.done
                                   ? 'line-through'
                                   : 'none',
@@ -1362,32 +1360,55 @@ export default function PainelPrincipal({
               {(noticeForm.checklist || []).map((item, index) => (
                 <div
                   key={item.id}
-                  style={{ display: 'flex', alignItems: 'center', gap: 8 }}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 8,
+                    width: '100%',
+                    minWidth: 0,
+                    boxSizing: 'border-box',
+                  }}
                 >
-                  <input
-                    type='checkbox'
-                    checked={Boolean(item.done)}
+                  <button
+                    type='button'
+                    role='checkbox'
+                    aria-checked={Boolean(item.done)}
                     aria-label={`Concluir item ${index + 1}`}
-                    onChange={(event) =>
+                    onClick={() =>
                       setNoticeForm((current) => ({
                         ...current,
                         checklist: current.checklist.map((entry) =>
                           entry.id === item.id
-                            ? { ...entry, done: event.target.checked }
+                            ? { ...entry, done: !entry.done }
                             : entry,
                         ),
                       }))
                     }
                     style={{
+                      appearance: 'none',
+                      WebkitAppearance: 'none',
                       flex: '0 0 18px',
                       width: 18,
                       minWidth: 18,
-                      maxWidth: 18,
                       height: 18,
                       margin: 0,
                       padding: 0,
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      border: '1.5px solid currentColor',
+                      borderRadius: 4,
+                      background: item.done
+                        ? 'rgba(99,102,241,.2)'
+                        : 'transparent',
+                      color: 'inherit',
+                      fontSize: 12,
+                      lineHeight: 1,
+                      cursor: 'pointer',
                     }}
-                  />
+                  >
+                    {item.done ? '✓' : ''}
+                  </button>
                   <input
                     type='text'
                     value={item.text}
