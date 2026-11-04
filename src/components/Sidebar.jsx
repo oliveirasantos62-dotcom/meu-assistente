@@ -57,7 +57,22 @@ const DEFAULT_REFERENCES = Object.fromEntries(
   SECTIONS.map((section) => [section.id, true]),
 );
 
+const DEFAULT_ORDER = SECTIONS.map((section) => section.id);
 const STORAGE_PREFIX = 'meu-assistente-sidebar-config-';
+
+function normalizeOrder(savedOrder) {
+  const validIds = new Set(DEFAULT_ORDER);
+  const uniqueSaved = Array.isArray(savedOrder)
+    ? savedOrder.filter(
+        (id, index) => validIds.has(id) && savedOrder.indexOf(id) === index,
+      )
+    : [];
+
+  return [
+    ...uniqueSaved,
+    ...DEFAULT_ORDER.filter((id) => !uniqueSaved.includes(id)),
+  ];
+}
 
 function getStorageKey(user) {
   const identifier = user?.id || user?.email || user?.username || 'default';
@@ -88,11 +103,13 @@ function getInitialConfig(user) {
       },
       searchVisible:
         typeof parsed.searchVisible === 'boolean' ? parsed.searchVisible : true,
+      order: normalizeOrder(parsed.order),
     };
   } catch {
     return {
       visible: { ...DEFAULT_VISIBLE },
       searchVisible: true,
+      order: [...DEFAULT_ORDER],
     };
   }
 }
@@ -123,6 +140,7 @@ export default function Sidebar({
   const [search, setSearch] = useState('');
   const [showCustomizer, setShowCustomizer] = useState(false);
   const [customizerTab, setCustomizerTab] = useState('visibility');
+  const [draggedSection, setDraggedSection] = useState(null);
 
   // REFERÊNCIAS: fonte única de dados = useAppData.
   const references = useMemo(
@@ -181,10 +199,17 @@ export default function Sidebar({
   const getLabel = (section) =>
     cleanNavLabel(text(`nav.${section.id}`, section.fallback));
 
+  const orderedSections = useMemo(() => {
+    const byId = new Map(SECTIONS.map((section) => [section.id, section]));
+    return normalizeOrder(config.order)
+      .map((id) => byId.get(id))
+      .filter(Boolean);
+  }, [config.order]);
+
   const filteredSections = useMemo(() => {
     const normalizedSearch = search.trim().toLowerCase();
 
-    return SECTIONS.filter((section) => {
+    return orderedSections.filter((section) => {
       if (section.id !== 'dashboard' && !config.visible[section.id]) {
         return false;
       }
@@ -196,15 +221,15 @@ export default function Sidebar({
         section.id.toLowerCase().includes(normalizedSearch)
       );
     });
-  }, [search, config.visible, t]);
+  }, [search, config.visible, t, orderedSections]);
 
   const allSections = useMemo(
     () =>
-      SECTIONS.map((section) => ({
+      orderedSections.map((section) => ({
         ...section,
         label: getLabel(section),
       })),
-    [t],
+    [t, orderedSections],
   );
 
   function handleNavigate(sectionId) {
@@ -219,6 +244,38 @@ export default function Sidebar({
     if (onClose && window.matchMedia('(max-width: 900px)').matches) {
       onClose();
     }
+  }
+
+  function moveSection(draggedId, targetId) {
+    if (!draggedId || !targetId || draggedId === targetId) return;
+
+    setConfig((previous) => {
+      const currentOrder = normalizeOrder(previous.order);
+      const fromIndex = currentOrder.indexOf(draggedId);
+      const toIndex = currentOrder.indexOf(targetId);
+
+      if (fromIndex < 0 || toIndex < 0) return previous;
+
+      const nextOrder = [...currentOrder];
+      nextOrder.splice(fromIndex, 1);
+      nextOrder.splice(toIndex, 0, draggedId);
+
+      return { ...previous, order: nextOrder };
+    });
+  }
+
+  function handleDragStart(event, sectionId) {
+    setDraggedSection(sectionId);
+    event.dataTransfer.effectAllowed = 'move';
+    event.dataTransfer.setData('text/plain', sectionId);
+  }
+
+  function handleDrop(event, targetId) {
+    event.preventDefault();
+    const draggedId =
+      draggedSection || event.dataTransfer.getData('text/plain');
+    moveSection(draggedId, targetId);
+    setDraggedSection(null);
   }
 
   function updateVisibility(sectionId, value) {
@@ -301,7 +358,9 @@ export default function Sidebar({
     setConfig({
       visible: { ...DEFAULT_VISIBLE },
       searchVisible: true,
+      order: [...DEFAULT_ORDER],
     });
+    setDraggedSection(null);
 
     // Restaura as referências no appData.
     if (typeof save === 'function' && data) {
@@ -626,6 +685,17 @@ export default function Sidebar({
                   </button>
                 </div>
 
+                <p
+                  style={{
+                    margin: '12px 2px 8px',
+                    fontSize: '0.82rem',
+                    opacity: 0.72,
+                  }}
+                >
+                  <span aria-hidden='true'>⠿</span> Arraste os módulos pelo
+                  ícone para alterar a ordem em que aparecem no menu.
+                </p>
+
                 <div className='sidebar-customizer-list'>
                   {allSections.map((section) => {
                     const enabled = Boolean(config.visible[section.id]);
@@ -640,8 +710,33 @@ export default function Sidebar({
                           'sidebar-customizer-row',
                           enabled ? 'enabled' : 'disabled',
                         ].join(' ')}
+                        draggable
+                        onDragStart={(event) =>
+                          handleDragStart(event, section.id)
+                        }
+                        onDragOver={(event) => event.preventDefault()}
+                        onDrop={(event) => handleDrop(event, section.id)}
+                        onDragEnd={() => setDraggedSection(null)}
+                        style={{
+                          opacity: draggedSection === section.id ? 0.45 : 1,
+                          cursor: 'grab',
+                          transition: 'opacity 120ms ease',
+                        }}
                       >
                         <div className='sidebar-customizer-row-main'>
+                          <span
+                            aria-hidden='true'
+                            title='Arraste para reordenar'
+                            style={{
+                              cursor: 'grab',
+                              userSelect: 'none',
+                              opacity: 0.55,
+                              marginRight: 8,
+                              fontSize: '1.1rem',
+                            }}
+                          >
+                            ⠿
+                          </span>
                           <span className='sidebar-customizer-row-icon'>
                             {section.icon}
                           </span>
