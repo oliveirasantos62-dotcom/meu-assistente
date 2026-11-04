@@ -107,6 +107,7 @@ export default function PainelPrincipal({
 
   const [noticeModalOpen, setNoticeModalOpen] = useState(false);
   const [boardModalOpen, setBoardModalOpen] = useState(false);
+  const [boardEditing, setBoardEditing] = useState(false);
   const [boardForm, setBoardForm] = useState({
     name: '',
     backgroundColor: '#dbeafe',
@@ -152,6 +153,7 @@ export default function PainelPrincipal({
   };
 
   const openNewNoticeBoard = () => {
+    setBoardEditing(false);
     setBoardForm({
       name: '',
       backgroundColor: '#dbeafe',
@@ -164,6 +166,27 @@ export default function PainelPrincipal({
     event.preventDefault();
     const name = boardForm.name.trim();
     if (!name) return;
+
+    if (boardEditing && activeNoticeBoard) {
+      // Atualiza somente as propriedades visuais e o nome do mural.
+      // Os avisos existentes permanecem intactos.
+      updateNoticeBoard((current) => ({
+        ...current,
+        boards: current.boards.map((board) =>
+          board.id === activeNoticeBoard.id
+            ? {
+                ...board,
+                name: name.slice(0, 40),
+                backgroundColor: boardForm.backgroundColor || '#dbeafe',
+                textColor: boardForm.textColor || '#1e293b',
+              }
+            : board,
+        ),
+      }));
+      setBoardModalOpen(false);
+      setBoardEditing(false);
+      return;
+    }
 
     const board = {
       id: `notice-board-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
@@ -182,6 +205,17 @@ export default function PainelPrincipal({
     }));
     setActiveNoticeBoardId(board.id);
     setBoardModalOpen(false);
+  };
+
+  const openEditNoticeBoard = () => {
+    if (!activeNoticeBoard) return;
+    setBoardEditing(true);
+    setBoardForm({
+      name: activeNoticeBoard.name || '',
+      backgroundColor: activeNoticeBoard.backgroundColor || '#dbeafe',
+      textColor: activeNoticeBoard.textColor || '#1e293b',
+    });
+    setBoardModalOpen(true);
   };
 
   const renameNoticeBoard = () => {
@@ -923,6 +957,19 @@ export default function PainelPrincipal({
               >
                 <button
                   type='button'
+                  onClick={openEditNoticeBoard}
+                  style={{
+                    background: 'transparent',
+                    border: 0,
+                    color: 'var(--text-muted, inherit)',
+                    cursor: 'pointer',
+                    padding: '4px 0',
+                  }}
+                >
+                  Editar cores
+                </button>
+                <button
+                  type='button'
                   onClick={renameNoticeBoard}
                   style={{
                     background: 'transparent',
@@ -1032,7 +1079,7 @@ export default function PainelPrincipal({
             <div className='dashboard-notice-modal-header'>
               <div>
                 <span className='section-label'>ORGANIZAÇÃO</span>
-                <h3>Novo mural</h3>
+                <h3>{boardEditing ? 'Editar mural' : 'Novo mural'}</h3>
               </div>
               <button
                 type='button'
@@ -1127,7 +1174,7 @@ export default function PainelPrincipal({
                 className='primary'
                 disabled={!boardForm.name.trim()}
               >
-                Criar mural
+                {boardEditing ? 'Salvar alterações' : 'Criar mural'}
               </button>
             </div>
           </form>
