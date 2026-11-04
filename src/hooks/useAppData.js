@@ -254,6 +254,13 @@ function normalizeAppData(rawData) {
         borderColor: item?.borderColor || item?.color || '#e0b800',
         borderEnabled: item?.borderEnabled !== false,
         borderMode: item?.borderMode === 'top' ? 'top' : 'all',
+        checklist: Array.isArray(item?.checklist)
+          ? item.checklist.map((entry, index) => ({
+              id: String(entry?.id || `check-${index}`),
+              text: String(entry?.text || ''),
+              done: Boolean(entry?.done),
+            }))
+          : [],
         createdAt: item?.createdAt || new Date().toISOString(),
         updatedAt: item?.updatedAt || new Date().toISOString(),
       });

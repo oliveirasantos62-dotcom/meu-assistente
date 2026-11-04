@@ -117,6 +117,7 @@ export default function PainelPrincipal({
   const [noticeForm, setNoticeForm] = useState({
     title: '',
     content: '',
+    checklist: [],
     backgroundColor: '#fff3a6',
     textColor: '#2f2a1f',
     borderColor: '#e0b800',
@@ -262,6 +263,7 @@ export default function PainelPrincipal({
     setNoticeForm({
       title: '',
       content: '',
+      checklist: [],
       backgroundColor: '#fff3a6',
       textColor: '#2f2a1f',
       borderColor: '#e0b800',
@@ -276,6 +278,13 @@ export default function PainelPrincipal({
     setNoticeForm({
       title: notice.title || '',
       content: notice.content || '',
+      checklist: Array.isArray(notice.checklist)
+        ? notice.checklist.map((item, index) => ({
+            id: item?.id || `check-${index}-${Date.now()}`,
+            text: String(item?.text || ''),
+            done: Boolean(item?.done),
+          }))
+        : [],
       ...normalizeNotice(notice),
     });
     setNoticeModalOpen(true);
@@ -286,7 +295,16 @@ export default function PainelPrincipal({
 
     const title = noticeForm.title.trim();
     const content = noticeForm.content.trim();
-    if (!title && !content) return;
+    const checklist = Array.isArray(noticeForm.checklist)
+      ? noticeForm.checklist
+          .map((item) => ({
+            ...item,
+            text: String(item.text || '').trim(),
+            done: Boolean(item.done),
+          }))
+          .filter((item) => item.text)
+      : [];
+    if (!title && !content && checklist.length === 0) return;
 
     const now = new Date().toISOString();
     const item = {
@@ -295,6 +313,7 @@ export default function PainelPrincipal({
         `${Date.now()}-${Math.random().toString(36).slice(2)}`,
       title: title || 'Aviso',
       content,
+      checklist,
       backgroundColor: noticeForm.backgroundColor || '#fff3a6',
       textColor: noticeForm.textColor || '#2f2a1f',
       borderColor: noticeForm.borderColor || '#e0b800',
@@ -966,9 +985,21 @@ export default function PainelPrincipal({
                     padding: '4px 0',
                   }}
                 >
-                  Editar
+                  Editar cores
                 </button>
-
+                <button
+                  type='button'
+                  onClick={renameNoticeBoard}
+                  style={{
+                    background: 'transparent',
+                    border: 0,
+                    color: 'var(--text-muted, inherit)',
+                    cursor: 'pointer',
+                    padding: '4px 0',
+                  }}
+                >
+                  Renomear mural
+                </button>
                 <button
                   type='button'
                   onClick={deleteNoticeBoard}
@@ -1053,7 +1084,80 @@ export default function PainelPrincipal({
                     </div>
                   </div>
                   <h4>{notice.title || 'Aviso'}</h4>
-                  <p>{notice.content || 'Sem conteúdo.'}</p>
+                  {notice.content && <p>{notice.content}</p>}
+                  {Array.isArray(notice.checklist) &&
+                    notice.checklist.length > 0 && (
+                      <ul
+                        className='dashboard-notice-checklist'
+                        style={{
+                          listStyle: 'none',
+                          padding: 0,
+                          margin: '10px 0 0',
+                          display: 'grid',
+                          gap: 7,
+                        }}
+                      >
+                        {notice.checklist.map((item, index) => (
+                          <li
+                            key={item.id || index}
+                            style={{
+                              display: 'flex',
+                              alignItems: 'flex-start',
+                              gap: 8,
+                            }}
+                          >
+                            <input
+                              type='checkbox'
+                              checked={Boolean(item.done)}
+                              onChange={(event) => {
+                                const updated = {
+                                  ...notice,
+                                  checklist: notice.checklist.map(
+                                    (entry, entryIndex) =>
+                                      entryIndex === index
+                                        ? {
+                                            ...entry,
+                                            done: event.target.checked,
+                                          }
+                                        : entry,
+                                  ),
+                                };
+                                updateNoticeBoard((current) => ({
+                                  ...current,
+                                  boards: current.boards.map((board) =>
+                                    board.id !== activeNoticeBoard?.id
+                                      ? board
+                                      : {
+                                          ...board,
+                                          items: board.items.map((entry) =>
+                                            entry.id === notice.id
+                                              ? updated
+                                              : entry,
+                                          ),
+                                        },
+                                  ),
+                                }));
+                              }}
+                              aria-label={`Marcar ${item.text} como concluído`}
+                            />
+                            <span
+                              style={{
+                                textDecoration: item.done
+                                  ? 'line-through'
+                                  : 'none',
+                                opacity: item.done ? 0.65 : 1,
+                              }}
+                            >
+                              {item.text}
+                            </span>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  {!notice.content &&
+                    !(
+                      Array.isArray(notice.checklist) && notice.checklist.length
+                    ) && <p>Sem conteúdo.</p>}
                 </article>
               ))}
             </div>
@@ -1094,6 +1198,105 @@ export default function PainelPrincipal({
                 required
               />
             </label>
+
+            <div
+              className='dashboard-notice-checklist-editor'
+              style={{ display: 'grid', gap: 8, margin: '12px 0' }}
+            >
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  gap: 8,
+                }}
+              >
+                <strong>
+                  Checklist{' '}
+                  <span style={{ fontWeight: 400, opacity: 0.65 }}>
+                    (opcional)
+                  </span>
+                </strong>
+                <button
+                  type='button'
+                  className='ghost'
+                  onClick={() =>
+                    setNoticeForm((current) => ({
+                      ...current,
+                      checklist: [
+                        ...(current.checklist || []),
+                        {
+                          id: `check-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+                          text: '',
+                          done: false,
+                        },
+                      ],
+                    }))
+                  }
+                >
+                  + Adicionar item
+                </button>
+              </div>
+              {(noticeForm.checklist || []).map((item, index) => (
+                <div
+                  key={item.id}
+                  style={{ display: 'flex', alignItems: 'center', gap: 8 }}
+                >
+                  <input
+                    type='checkbox'
+                    checked={Boolean(item.done)}
+                    aria-label={`Concluir item ${index + 1}`}
+                    onChange={(event) =>
+                      setNoticeForm((current) => ({
+                        ...current,
+                        checklist: current.checklist.map((entry) =>
+                          entry.id === item.id
+                            ? { ...entry, done: event.target.checked }
+                            : entry,
+                        ),
+                      }))
+                    }
+                  />
+                  <input
+                    value={item.text}
+                    onChange={(event) =>
+                      setNoticeForm((current) => ({
+                        ...current,
+                        checklist: current.checklist.map((entry) =>
+                          entry.id === item.id
+                            ? { ...entry, text: event.target.value }
+                            : entry,
+                        ),
+                      }))
+                    }
+                    placeholder={`Item ${index + 1}`}
+                    maxLength={160}
+                    style={{ flex: 1, minWidth: 0 }}
+                  />
+                  <button
+                    type='button'
+                    className='ghost'
+                    aria-label={`Remover item ${index + 1}`}
+                    onClick={() =>
+                      setNoticeForm((current) => ({
+                        ...current,
+                        checklist: current.checklist.filter(
+                          (entry) => entry.id !== item.id,
+                        ),
+                      }))
+                    }
+                  >
+                    ×
+                  </button>
+                </div>
+              ))}
+              {(!noticeForm.checklist || noticeForm.checklist.length === 0) && (
+                <p style={{ margin: 0, opacity: 0.65, fontSize: '.85rem' }}>
+                  Adicione itens se quiser acompanhar tarefas dentro deste
+                  aviso. O aviso também pode ser apenas texto.
+                </p>
+              )}
+            </div>
 
             <div className='dashboard-notice-customization'>
               <div className='dashboard-notice-color-field'>
