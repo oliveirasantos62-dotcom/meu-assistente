@@ -193,20 +193,45 @@ function normalizeAppData(rawData) {
     // Coleções & Conquistas
     collections: normalizedCollections,
 
-    noticeBoard: {
-      enabled: Boolean(source.noticeBoard?.enabled),
-      items: Array.isArray(source.noticeBoard?.items)
-        ? source.noticeBoard.items.map((item) => ({
-            ...item,
-            id: String(item.id || `${Date.now()}-${Math.random().toString(36).slice(2)}`),
-            title: String(item.title || '').trim(),
-            content: String(item.content || ''),
-            color: item.color || '#6366f1',
-            createdAt: item.createdAt || new Date().toISOString(),
-            updatedAt: item.updatedAt || new Date().toISOString(),
-          }))
-        : [],
-    },
+    noticeBoard: (() => {
+      const rawNoticeBoard = source.noticeBoard && typeof source.noticeBoard === 'object'
+        ? source.noticeBoard
+        : {};
+
+      const normalizeNoticeItem = (item) => ({
+        ...item,
+        id: String(item?.id || `${Date.now()}-${Math.random().toString(36).slice(2)}`),
+        title: String(item?.title || '').trim(),
+        content: String(item?.content || ''),
+        color: item?.color || item?.backgroundColor || '#6366f1',
+        createdAt: item?.createdAt || new Date().toISOString(),
+        updatedAt: item?.updatedAt || new Date().toISOString(),
+      });
+
+      return {
+        enabled: Boolean(rawNoticeBoard.enabled),
+        // Mantém os múltiplos murais. A versão anterior normalizava
+        // somente `items` e descartava `boards` em todo salvamento.
+        ...(Array.isArray(rawNoticeBoard.boards)
+          ? {
+              boards: rawNoticeBoard.boards.map((board, index) => ({
+                ...board,
+                id: String(board?.id || `notice-board-${index}`),
+                name: String(board?.name || `Mural ${index + 1}`).trim(),
+                items: Array.isArray(board?.items)
+                  ? board.items.map(normalizeNoticeItem)
+                  : [],
+              })),
+            }
+          : {}),
+        ...(Array.isArray(rawNoticeBoard.items)
+          ? { items: rawNoticeBoard.items.map(normalizeNoticeItem) }
+          : {}),
+        ...(rawNoticeBoard.activeBoardId
+          ? { activeBoardId: String(rawNoticeBoard.activeBoardId) }
+          : {}),
+      };
+    })(),
 
     tags: normalizedTags,
 
