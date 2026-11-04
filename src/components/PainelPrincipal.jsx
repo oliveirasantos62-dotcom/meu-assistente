@@ -1378,8 +1378,18 @@ export default function PainelPrincipal({
                         ),
                       }))
                     }
+                    style={{
+                      flex: '0 0 18px',
+                      width: 18,
+                      minWidth: 18,
+                      maxWidth: 18,
+                      height: 18,
+                      margin: 0,
+                      padding: 0,
+                    }}
                   />
                   <input
+                    type='text'
                     value={item.text}
                     onChange={(event) =>
                       setNoticeForm((current) => ({
@@ -1393,7 +1403,15 @@ export default function PainelPrincipal({
                     }
                     placeholder={`Item ${index + 1}`}
                     maxLength={160}
-                    style={{ flex: 1, minWidth: 0 }}
+                    style={{
+                      flex: '1 1 0%',
+                      width: '100%',
+                      minWidth: 0,
+                      maxWidth: '100%',
+                      boxSizing: 'border-box',
+                      color: 'var(--text-primary, #f8fafc)',
+                      background: 'var(--input-bg, rgba(255,255,255,.04))',
+                    }}
                   />
                   <button
                     type='button'
