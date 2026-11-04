@@ -71,27 +71,43 @@ function normalizeAppData(rawData) {
   // central de tags. Assim, tarefas antigas continuam conectadas aos
   // relatórios, filtros e demais entidades sem duplicar informação.
   const normalizedTags = Array.isArray(source.tags)
-    ? source.tags.map((tag) => ({
-        ...tag,
-        id: String(tag.id),
-        name: String(tag.name || '').replace(/^#/, '').trim(),
-      })).filter((tag) => tag.name)
+    ? source.tags
+        .map((tag) => ({
+          ...tag,
+          id: String(tag.id),
+          name: String(tag.name || '')
+            .replace(/^#/, '')
+            .trim(),
+        }))
+        .filter((tag) => tag.name)
     : [];
 
   const legacyTagIds = new Map(
     normalizedTags.map((tag) => [tag.name.toLowerCase(), String(tag.id)]),
   );
 
-  const tasksWithNormalizedTags = [...sourceTasks, ...migratedCalendarTasks].map((task) => {
+  const tasksWithNormalizedTags = [
+    ...sourceTasks,
+    ...migratedCalendarTasks,
+  ].map((task) => {
     const existing = Array.isArray(task.tags)
-      ? task.tags.map((tag) => (typeof tag === 'object' ? tag.id : String(tag))).filter(Boolean)
+      ? task.tags
+          .map((tag) => (typeof tag === 'object' ? tag.id : String(tag)))
+          .filter(Boolean)
       : [];
 
-    const legacyName = String(task.tag || '').replace(/^#/, '').trim();
+    const legacyName = String(task.tag || '')
+      .replace(/^#/, '')
+      .trim();
     if (legacyName) {
       let tagId = legacyTagIds.get(legacyName.toLowerCase());
       if (!tagId) {
-        tagId = `legacy-tag-${legacyName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || Date.now()}`;
+        tagId = `legacy-tag-${
+          legacyName
+            .toLowerCase()
+            .replace(/[^a-z0-9]+/g, '-')
+            .replace(/^-|-$/g, '') || Date.now()
+        }`;
         const newTag = {
           id: tagId,
           name: legacyName,
@@ -106,7 +122,9 @@ function normalizeAppData(rawData) {
 
     const normalizedTask = {
       ...task,
-      status: task.status || (task.cancelled ? 'cancelled' : task.done ? 'done' : 'pending'),
+      status:
+        task.status ||
+        (task.cancelled ? 'cancelled' : task.done ? 'done' : 'pending'),
       cancelled: task.cancelled === true || task.status === 'cancelled',
       tags: Array.from(new Set(existing.map(String))),
     };
@@ -116,12 +134,21 @@ function normalizeAppData(rawData) {
 
   const normalizeEntityTags = (item) => ({
     ...item,
-    tags: Array.from(new Set((Array.isArray(item?.tags) ? item.tags : []).map((tag) => typeof tag === 'object' ? tag.id : tag).map(String).filter(Boolean))),
+    tags: Array.from(
+      new Set(
+        (Array.isArray(item?.tags) ? item.tags : [])
+          .map((tag) => (typeof tag === 'object' ? tag.id : tag))
+          .map(String)
+          .filter(Boolean),
+      ),
+    ),
   });
 
   const normalizeCollectionTags = (collection) => ({
     ...normalizeEntityTags(collection),
-    itens: Array.isArray(collection?.itens) ? collection.itens.map(normalizeEntityTags) : [],
+    itens: Array.isArray(collection?.itens)
+      ? collection.itens.map(normalizeEntityTags)
+      : [],
   });
 
   const normalizedCollections = Array.isArray(source.collections)
@@ -137,9 +164,11 @@ function normalizeAppData(rawData) {
     financialGoals: Array.isArray(source.finance?.financialGoals)
       ? source.finance.financialGoals.map(normalizeEntityTags)
       : [],
-    budgetsByCategory: source.finance?.budgetsByCategory && typeof source.finance.budgetsByCategory === 'object'
-      ? source.finance.budgetsByCategory
-      : {},
+    budgetsByCategory:
+      source.finance?.budgetsByCategory &&
+      typeof source.finance.budgetsByCategory === 'object'
+        ? source.finance.budgetsByCategory
+        : {},
     accounts: Array.isArray(source.finance?.accounts)
       ? source.finance.accounts.map(normalizeEntityTags)
       : [],
@@ -149,29 +178,41 @@ function normalizeAppData(rawData) {
     ...emptyAppData,
     ...source,
 
-    habits: Array.isArray(source.habits) ? source.habits.map(normalizeEntityTags) : [],
+    habits: Array.isArray(source.habits)
+      ? source.habits.map(normalizeEntityTags)
+      : [],
 
     tasks: tasksWithNormalizedTags.map((task) => ({
       ...task,
       observations: Array.isArray(task.observations) ? task.observations : [],
     })),
 
-    goals: Array.isArray(source.goals) ? source.goals.map(normalizeEntityTags) : [],
+    goals: Array.isArray(source.goals)
+      ? source.goals.map(normalizeEntityTags)
+      : [],
 
-    projects: Array.isArray(source.projects) ? source.projects.map(normalizeEntityTags) : [],
+    projects: Array.isArray(source.projects)
+      ? source.projects.map(normalizeEntityTags)
+      : [],
 
-    areas: Array.isArray(source.areas) ? source.areas.map(normalizeEntityTags) : [],
+    areas: Array.isArray(source.areas)
+      ? source.areas.map(normalizeEntityTags)
+      : [],
 
-    processes: Array.isArray(source.processes) ? source.processes.map(normalizeEntityTags) : [],
+    processes: Array.isArray(source.processes)
+      ? source.processes.map(normalizeEntityTags)
+      : [],
 
-    calendarEvents: sourceCalendarEvents.filter(
-      (event) =>
-        !(
-          event?.type === 'task' &&
-          !event?.sourceTask &&
-          migratedTaskIds.has(String(event.id))
-        ),
-    ).map(normalizeEntityTags),
+    calendarEvents: sourceCalendarEvents
+      .filter(
+        (event) =>
+          !(
+            event?.type === 'task' &&
+            !event?.sourceTask &&
+            migratedTaskIds.has(String(event.id))
+          ),
+      )
+      .map(normalizeEntityTags),
 
     history:
       source.history &&
@@ -180,7 +221,9 @@ function normalizeAppData(rawData) {
         ? source.history
         : {},
 
-    diaryEntries: Array.isArray(source.diaryEntries) ? source.diaryEntries.map(normalizeEntityTags) : [],
+    diaryEntries: Array.isArray(source.diaryEntries)
+      ? source.diaryEntries.map(normalizeEntityTags)
+      : [],
 
     studySessions: Array.isArray(source.studySessions)
       ? source.studySessions.map(normalizeEntityTags)
@@ -194,50 +237,64 @@ function normalizeAppData(rawData) {
     collections: normalizedCollections,
 
     noticeBoard: (() => {
-      const rawNoticeBoard = source.noticeBoard && typeof source.noticeBoard === 'object'
-        ? source.noticeBoard
-        : {};
+      const rawBoard =
+        source.noticeBoard && typeof source.noticeBoard === 'object'
+          ? source.noticeBoard
+          : {};
 
       const normalizeNoticeItem = (item) => ({
         ...item,
-        id: String(item?.id || `${Date.now()}-${Math.random().toString(36).slice(2)}`),
+        id: String(
+          item?.id || `${Date.now()}-${Math.random().toString(36).slice(2)}`,
+        ),
         title: String(item?.title || '').trim(),
         content: String(item?.content || ''),
-        color: item?.color || item?.backgroundColor || '#6366f1',
+        backgroundColor: item?.backgroundColor || item?.color || '#fff3a6',
+        textColor: item?.textColor || '#2f2a1f',
+        borderColor: item?.borderColor || item?.color || '#e0b800',
+        borderEnabled: item?.borderEnabled !== false,
+        borderMode: item?.borderMode === 'top' ? 'top' : 'all',
         createdAt: item?.createdAt || new Date().toISOString(),
         updatedAt: item?.updatedAt || new Date().toISOString(),
       });
 
       return {
-        enabled: Boolean(rawNoticeBoard.enabled),
-        // Mantém os múltiplos murais. A versão anterior normalizava
-        // somente `items` e descartava `boards` em todo salvamento.
-        ...(Array.isArray(rawNoticeBoard.boards)
+        enabled: Boolean(rawBoard.enabled),
+        // Mantém os murais, suas cores e seus avisos em toda normalização/salvamento.
+        ...(Array.isArray(rawBoard.boards)
           ? {
-              boards: rawNoticeBoard.boards.map((board, index) => ({
+              boards: rawBoard.boards.map((board, index) => ({
                 ...board,
                 id: String(board?.id || `notice-board-${index}`),
                 name: String(board?.name || `Mural ${index + 1}`).trim(),
+                backgroundColor: board?.backgroundColor || '#dbeafe',
+                textColor: board?.textColor || '#1e293b',
                 items: Array.isArray(board?.items)
                   ? board.items.map(normalizeNoticeItem)
                   : [],
               })),
             }
           : {}),
-        ...(Array.isArray(rawNoticeBoard.items)
-          ? { items: rawNoticeBoard.items.map(normalizeNoticeItem) }
+        ...(Array.isArray(rawBoard.items)
+          ? {
+              items: rawBoard.items.map(normalizeNoticeItem),
+            }
           : {}),
-        ...(rawNoticeBoard.activeBoardId
-          ? { activeBoardId: String(rawNoticeBoard.activeBoardId) }
+        ...(rawBoard.activeBoardId
+          ? { activeBoardId: String(rawBoard.activeBoardId) }
           : {}),
       };
     })(),
 
     tags: normalizedTags,
 
-    studyCycles: Array.isArray(source.studyCycles) ? source.studyCycles.map(normalizeEntityTags) : [],
+    studyCycles: Array.isArray(source.studyCycles)
+      ? source.studyCycles.map(normalizeEntityTags)
+      : [],
 
-    errors: Array.isArray(source.errors) ? source.errors.map(normalizeEntityTags) : [],
+    errors: Array.isArray(source.errors)
+      ? source.errors.map(normalizeEntityTags)
+      : [],
 
     weeklyReflections: Array.isArray(source.weeklyReflections)
       ? source.weeklyReflections.map(normalizeEntityTags)
@@ -248,7 +305,9 @@ function normalizeAppData(rawData) {
     coins: Number(source.coins) || 0,
 
     finance: normalizedFinance,
-    investments: Array.isArray(source.investments) ? source.investments.map(normalizeEntityTags) : [],
+    investments: Array.isArray(source.investments)
+      ? source.investments.map(normalizeEntityTags)
+      : [],
 
     portfolioHistory: Array.isArray(source.portfolioHistory)
       ? source.portfolioHistory
@@ -297,11 +356,27 @@ function normalizeAppData(rawData) {
     settings:
       source.settings && typeof source.settings === 'object'
         ? {
-            modules: source.settings.modules && typeof source.settings.modules === 'object' ? source.settings.modules : {},
-            moduleReferences: source.settings.moduleReferences && typeof source.settings.moduleReferences === 'object' ? source.settings.moduleReferences : {},
-            assistant: source.settings.assistant && typeof source.settings.assistant === 'object' ? source.settings.assistant : { webResearch: false },
+            modules:
+              source.settings.modules &&
+              typeof source.settings.modules === 'object'
+                ? source.settings.modules
+                : {},
+            moduleReferences:
+              source.settings.moduleReferences &&
+              typeof source.settings.moduleReferences === 'object'
+                ? source.settings.moduleReferences
+                : {},
+            assistant:
+              source.settings.assistant &&
+              typeof source.settings.assistant === 'object'
+                ? source.settings.assistant
+                : { webResearch: false },
           }
-        : { modules: {}, moduleReferences: {}, assistant: { webResearch: false } },
+        : {
+            modules: {},
+            moduleReferences: {},
+            assistant: { webResearch: false },
+          },
   };
 }
 
@@ -535,7 +610,8 @@ export function useAppData(user) {
   const tasks = Array.isArray(safeData.tasks) ? safeData.tasks : [];
 
   const pendingTasks = useMemo(
-    () => tasks.filter((task) => !task.done && !isTaskCancelled(task, new Date())),
+    () =>
+      tasks.filter((task) => !task.done && !isTaskCancelled(task, new Date())),
     [tasks],
   );
 
