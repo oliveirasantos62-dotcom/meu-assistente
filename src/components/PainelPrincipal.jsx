@@ -966,21 +966,9 @@ export default function PainelPrincipal({
                     padding: '4px 0',
                   }}
                 >
-                  Editar cores
+                  Editar
                 </button>
-                <button
-                  type='button'
-                  onClick={renameNoticeBoard}
-                  style={{
-                    background: 'transparent',
-                    border: 0,
-                    color: 'var(--text-muted, inherit)',
-                    cursor: 'pointer',
-                    padding: '4px 0',
-                  }}
-                >
-                  Renomear mural
-                </button>
+
                 <button
                   type='button'
                   onClick={deleteNoticeBoard}
