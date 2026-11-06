@@ -12,6 +12,7 @@ const EMPTY_FORM = {
   projectId: '',
   areaId: '',
   tags: [],
+  subtasks: [],
 };
 
 const EMPTY_AREA = {
@@ -101,7 +102,11 @@ export default function Tasks({ data, save, completeTask }) {
 
     return orderedTasks.filter((task) => {
       const taskTagNames = getTagIds(task)
-        .map((tagId) => tagsList.find((tag) => String(tag.id) === String(tagId))?.name || '')
+        .map(
+          (tagId) =>
+            tagsList.find((tag) => String(tag.id) === String(tagId))?.name ||
+            '',
+        )
         .join(' ');
 
       const matchesSearch =
@@ -118,7 +123,9 @@ export default function Tasks({ data, save, completeTask }) {
 
       const matchesFilter =
         filter === 'all' ||
-        (filter === 'pending' && !task.done && !isTaskCancelled(task, new Date())) ||
+        (filter === 'pending' &&
+          !task.done &&
+          !isTaskCancelled(task, new Date())) ||
         (filter === 'done' && task.done) ||
         (filter === 'cancelled' && isTaskCancelled(task, new Date())) ||
         (filter === 'overdue' &&
@@ -147,6 +154,57 @@ export default function Tasks({ data, save, completeTask }) {
     setForm((prev) => ({ ...prev, [field]: value }));
   };
 
+  const addSubtaskToForm = () => {
+    const title = String(form.subtaskDraft || '').trim();
+    if (!title) return;
+    setForm((prev) => ({
+      ...prev,
+      subtasks: [
+        ...(Array.isArray(prev.subtasks) ? prev.subtasks : []),
+        {
+          id: createId(),
+          title,
+          done: false,
+          createdAt: new Date().toISOString(),
+        },
+      ],
+      subtaskDraft: '',
+    }));
+  };
+
+  const toggleFormSubtask = (subtaskId) => {
+    setForm((prev) => ({
+      ...prev,
+      subtasks: (Array.isArray(prev.subtasks) ? prev.subtasks : []).map(
+        (item) =>
+          item.id === subtaskId ? { ...item, done: !item.done } : item,
+      ),
+    }));
+  };
+
+  const deleteFormSubtask = (subtaskId) => {
+    setForm((prev) => ({
+      ...prev,
+      subtasks: (Array.isArray(prev.subtasks) ? prev.subtasks : []).filter(
+        (item) => item.id !== subtaskId,
+      ),
+    }));
+  };
+
+  const toggleTaskSubtask = (task, subtaskId) => {
+    const subtasks = (Array.isArray(task.subtasks) ? task.subtasks : []).map(
+      (item) => (item.id === subtaskId ? { ...item, done: !item.done } : item),
+    );
+    save({
+      ...data,
+      tasks: tasksList.map((item) =>
+        item.id === task.id
+          ? { ...item, subtasks, updatedAt: new Date().toISOString() }
+          : item,
+      ),
+    });
+  };
+
   const toggleFormTag = (tagId) => {
     const id = String(tagId);
     setForm((prev) => {
@@ -165,7 +223,10 @@ export default function Tasks({ data, save, completeTask }) {
     if (!clean) return;
 
     const existing = tagsList.find(
-      (tag) => String(tag.name || '').trim().toLowerCase() === clean.toLowerCase(),
+      (tag) =>
+        String(tag.name || '')
+          .trim()
+          .toLowerCase() === clean.toLowerCase(),
     );
 
     if (existing) {
@@ -184,11 +245,13 @@ export default function Tasks({ data, save, completeTask }) {
     save({ ...data, tags: [...tagsList, tag] });
     setForm((prev) => ({
       ...prev,
-      tags: [...(Array.isArray(prev.tags) ? prev.tags.map(String) : []), String(tag.id)],
+      tags: [
+        ...(Array.isArray(prev.tags) ? prev.tags.map(String) : []),
+        String(tag.id),
+      ],
     }));
     setNewTagName('');
   };
-
 
   // =====================================
   // TAREFAS
@@ -215,7 +278,6 @@ export default function Tasks({ data, save, completeTask }) {
       tags: getTagIds(task).map(String),
     });
 
-
     setNewTagName('');
     setShowForm(true);
   };
@@ -234,7 +296,16 @@ export default function Tasks({ data, save, completeTask }) {
       xp: Math.min(10000, Math.max(0, Number(form.xp) || 0)),
       projectId: form.projectId === '' ? null : form.projectId,
       areaId: form.areaId === '' ? null : form.areaId,
-      tags: Array.from(new Set((Array.isArray(form.tags) ? form.tags : []).map(String).filter(Boolean))),
+      tags: Array.from(
+        new Set(
+          (Array.isArray(form.tags) ? form.tags : [])
+            .map(String)
+            .filter(Boolean),
+        ),
+      ),
+      subtasks: (Array.isArray(form.subtasks) ? form.subtasks : [])
+        .map((item) => ({ ...item, title: String(item.title || '').trim() }))
+        .filter((item) => item.title),
       updatedAt: new Date().toISOString(),
     };
 
@@ -338,22 +409,33 @@ export default function Tasks({ data, save, completeTask }) {
   };
 
   const reorderTasks = (draggedId, targetId, position = 'before') => {
-    if (!draggedId || !targetId || String(draggedId) === String(targetId)) return;
+    if (!draggedId || !targetId || String(draggedId) === String(targetId))
+      return;
 
     const ordered = [...tasksList].sort((a, b) => {
       const ai = tasksList.findIndex((item) => item.id === a.id);
       const bi = tasksList.findIndex((item) => item.id === b.id);
-      const ao = Number.isFinite(Number(a.sortOrder)) ? Number(a.sortOrder) : ai;
-      const bo = Number.isFinite(Number(b.sortOrder)) ? Number(b.sortOrder) : bi;
+      const ao = Number.isFinite(Number(a.sortOrder))
+        ? Number(a.sortOrder)
+        : ai;
+      const bo = Number.isFinite(Number(b.sortOrder))
+        ? Number(b.sortOrder)
+        : bi;
       return ao - bo;
     });
 
-    const fromIndex = ordered.findIndex((task) => String(task.id) === String(draggedId));
-    const targetIndex = ordered.findIndex((task) => String(task.id) === String(targetId));
+    const fromIndex = ordered.findIndex(
+      (task) => String(task.id) === String(draggedId),
+    );
+    const targetIndex = ordered.findIndex(
+      (task) => String(task.id) === String(targetId),
+    );
     if (fromIndex < 0 || targetIndex < 0) return;
 
     const [moved] = ordered.splice(fromIndex, 1);
-    let insertIndex = ordered.findIndex((task) => String(task.id) === String(targetId));
+    let insertIndex = ordered.findIndex(
+      (task) => String(task.id) === String(targetId),
+    );
     if (insertIndex < 0) return;
     if (position === 'after') insertIndex += 1;
     ordered.splice(insertIndex, 0, moved);
@@ -379,7 +461,8 @@ export default function Tasks({ data, save, completeTask }) {
     if (!draggedTaskId || String(draggedTaskId) === String(taskId)) return;
 
     const rect = event.currentTarget.getBoundingClientRect();
-    const position = event.clientY < rect.top + rect.height / 2 ? 'before' : 'after';
+    const position =
+      event.clientY < rect.top + rect.height / 2 ? 'before' : 'after';
     setDragOverTask({ id: taskId, position });
     event.dataTransfer.dropEffect = 'move';
   };
@@ -387,7 +470,8 @@ export default function Tasks({ data, save, completeTask }) {
   const handleTaskDrop = (event, taskId) => {
     event.preventDefault();
     const dragged = event.dataTransfer.getData('text/plain') || draggedTaskId;
-    const position = dragOverTask?.id === taskId ? dragOverTask.position : 'before';
+    const position =
+      dragOverTask?.id === taskId ? dragOverTask.position : 'before';
     reorderTasks(dragged, taskId, position);
   };
 
@@ -424,7 +508,9 @@ export default function Tasks({ data, save, completeTask }) {
     }
 
     if (task.done) {
-      alert('Uma tarefa concluída não precisa ser cancelada. Reabra-a primeiro se quiser reagendá-la.');
+      alert(
+        'Uma tarefa concluída não precisa ser cancelada. Reabra-a primeiro se quiser reagendá-la.',
+      );
       return;
     }
 
@@ -435,11 +521,16 @@ export default function Tasks({ data, save, completeTask }) {
 
     if (mode === null) return;
     if (mode !== '1' && mode !== '2') {
-      alert('Escolha 1 para cancelar somente hoje ou 2 para suspender indefinidamente.');
+      alert(
+        'Escolha 1 para cancelar somente hoje ou 2 para suspender indefinidamente.',
+      );
       return;
     }
 
-    const reason = window.prompt('Motivo do cancelamento (opcional):', task.cancellationReason || '');
+    const reason = window.prompt(
+      'Motivo do cancelamento (opcional):',
+      task.cancellationReason || '',
+    );
     if (reason === null) return;
 
     const today = localDateString(new Date());
@@ -601,12 +692,20 @@ export default function Tasks({ data, save, completeTask }) {
 
   const completedCount = tasksList.filter((task) => task.done).length;
 
-  const pendingCount = tasksList.filter((task) => !task.done && task.status !== 'cancelled' && !task.cancelled).length;
+  const pendingCount = tasksList.filter(
+    (task) => !task.done && task.status !== 'cancelled' && !task.cancelled,
+  ).length;
 
-  const cancelledCount = tasksList.filter((task) => task.status === 'cancelled' || task.cancelled === true).length;
+  const cancelledCount = tasksList.filter(
+    (task) => task.status === 'cancelled' || task.cancelled === true,
+  ).length;
 
   const overdueCount = tasksList.filter(
-    (task) => !task.done && !isTaskCancelled(task, new Date()) && task.deadline && task.deadline < localDate(),
+    (task) =>
+      !task.done &&
+      !isTaskCancelled(task, new Date()) &&
+      task.deadline &&
+      task.deadline < localDate(),
   ).length;
 
   const recurringTasks = tasksList.filter(
@@ -763,7 +862,10 @@ export default function Tasks({ data, save, completeTask }) {
             </div>
           </div>
 
-          <p className='tasks-order-hint'>↕️ Arraste pelo ícone ⋮⋮ para definir a ordem das tarefas. A ordem fica salva e continua a mesma ao voltar para a página.</p>
+          <p className='tasks-order-hint'>
+            ↕️ Arraste pelo ícone ⋮⋮ para definir a ordem das tarefas. A ordem
+            fica salva e continua a mesma ao voltar para a página.
+          </p>
 
           <div className='tasks-list'>
             {visibleTasks.map((task) => {
@@ -774,10 +876,16 @@ export default function Tasks({ data, save, completeTask }) {
               const area = getTaskArea(task);
 
               const cancelled = isTaskCancelled(task, new Date());
-              const indefinitelySuspended = task?.status === 'cancelled' || task?.cancelled === true || task?.cancellationScope === 'indefinite';
+              const indefinitelySuspended =
+                task?.status === 'cancelled' ||
+                task?.cancelled === true ||
+                task?.cancellationScope === 'indefinite';
 
               const overdue =
-                !task.done && !cancelled && task.deadline && task.deadline < localDate();
+                !task.done &&
+                !cancelled &&
+                task.deadline &&
+                task.deadline < localDate();
 
               return (
                 <article
@@ -827,12 +935,48 @@ export default function Tasks({ data, save, completeTask }) {
                   <div className='task-content'>
                     <strong className='task-name'>
                       {task.name}
-                      {cancelled && <span className='status-chip status-cancelled'>{indefinitelySuspended ? '⏸️ Suspensa' : '⏸️ Cancelada hoje'}</span>}
+                      {cancelled && (
+                        <span className='status-chip status-cancelled'>
+                          {indefinitelySuspended
+                            ? '⏸️ Suspensa'
+                            : '⏸️ Cancelada hoje'}
+                        </span>
+                      )}
                     </strong>
 
                     {task.description && (
                       <p className='subtitle'>{task.description}</p>
                     )}
+
+                    {Array.isArray(task.subtasks) &&
+                      task.subtasks.length > 0 && (
+                        <div className='task-subtasks'>
+                          <div className='task-subtasks-heading'>
+                            <strong>Subtarefas</strong>
+                            <small>
+                              {task.subtasks.filter((item) => item.done).length}
+                              /{task.subtasks.length} concluídas
+                            </small>
+                          </div>
+                          <div className='task-subtasks-list'>
+                            {task.subtasks.map((subtask) => (
+                              <label
+                                className={`task-subtask ${subtask.done ? 'is-done' : ''}`}
+                                key={subtask.id}
+                              >
+                                <input
+                                  type='checkbox'
+                                  checked={Boolean(subtask.done)}
+                                  onChange={() =>
+                                    toggleTaskSubtask(task, subtask.id)
+                                  }
+                                />
+                                <span>{subtask.title}</span>
+                              </label>
+                            ))}
+                          </div>
+                        </div>
+                      )}
 
                     <div className='task-meta'>
                       <span
@@ -880,14 +1024,18 @@ export default function Tasks({ data, save, completeTask }) {
                       )}
 
                       {getTagIds(task).map((tagId) => {
-                        const taskTag = tagsList.find((item) => String(item.id) === String(tagId));
+                        const taskTag = tagsList.find(
+                          (item) => String(item.id) === String(tagId),
+                        );
                         if (!taskTag) return null;
                         return (
                           <button
                             type='button'
                             key={String(tagId)}
                             className='task-tag-chip'
-                            style={{ '--tag-color': taskTag.color || '#6366f1' }}
+                            style={{
+                              '--tag-color': taskTag.color || '#6366f1',
+                            }}
                             onClick={() => setTagFilter(String(tagId))}
                             title={`Filtrar por #${taskTag.name}`}
                           >
@@ -903,7 +1051,9 @@ export default function Tasks({ data, save, completeTask }) {
                       type='button'
                       className='ghost'
                       onClick={() => toggleCancelled(task)}
-                      title={cancelled ? 'Reativar tarefa' : 'Cancelar sem excluir'}
+                      title={
+                        cancelled ? 'Reativar tarefa' : 'Cancelar sem excluir'
+                      }
                     >
                       {cancelled ? '▶️ Reativar' : '⏸️ Cancelar'}
                     </button>
@@ -1189,6 +1339,65 @@ export default function Tasks({ data, save, completeTask }) {
               />
             </label>
 
+            <section className='subtask-editor' aria-label='Subtarefas'>
+              <div className='subtask-editor-title'>
+                <strong>☑️ Subtarefas</strong>
+                <small>
+                  {
+                    (Array.isArray(form.subtasks) ? form.subtasks : []).filter(
+                      (item) => item.done,
+                    ).length
+                  }
+                  /{(Array.isArray(form.subtasks) ? form.subtasks : []).length}
+                </small>
+              </div>
+              {(Array.isArray(form.subtasks) ? form.subtasks : []).map(
+                (subtask) => (
+                  <div className='subtask-edit-row' key={subtask.id}>
+                    <input
+                      type='checkbox'
+                      checked={Boolean(subtask.done)}
+                      onChange={() => toggleFormSubtask(subtask.id)}
+                      aria-label={`Concluir ${subtask.title}`}
+                    />
+                    <span className={subtask.done ? 'is-done' : ''}>
+                      {subtask.title}
+                    </span>
+                    <button
+                      type='button'
+                      className='ghost'
+                      onClick={() => deleteFormSubtask(subtask.id)}
+                      aria-label={`Excluir ${subtask.title}`}
+                    >
+                      🗑️
+                    </button>
+                  </div>
+                ),
+              )}
+              <div className='subtask-add-row'>
+                <input
+                  type='text'
+                  value={form.subtaskDraft || ''}
+                  onChange={(e) => updateForm('subtaskDraft', e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      addSubtaskToForm();
+                    }
+                  }}
+                  placeholder='Digite uma subtarefa...'
+                  aria-label='Nome da nova subtarefa'
+                />
+                <button
+                  type='button'
+                  className='secondary'
+                  onClick={addSubtaskToForm}
+                >
+                  ＋ Adicionar
+                </button>
+              </div>
+            </section>
+
             <div className='form-grid'>
               <label>
                 Prioridade
@@ -1270,13 +1479,18 @@ export default function Tasks({ data, save, completeTask }) {
             <div className='task-tags-field'>
               <div className='task-tags-heading'>
                 <span>🏷️ Tags</span>
-                <small>Use tags para conectar a tarefa a estudos, objetivos, hábitos, projetos e relatórios.</small>
+                <small>
+                  Use tags para conectar a tarefa a estudos, objetivos, hábitos,
+                  projetos e relatórios.
+                </small>
               </div>
 
               {tagsList.length ? (
                 <div className='task-tag-picker'>
                   {tagsList.map((tag) => {
-                    const active = (form.tags || []).map(String).includes(String(tag.id));
+                    const active = (form.tags || [])
+                      .map(String)
+                      .includes(String(tag.id));
                     return (
                       <button
                         type='button'
@@ -1286,8 +1500,7 @@ export default function Tasks({ data, save, completeTask }) {
                         onClick={() => toggleFormTag(tag.id)}
                         aria-pressed={active}
                       >
-                        <span className='task-tag-dot' />
-                        #{tag.name}
+                        <span className='task-tag-dot' />#{tag.name}
                         {active && <b>✓</b>}
                       </button>
                     );
@@ -1309,7 +1522,11 @@ export default function Tasks({ data, save, completeTask }) {
                     }
                   }}
                 />
-                <button type='button' className='ghost' onClick={createTagFromTask}>
+                <button
+                  type='button'
+                  className='ghost'
+                  onClick={createTagFromTask}
+                >
                   + Criar tag
                 </button>
               </div>
@@ -1546,10 +1763,10 @@ export default function Tasks({ data, save, completeTask }) {
 
         .tasks-page .task-completion-button {
           flex: 0 0 auto;
-          width: 34px;
-          height: 34px;
-          min-width: 34px;
-          min-height: 34px;
+          width: 24px;
+          height: 24px;
+          min-width: 24px;
+          min-height: 24px;
           display: inline-flex;
           align-items: center;
           justify-content: center;
@@ -1594,8 +1811,8 @@ export default function Tasks({ data, save, completeTask }) {
         }
 
         .tasks-page .completion-icon {
-          width: 22px;
-          height: 22px;
+          width: 100%;
+          height: 100%;
           display: inline-grid;
           place-items: center;
           border: 1.5px solid currentColor;
@@ -1603,6 +1820,18 @@ export default function Tasks({ data, save, completeTask }) {
           font-size: 12px;
           font-weight: 900;
         }
+
+        .tasks-page .task-subtasks { flex: 1 0 100%; min-width: 0; margin-top: 8px; padding: 10px 12px; border: 1px solid var(--border-color, rgba(120,120,120,.2)); border-radius: 10px; }
+        .tasks-page .task-subtasks-heading, .tasks-page .subtask-editor-title { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 7px; }
+        .tasks-page .task-subtasks-heading small, .tasks-page .subtask-editor-title small { opacity: .7; }
+        .tasks-page .task-subtasks-list { display: grid; gap: 6px; }
+        .tasks-page .task-subtask { display: flex; align-items: center; gap: 8px; font-size: .92em; cursor: pointer; }
+        .tasks-page .task-subtask input, .tasks-page .subtask-edit-row input[type='checkbox'] { width: 16px; height: 16px; flex: 0 0 auto; }
+        .tasks-page .task-subtask.is-done span, .tasks-page .subtask-edit-row .is-done { text-decoration: line-through; opacity: .6; }
+        .tasks-page .subtask-editor { display: grid; gap: 8px; padding: 12px; border: 1px solid var(--border-color, rgba(120,120,120,.2)); border-radius: 12px; }
+        .tasks-page .subtask-edit-row, .tasks-page .subtask-add-row { display: flex; align-items: center; gap: 8px; min-width: 0; }
+        .tasks-page .subtask-edit-row span { flex: 1; overflow-wrap: anywhere; }
+        .tasks-page .subtask-add-row input { flex: 1; min-width: 0; }
 
         .tasks-page .is-done .completion-icon {
           border-color: rgba(255,255,255,.9);
