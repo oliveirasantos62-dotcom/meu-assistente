@@ -1823,6 +1823,49 @@ export default function Tasks({ data, save, completeTask }) {
           outline-offset: 2px;
         }
 
+        /* O controle de subtarefas mantém a aparência normal mesmo quando a tarefa é concluída. */
+        .tasks-page .task.done .task-subtasks-toggle {
+          width: 24px !important;
+          height: 24px !important;
+          min-width: 24px !important;
+          min-height: 24px !important;
+          flex: 0 0 24px !important;
+          display: inline-flex !important;
+          align-items: center !important;
+          justify-content: center !important;
+          padding: 0 !important;
+          border: 1px solid var(--border-color, rgba(120,120,120,.3)) !important;
+          border-radius: 7px !important;
+          background: transparent !important;
+          color: var(--text-secondary, inherit) !important;
+          font-family: inherit !important;
+          font-size: 16px !important;
+          font-weight: 400 !important;
+          line-height: 1 !important;
+          text-decoration: none !important;
+          opacity: 1 !important;
+          filter: none !important;
+          transform: none !important;
+          box-shadow: none !important;
+          cursor: pointer !important;
+        }
+
+        .tasks-page .task.done .task-subtasks-toggle::before,
+        .tasks-page .task.done .task-subtasks-toggle::after {
+          content: none !important;
+          display: none !important;
+        }
+
+        .tasks-page .task.done .task-subtasks-toggle span {
+          display: inline !important;
+          color: inherit !important;
+          font: inherit !important;
+          line-height: 1 !important;
+          text-decoration: none !important;
+          opacity: 1 !important;
+          transform: none !important;
+        }
+
         .tasks-page .task-completion-button {
           flex: 0 0 auto;
           width: 24px;
