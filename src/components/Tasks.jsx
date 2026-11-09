@@ -65,6 +65,9 @@ export default function Tasks({ data, save, completeTask }) {
   const [draggedTaskId, setDraggedTaskId] = useState(null);
   const [dragOverTask, setDragOverTask] = useState(null);
   const [collapsedSubtasks, setCollapsedSubtasks] = useState({});
+  const [collapsedSubtaskNotes, setCollapsedSubtaskNotes] = useState({});
+  const [draggedSubtask, setDraggedSubtask] = useState(null);
+  const [dragOverSubtask, setDragOverSubtask] = useState(null);
 
   const tasksList = Array.isArray(data?.tasks) ? data.tasks : [];
   const projectsList = Array.isArray(data?.projects) ? data.projects : [];
@@ -208,6 +211,103 @@ export default function Tasks({ data, save, completeTask }) {
           : item,
       ),
     });
+  };
+
+  const updateTaskSubtasks = (task, subtasks) => {
+    save({
+      ...data,
+      tasks: tasksList.map((item) =>
+        String(item.id) === String(task.id)
+          ? { ...item, subtasks, updatedAt: new Date().toISOString() }
+          : item,
+      ),
+    });
+  };
+
+  const editSubtaskNote = (task, subtask) => {
+    const note = window.prompt(
+      `Nota da subtarefa: ${subtask.title}`,
+      subtask.note || '',
+    );
+    if (note === null) return;
+    const subtasks = (Array.isArray(task.subtasks) ? task.subtasks : []).map(
+      (item) =>
+        String(item.id) === String(subtask.id)
+          ? { ...item, note: note.trim() }
+          : item,
+    );
+    updateTaskSubtasks(task, subtasks);
+    if (!note.trim()) {
+      setCollapsedSubtaskNotes((prev) => ({
+        ...prev,
+        [`${task.id}:${subtask.id}`]: false,
+      }));
+    }
+  };
+
+  const toggleSubtaskNote = (taskId, subtaskId) => {
+    const key = `${taskId}:${subtaskId}`;
+    setCollapsedSubtaskNotes((prev) => ({ ...prev, [key]: !prev[key] }));
+  };
+
+  const reorderSubtasks = (task, draggedId, targetId, position = 'before') => {
+    if (!draggedId || !targetId || String(draggedId) === String(targetId))
+      return;
+    const ordered = [...(Array.isArray(task.subtasks) ? task.subtasks : [])];
+    const fromIndex = ordered.findIndex(
+      (item) => String(item.id) === String(draggedId),
+    );
+    const targetIndex = ordered.findIndex(
+      (item) => String(item.id) === String(targetId),
+    );
+    if (fromIndex < 0 || targetIndex < 0) return;
+    const [moved] = ordered.splice(fromIndex, 1);
+    let insertIndex = ordered.findIndex(
+      (item) => String(item.id) === String(targetId),
+    );
+    if (insertIndex < 0) return;
+    if (position === 'after') insertIndex += 1;
+    ordered.splice(insertIndex, 0, moved);
+    updateTaskSubtasks(task, ordered);
+    setDraggedSubtask(null);
+    setDragOverSubtask(null);
+  };
+
+  const handleSubtaskDragStart = (event, taskId, subtaskId) => {
+    event.stopPropagation();
+    setDraggedSubtask({ taskId, subtaskId });
+    event.dataTransfer.effectAllowed = 'move';
+    event.dataTransfer.setData('text/plain', String(subtaskId));
+  };
+
+  const handleSubtaskDragOver = (event, taskId, subtaskId) => {
+    event.preventDefault();
+    event.stopPropagation();
+    if (
+      !draggedSubtask ||
+      String(draggedSubtask.taskId) !== String(taskId) ||
+      String(draggedSubtask.subtaskId) === String(subtaskId)
+    )
+      return;
+    const rect = event.currentTarget.getBoundingClientRect();
+    const position =
+      event.clientY < rect.top + rect.height / 2 ? 'before' : 'after';
+    setDragOverSubtask({ taskId, subtaskId, position });
+    event.dataTransfer.dropEffect = 'move';
+  };
+
+  const handleSubtaskDrop = (event, task, subtaskId) => {
+    event.preventDefault();
+    event.stopPropagation();
+    const draggedId =
+      event.dataTransfer.getData('text/plain') || draggedSubtask?.subtaskId;
+    const position =
+      dragOverSubtask?.subtaskId === subtaskId
+        ? dragOverSubtask.position
+        : 'before';
+    if (String(draggedSubtask?.taskId) === String(task.id)) {
+      reorderSubtasks(task, draggedId, subtaskId, position);
+    }
   };
 
   const toggleFormTag = (tagId) => {
@@ -991,21 +1091,126 @@ export default function Tasks({ data, save, completeTask }) {
                             </small>
                           </div>
                           <div className='task-subtasks-list'>
-                            {task.subtasks.map((subtask) => (
-                              <label
-                                className={`task-subtask ${subtask.done ? 'is-done' : ''}`}
-                                key={subtask.id}
-                              >
-                                <input
-                                  type='checkbox'
-                                  checked={Boolean(subtask.done)}
-                                  onChange={() =>
-                                    toggleTaskSubtask(task, subtask.id)
+                            {task.subtasks.map((subtask) => {
+                              const noteKey = `${task.id}:${subtask.id}`;
+                              const hasNote = Boolean(
+                                String(subtask.note || '').trim(),
+                              );
+                              const noteCollapsed = Boolean(
+                                collapsedSubtaskNotes[noteKey],
+                              );
+                              const isDragging =
+                                draggedSubtask?.subtaskId === subtask.id &&
+                                String(draggedSubtask?.taskId) ===
+                                  String(task.id);
+                              const isDragOver =
+                                dragOverSubtask?.subtaskId === subtask.id &&
+                                String(dragOverSubtask?.taskId) ===
+                                  String(task.id);
+                              return (
+                                <div
+                                  className={`task-subtask-item ${isDragging ? 'is-dragging' : ''} ${isDragOver ? `drag-over-${dragOverSubtask.position}` : ''}`}
+                                  key={subtask.id}
+                                  onDragOver={(event) =>
+                                    handleSubtaskDragOver(
+                                      event,
+                                      task.id,
+                                      subtask.id,
+                                    )
                                   }
-                                />
-                                <span>{subtask.title}</span>
-                              </label>
-                            ))}
+                                  onDrop={(event) =>
+                                    handleSubtaskDrop(event, task, subtask.id)
+                                  }
+                                >
+                                  <div className='task-subtask-row'>
+                                    <button
+                                      type='button'
+                                      className='subtask-drag-handle'
+                                      draggable
+                                      onDragStart={(event) =>
+                                        handleSubtaskDragStart(
+                                          event,
+                                          task.id,
+                                          subtask.id,
+                                        )
+                                      }
+                                      onDragEnd={() => {
+                                        setDraggedSubtask(null);
+                                        setDragOverSubtask(null);
+                                      }}
+                                      onClick={(event) =>
+                                        event.preventDefault()
+                                      }
+                                      title='Arraste para reorganizar esta subtarefa'
+                                      aria-label={`Arrastar subtarefa ${subtask.title}`}
+                                    >
+                                      ⋮⋮
+                                    </button>
+                                    <label
+                                      className={`task-subtask ${subtask.done ? 'is-done' : ''}`}
+                                    >
+                                      <input
+                                        type='checkbox'
+                                        checked={Boolean(subtask.done)}
+                                        onChange={() =>
+                                          toggleTaskSubtask(task, subtask.id)
+                                        }
+                                      />
+                                      <span>{subtask.title}</span>
+                                    </label>
+                                    {hasNote && (
+                                      <button
+                                        type='button'
+                                        className={`task-subtasks-toggle subtask-note-toggle ${noteCollapsed ? 'is-collapsed' : ''}`}
+                                        onClick={() =>
+                                          toggleSubtaskNote(task.id, subtask.id)
+                                        }
+                                        aria-label={`${noteCollapsed ? 'Mostrar' : 'Ocultar'} nota de ${subtask.title}`}
+                                        aria-expanded={!noteCollapsed}
+                                        title={
+                                          noteCollapsed
+                                            ? 'Mostrar nota'
+                                            : 'Ocultar nota'
+                                        }
+                                      >
+                                        <span aria-hidden='true'>
+                                          {noteCollapsed ? '▸' : '▾'}
+                                        </span>
+                                      </button>
+                                    )}
+                                    {!hasNote && (
+                                      <button
+                                        type='button'
+                                        className='ghost subtask-note-edit'
+                                        onClick={() =>
+                                          editSubtaskNote(task, subtask)
+                                        }
+                                        aria-label={`Adicionar nota em ${subtask.title}`}
+                                        title='Adicionar nota'
+                                      >
+                                        ✏️
+                                      </button>
+                                    )}
+                                  </div>
+                                  {hasNote && !noteCollapsed && (
+                                    <div className='subtask-note'>
+                                      <span>{subtask.note}</span>
+                                      <button
+                                        type='button'
+                                        className='ghost subtask-note-edit'
+                                        onClick={() =>
+                                          editSubtaskNote(task, subtask)
+                                        }
+                                        aria-label={`Editar nota de ${subtask.title}`}
+                                        title='Editar nota'
+                                      >
+                                        ✏️
+                                      </button>
+                                    </div>
+                                  )}
+                                </div>
+                              );
+                            })}
                           </div>
                         </div>
                       )}
@@ -1931,6 +2136,62 @@ export default function Tasks({ data, save, completeTask }) {
         .tasks-page .task-subtasks-heading small, .tasks-page .subtask-editor-title small { opacity: .7; }
         .tasks-page .task-subtasks-list { display: grid; gap: 6px; }
         .tasks-page .task-subtask { display: flex; align-items: center; gap: 8px; font-size: .92em; cursor: pointer; }
+        .tasks-page .task-subtask-item {
+          display: grid;
+          gap: 5px;
+          min-width: 0;
+          padding: 3px 4px;
+          border-radius: 8px;
+          position: relative;
+        }
+        .tasks-page .task-subtask-item.is-dragging { opacity: .45; }
+        .tasks-page .task-subtask-item.drag-over-before { box-shadow: inset 0 2px 0 var(--accent-color, #6366f1); }
+        .tasks-page .task-subtask-item.drag-over-after { box-shadow: inset 0 -2px 0 var(--accent-color, #6366f1); }
+        .tasks-page .task-subtask-row {
+          display: flex;
+          align-items: center;
+          gap: 7px;
+          min-width: 0;
+        }
+        .tasks-page .subtask-drag-handle {
+          flex: 0 0 20px;
+          width: 20px;
+          height: 24px;
+          padding: 0;
+          border: 0;
+          border-radius: 5px;
+          background: transparent;
+          color: var(--text-secondary, #888);
+          cursor: grab;
+          touch-action: none;
+          letter-spacing: -2px;
+        }
+        .tasks-page .subtask-drag-handle:active { cursor: grabbing; }
+        .tasks-page .task-subtask-row .task-subtask { flex: 1; min-width: 0; }
+        .tasks-page .subtask-note-toggle { margin-left: auto; }
+        .tasks-page .subtask-note-edit {
+          flex: 0 0 auto;
+          min-width: 28px;
+          padding: 3px 6px;
+          line-height: 1;
+        }
+        .tasks-page .subtask-note {
+          display: flex;
+          align-items: flex-start;
+          gap: 8px;
+          margin-left: 27px;
+          padding: 7px 9px;
+          border-left: 2px solid var(--accent-color, #6366f1);
+          border-radius: 0 7px 7px 0;
+          background: color-mix(in srgb, var(--accent-color, #6366f1) 7%, transparent);
+          font-size: .88em;
+        }
+        .tasks-page .subtask-note > span {
+          flex: 1;
+          min-width: 0;
+          overflow-wrap: anywhere;
+          white-space: pre-wrap;
+        }
         .tasks-page .task-subtask input, .tasks-page .subtask-edit-row input[type='checkbox'] { width: 16px; height: 16px; flex: 0 0 auto; }
         .tasks-page .task-subtask.is-done span, .tasks-page .subtask-edit-row .is-done { text-decoration: line-through; opacity: .6; }
         .tasks-page .subtask-editor { display: grid; gap: 8px; padding: 12px; border: 1px solid var(--border-color, rgba(120,120,120,.2)); border-radius: 12px; }
