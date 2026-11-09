@@ -66,6 +66,7 @@ export default function Tasks({ data, save, completeTask }) {
   const [dragOverTask, setDragOverTask] = useState(null);
   const [collapsedSubtasks, setCollapsedSubtasks] = useState({});
   const [collapsedSubtaskNotes, setCollapsedSubtaskNotes] = useState({});
+  const [subtaskFilters, setSubtaskFilters] = useState({});
   const [draggedSubtask, setDraggedSubtask] = useState(null);
   const [dragOverSubtask, setDragOverSubtask] = useState(null);
 
@@ -186,6 +187,18 @@ export default function Tasks({ data, save, completeTask }) {
     }));
   };
 
+  const updateFormSubtask = (subtaskId, changes) => {
+    setForm((prev) => ({
+      ...prev,
+      subtasks: (Array.isArray(prev.subtasks) ? prev.subtasks : []).map(
+        (item) =>
+          String(item.id) === String(subtaskId)
+            ? { ...item, ...changes }
+            : item,
+      ),
+    }));
+  };
+
   const deleteFormSubtask = (subtaskId) => {
     setForm((prev) => ({
       ...prev,
@@ -222,27 +235,6 @@ export default function Tasks({ data, save, completeTask }) {
           : item,
       ),
     });
-  };
-
-  const editSubtaskNote = (task, subtask) => {
-    const note = window.prompt(
-      `Nota da subtarefa: ${subtask.title}`,
-      subtask.note || '',
-    );
-    if (note === null) return;
-    const subtasks = (Array.isArray(task.subtasks) ? task.subtasks : []).map(
-      (item) =>
-        String(item.id) === String(subtask.id)
-          ? { ...item, note: note.trim() }
-          : item,
-    );
-    updateTaskSubtasks(task, subtasks);
-    if (!note.trim()) {
-      setCollapsedSubtaskNotes((prev) => ({
-        ...prev,
-        [`${task.id}:${subtask.id}`]: false,
-      }));
-    }
   };
 
   const toggleSubtaskNote = (taskId, subtaskId) => {
@@ -409,7 +401,11 @@ export default function Tasks({ data, save, completeTask }) {
         ),
       ),
       subtasks: (Array.isArray(form.subtasks) ? form.subtasks : [])
-        .map((item) => ({ ...item, title: String(item.title || '').trim() }))
+        .map((item) => ({
+          ...item,
+          title: String(item.title || '').trim(),
+          note: String(item.note || '').trim(),
+        }))
         .filter((item) => item.title),
       updatedAt: new Date().toISOString(),
     };
@@ -1089,128 +1085,131 @@ export default function Tasks({ data, save, completeTask }) {
                               {task.subtasks.filter((item) => item.done).length}
                               /{task.subtasks.length} concluídas
                             </small>
+                            <select
+                              className='subtask-status-filter'
+                              value={subtaskFilters[task.id] || 'all'}
+                              onChange={(event) =>
+                                setSubtaskFilters((prev) => ({
+                                  ...prev,
+                                  [task.id]: event.target.value,
+                                }))
+                              }
+                              aria-label={`Filtrar subtarefas de ${task.name}`}
+                            >
+                              <option value='all'>Todas</option>
+                              <option value='done'>Só feitas</option>
+                              <option value='pending'>Só pendentes</option>
+                            </select>
                           </div>
                           <div className='task-subtasks-list'>
-                            {task.subtasks.map((subtask) => {
-                              const noteKey = `${task.id}:${subtask.id}`;
-                              const hasNote = Boolean(
-                                String(subtask.note || '').trim(),
-                              );
-                              const noteCollapsed = Boolean(
-                                collapsedSubtaskNotes[noteKey],
-                              );
-                              const isDragging =
-                                draggedSubtask?.subtaskId === subtask.id &&
-                                String(draggedSubtask?.taskId) ===
-                                  String(task.id);
-                              const isDragOver =
-                                dragOverSubtask?.subtaskId === subtask.id &&
-                                String(dragOverSubtask?.taskId) ===
-                                  String(task.id);
-                              return (
-                                <div
-                                  className={`task-subtask-item ${isDragging ? 'is-dragging' : ''} ${isDragOver ? `drag-over-${dragOverSubtask.position}` : ''}`}
-                                  key={subtask.id}
-                                  onDragOver={(event) =>
-                                    handleSubtaskDragOver(
-                                      event,
-                                      task.id,
-                                      subtask.id,
-                                    )
-                                  }
-                                  onDrop={(event) =>
-                                    handleSubtaskDrop(event, task, subtask.id)
-                                  }
-                                >
-                                  <div className='task-subtask-row'>
-                                    <button
-                                      type='button'
-                                      className='subtask-drag-handle'
-                                      draggable
-                                      onDragStart={(event) =>
-                                        handleSubtaskDragStart(
-                                          event,
-                                          task.id,
-                                          subtask.id,
-                                        )
-                                      }
-                                      onDragEnd={() => {
-                                        setDraggedSubtask(null);
-                                        setDragOverSubtask(null);
-                                      }}
-                                      onClick={(event) =>
-                                        event.preventDefault()
-                                      }
-                                      title='Arraste para reorganizar esta subtarefa'
-                                      aria-label={`Arrastar subtarefa ${subtask.title}`}
-                                    >
-                                      ⋮⋮
-                                    </button>
-                                    <label
-                                      className={`task-subtask ${subtask.done ? 'is-done' : ''}`}
-                                    >
-                                      <input
-                                        type='checkbox'
-                                        checked={Boolean(subtask.done)}
-                                        onChange={() =>
-                                          toggleTaskSubtask(task, subtask.id)
-                                        }
-                                      />
-                                      <span>{subtask.title}</span>
-                                    </label>
-                                    {hasNote && (
+                            {task.subtasks
+                              .filter((item) => {
+                                const status = subtaskFilters[task.id] || 'all';
+                                return (
+                                  status === 'all' ||
+                                  (status === 'done' && item.done) ||
+                                  (status === 'pending' && !item.done)
+                                );
+                              })
+                              .map((subtask) => {
+                                const noteKey = `${task.id}:${subtask.id}`;
+                                const hasNote = Boolean(
+                                  String(subtask.note || '').trim(),
+                                );
+                                const noteCollapsed = Boolean(
+                                  collapsedSubtaskNotes[noteKey],
+                                );
+                                const isDragging =
+                                  draggedSubtask?.subtaskId === subtask.id &&
+                                  String(draggedSubtask?.taskId) ===
+                                    String(task.id);
+                                const isDragOver =
+                                  dragOverSubtask?.subtaskId === subtask.id &&
+                                  String(dragOverSubtask?.taskId) ===
+                                    String(task.id);
+                                return (
+                                  <div
+                                    className={`task-subtask-item ${isDragging ? 'is-dragging' : ''} ${isDragOver ? `drag-over-${dragOverSubtask.position}` : ''}`}
+                                    key={subtask.id}
+                                    onDragOver={(event) =>
+                                      handleSubtaskDragOver(
+                                        event,
+                                        task.id,
+                                        subtask.id,
+                                      )
+                                    }
+                                    onDrop={(event) =>
+                                      handleSubtaskDrop(event, task, subtask.id)
+                                    }
+                                  >
+                                    <div className='task-subtask-row'>
                                       <button
                                         type='button'
-                                        className={`task-subtasks-toggle subtask-note-toggle ${noteCollapsed ? 'is-collapsed' : ''}`}
-                                        onClick={() =>
-                                          toggleSubtaskNote(task.id, subtask.id)
+                                        className='subtask-drag-handle'
+                                        draggable
+                                        onDragStart={(event) =>
+                                          handleSubtaskDragStart(
+                                            event,
+                                            task.id,
+                                            subtask.id,
+                                          )
                                         }
-                                        aria-label={`${noteCollapsed ? 'Mostrar' : 'Ocultar'} nota de ${subtask.title}`}
-                                        aria-expanded={!noteCollapsed}
-                                        title={
-                                          noteCollapsed
-                                            ? 'Mostrar nota'
-                                            : 'Ocultar nota'
+                                        onDragEnd={() => {
+                                          setDraggedSubtask(null);
+                                          setDragOverSubtask(null);
+                                        }}
+                                        onClick={(event) =>
+                                          event.preventDefault()
                                         }
+                                        title='Arraste para reorganizar esta subtarefa'
+                                        aria-label={`Arrastar subtarefa ${subtask.title}`}
                                       >
-                                        <span aria-hidden='true'>
-                                          {noteCollapsed ? '▸' : '▾'}
-                                        </span>
+                                        ⋮⋮
                                       </button>
-                                    )}
-                                    {!hasNote && (
-                                      <button
-                                        type='button'
-                                        className='task-subtasks-toggle subtask-note-edit'
-                                        onClick={() =>
-                                          editSubtaskNote(task, subtask)
-                                        }
-                                        aria-label={`Adicionar nota em ${subtask.title}`}
-                                        title='Adicionar nota'
+                                      <label
+                                        className={`task-subtask ${subtask.done ? 'is-done' : ''}`}
                                       >
-                                        ✏️
-                                      </button>
+                                        <input
+                                          type='checkbox'
+                                          checked={Boolean(subtask.done)}
+                                          onChange={() =>
+                                            toggleTaskSubtask(task, subtask.id)
+                                          }
+                                        />
+                                        <span>{subtask.title}</span>
+                                      </label>
+                                      {hasNote && (
+                                        <button
+                                          type='button'
+                                          className={`task-subtasks-toggle subtask-note-toggle ${noteCollapsed ? 'is-collapsed' : ''}`}
+                                          onClick={() =>
+                                            toggleSubtaskNote(
+                                              task.id,
+                                              subtask.id,
+                                            )
+                                          }
+                                          aria-label={`${noteCollapsed ? 'Mostrar' : 'Ocultar'} nota de ${subtask.title}`}
+                                          aria-expanded={!noteCollapsed}
+                                          title={
+                                            noteCollapsed
+                                              ? 'Mostrar nota'
+                                              : 'Ocultar nota'
+                                          }
+                                        >
+                                          <span aria-hidden='true'>
+                                            {noteCollapsed ? '▸' : '▾'}
+                                          </span>
+                                        </button>
+                                      )}
+                                    </div>
+                                    {hasNote && !noteCollapsed && (
+                                      <div className='subtask-note'>
+                                        <span>{subtask.note}</span>
+                                      </div>
                                     )}
                                   </div>
-                                  {hasNote && !noteCollapsed && (
-                                    <div className='subtask-note'>
-                                      <span>{subtask.note}</span>
-                                      <button
-                                        type='button'
-                                        className='task-subtasks-toggle subtask-note-edit'
-                                        onClick={() =>
-                                          editSubtaskNote(task, subtask)
-                                        }
-                                        aria-label={`Editar nota de ${subtask.title}`}
-                                        title='Editar nota'
-                                      >
-                                        ✏️
-                                      </button>
-                                    </div>
-                                  )}
-                                </div>
-                              );
-                            })}
+                                );
+                              })}
                           </div>
                         </div>
                       )}
@@ -1597,9 +1596,31 @@ export default function Tasks({ data, save, completeTask }) {
                       onChange={() => toggleFormSubtask(subtask.id)}
                       aria-label={`Concluir ${subtask.title}`}
                     />
-                    <span className={subtask.done ? 'is-done' : ''}>
-                      {subtask.title}
-                    </span>
+                    <div className='subtask-edit-fields'>
+                      <input
+                        type='text'
+                        value={subtask.title || ''}
+                        maxLength={160}
+                        onChange={(e) =>
+                          updateFormSubtask(subtask.id, {
+                            title: e.target.value,
+                          })
+                        }
+                        placeholder='Nome da subtarefa'
+                        aria-label='Nome da subtarefa'
+                      />
+                      <textarea
+                        rows='2'
+                        value={subtask.note || ''}
+                        onChange={(e) =>
+                          updateFormSubtask(subtask.id, {
+                            note: e.target.value,
+                          })
+                        }
+                        placeholder='Nota ou instruções desta subtarefa (opcional)...'
+                        aria-label={`Nota da subtarefa ${subtask.title || ''}`}
+                      />
+                    </div>
                     <button
                       type='button'
                       className='ghost'
