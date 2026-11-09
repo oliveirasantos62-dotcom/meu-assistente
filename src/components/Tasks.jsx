@@ -67,6 +67,7 @@ export default function Tasks({ data, save, completeTask }) {
   const [collapsedSubtasks, setCollapsedSubtasks] = useState({});
   const [collapsedSubtaskNotes, setCollapsedSubtaskNotes] = useState({});
   const [subtaskFilters, setSubtaskFilters] = useState({});
+  const [editingSubtaskNoteId, setEditingSubtaskNoteId] = useState(null);
   const [draggedSubtask, setDraggedSubtask] = useState(null);
   const [dragOverSubtask, setDragOverSubtask] = useState(null);
 
@@ -1589,15 +1590,16 @@ export default function Tasks({ data, save, completeTask }) {
               </div>
               {(Array.isArray(form.subtasks) ? form.subtasks : []).map(
                 (subtask) => (
-                  <div className='subtask-edit-row' key={subtask.id}>
-                    <input
-                      type='checkbox'
-                      checked={Boolean(subtask.done)}
-                      onChange={() => toggleFormSubtask(subtask.id)}
-                      aria-label={`Concluir ${subtask.title}`}
-                    />
-                    <div className='subtask-edit-fields'>
+                  <div className='subtask-edit-item' key={subtask.id}>
+                    <div className='subtask-edit-row'>
                       <input
+                        type='checkbox'
+                        checked={Boolean(subtask.done)}
+                        onChange={() => toggleFormSubtask(subtask.id)}
+                        aria-label={`Concluir ${subtask.title}`}
+                      />
+                      <input
+                        className='subtask-edit-name'
                         type='text'
                         value={subtask.title || ''}
                         maxLength={160}
@@ -1609,7 +1611,34 @@ export default function Tasks({ data, save, completeTask }) {
                         placeholder='Nome da subtarefa'
                         aria-label='Nome da subtarefa'
                       />
+                      <button
+                        type='button'
+                        className='ghost subtask-note-action'
+                        onClick={() =>
+                          setEditingSubtaskNoteId((current) =>
+                            String(current) === String(subtask.id)
+                              ? null
+                              : subtask.id,
+                          )
+                        }
+                        aria-label={subtask.note ? 'Editar nota' : 'Criar nota'}
+                        title={subtask.note ? 'Editar nota' : 'Criar nota'}
+                      >
+                        📝
+                      </button>
+                      <button
+                        type='button'
+                        className='ghost subtask-delete-action'
+                        onClick={() => deleteFormSubtask(subtask.id)}
+                        aria-label={`Excluir ${subtask.title}`}
+                        title='Excluir subtarefa'
+                      >
+                        🗑️
+                      </button>
+                    </div>
+                    {String(editingSubtaskNoteId) === String(subtask.id) && (
                       <textarea
+                        className='subtask-edit-note'
                         rows='2'
                         value={subtask.note || ''}
                         onChange={(e) =>
@@ -1617,18 +1646,10 @@ export default function Tasks({ data, save, completeTask }) {
                             note: e.target.value,
                           })
                         }
-                        placeholder='Nota ou instruções desta subtarefa (opcional)...'
+                        placeholder='Escreva uma nota para esta subtarefa...'
                         aria-label={`Nota da subtarefa ${subtask.title || ''}`}
                       />
-                    </div>
-                    <button
-                      type='button'
-                      className='ghost'
-                      onClick={() => deleteFormSubtask(subtask.id)}
-                      aria-label={`Excluir ${subtask.title}`}
-                    >
-                      🗑️
-                    </button>
+                    )}
                   </div>
                 ),
               )}
@@ -2220,7 +2241,12 @@ export default function Tasks({ data, save, completeTask }) {
         .tasks-page .task-subtask input, .tasks-page .subtask-edit-row input[type='checkbox'] { width: 16px; height: 16px; flex: 0 0 auto; }
         .tasks-page .task-subtask.is-done span, .tasks-page .subtask-edit-row .is-done { text-decoration: line-through; opacity: .6; }
         .tasks-page .subtask-editor { display: grid; gap: 8px; padding: 12px; border: 1px solid var(--border-color, rgba(120,120,120,.2)); border-radius: 12px; }
+        .tasks-page .subtask-edit-item { display: grid; gap: 7px; min-width: 0; }
         .tasks-page .subtask-edit-row, .tasks-page .subtask-add-row { display: flex; align-items: center; gap: 8px; min-width: 0; }
+        .tasks-page .subtask-edit-row .subtask-edit-name { flex: 1; min-width: 0; }
+        .tasks-page .subtask-edit-row .subtask-note-action,
+        .tasks-page .subtask-edit-row .subtask-delete-action { flex: 0 0 32px; width: 32px; min-width: 32px; height: 32px; padding: 0; display: inline-flex; align-items: center; justify-content: center; }
+        .tasks-page .subtask-edit-note { width: 100%; min-width: 0; box-sizing: border-box; margin-left: 24px; width: calc(100% - 24px); }
         .tasks-page .subtask-edit-row span { flex: 1; overflow-wrap: anywhere; }
         .tasks-page .subtask-add-row input { flex: 1; min-width: 0; }
 
