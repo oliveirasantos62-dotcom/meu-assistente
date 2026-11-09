@@ -1181,7 +1181,7 @@ export default function Tasks({ data, save, completeTask }) {
                                     {!hasNote && (
                                       <button
                                         type='button'
-                                        className='ghost subtask-note-edit'
+                                        className='task-subtasks-toggle subtask-note-edit'
                                         onClick={() =>
                                           editSubtaskNote(task, subtask)
                                         }
@@ -1197,7 +1197,7 @@ export default function Tasks({ data, save, completeTask }) {
                                       <span>{subtask.note}</span>
                                       <button
                                         type='button'
-                                        className='ghost subtask-note-edit'
+                                        className='task-subtasks-toggle subtask-note-edit'
                                         onClick={() =>
                                           editSubtaskNote(task, subtask)
                                         }
@@ -2170,9 +2170,13 @@ export default function Tasks({ data, save, completeTask }) {
         .tasks-page .task-subtask-row .task-subtask { flex: 1; min-width: 0; }
         .tasks-page .subtask-note-toggle { margin-left: auto; }
         .tasks-page .subtask-note-edit {
-          flex: 0 0 auto;
-          min-width: 28px;
-          padding: 3px 6px;
+          width: 24px;
+          height: 24px;
+          min-width: 24px;
+          min-height: 24px;
+          flex: 0 0 24px;
+          padding: 0;
+          font-size: 12px;
           line-height: 1;
         }
         .tasks-page .subtask-note {
