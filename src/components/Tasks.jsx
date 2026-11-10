@@ -394,64 +394,93 @@ export default function Tasks({ data, save, completeTask }) {
     setCollapsedSubtaskNotes((prev) => ({ ...prev, [key]: !prev[key] }));
   };
 
-  const reorderSubtasks = (task, draggedId, targetId, position = 'before') => {
+  const reorderSubtaskSiblings = (
+    task,
+    parentId,
+    draggedId,
+    targetId,
+    position = 'before',
+  ) => {
     if (!draggedId || !targetId || String(draggedId) === String(targetId))
       return;
-    const ordered = [...(Array.isArray(task.subtasks) ? task.subtasks : [])];
-    const fromIndex = ordered.findIndex(
-      (item) => String(item.id) === String(draggedId),
-    );
-    const targetIndex = ordered.findIndex(
-      (item) => String(item.id) === String(targetId),
-    );
-    if (fromIndex < 0 || targetIndex < 0) return;
-    const [moved] = ordered.splice(fromIndex, 1);
-    let insertIndex = ordered.findIndex(
-      (item) => String(item.id) === String(targetId),
-    );
-    if (insertIndex < 0) return;
-    if (position === 'after') insertIndex += 1;
-    ordered.splice(insertIndex, 0, moved);
-    updateTaskSubtasks(task, ordered);
+
+    const reorderList = (items) => {
+      const ordered = [...(Array.isArray(items) ? items : [])];
+      const fromIndex = ordered.findIndex(
+        (item) => String(item.id) === String(draggedId),
+      );
+      const targetIndex = ordered.findIndex(
+        (item) => String(item.id) === String(targetId),
+      );
+      if (fromIndex < 0 || targetIndex < 0) return items;
+      const [moved] = ordered.splice(fromIndex, 1);
+      let insertIndex = ordered.findIndex(
+        (item) => String(item.id) === String(targetId),
+      );
+      if (insertIndex < 0) return items;
+      if (position === 'after') insertIndex += 1;
+      ordered.splice(insertIndex, 0, moved);
+      return ordered;
+    };
+
+    const updated =
+      parentId == null
+        ? reorderList(task.subtasks)
+        : updateSubtaskTree(task.subtasks, parentId, (parent) => ({
+            ...parent,
+            subtasks: reorderList(parent.subtasks),
+          }));
+
+    updateTaskSubtasks(task, updated);
     setDraggedSubtask(null);
     setDragOverSubtask(null);
   };
 
-  const handleSubtaskDragStart = (event, taskId, subtaskId) => {
+  const handleSubtaskDragStart = (event, taskId, parentId, subtaskId) => {
     event.stopPropagation();
-    setDraggedSubtask({ taskId, subtaskId });
+    setDraggedSubtask({ taskId, parentId: parentId ?? null, subtaskId });
     event.dataTransfer.effectAllowed = 'move';
     event.dataTransfer.setData('text/plain', String(subtaskId));
   };
 
-  const handleSubtaskDragOver = (event, taskId, subtaskId) => {
+  const handleSubtaskDragOver = (event, taskId, parentId, subtaskId) => {
     event.preventDefault();
     event.stopPropagation();
     if (
       !draggedSubtask ||
       String(draggedSubtask.taskId) !== String(taskId) ||
+      String(draggedSubtask.parentId ?? '') !== String(parentId ?? '') ||
       String(draggedSubtask.subtaskId) === String(subtaskId)
     )
       return;
+
     const rect = event.currentTarget.getBoundingClientRect();
     const position =
       event.clientY < rect.top + rect.height / 2 ? 'before' : 'after';
-    setDragOverSubtask({ taskId, subtaskId, position });
+    setDragOverSubtask({
+      taskId,
+      parentId: parentId ?? null,
+      subtaskId,
+      position,
+    });
     event.dataTransfer.dropEffect = 'move';
   };
 
-  const handleSubtaskDrop = (event, task, subtaskId) => {
+  const handleSubtaskDrop = (event, task, parentId, subtaskId) => {
     event.preventDefault();
     event.stopPropagation();
     const draggedId =
       event.dataTransfer.getData('text/plain') || draggedSubtask?.subtaskId;
+    const sameParent =
+      String(draggedSubtask?.taskId) === String(task.id) &&
+      String(draggedSubtask?.parentId ?? '') === String(parentId ?? '');
     const position =
-      dragOverSubtask?.subtaskId === subtaskId
+      dragOverSubtask?.subtaskId === subtaskId &&
+      String(dragOverSubtask?.parentId ?? '') === String(parentId ?? '')
         ? dragOverSubtask.position
         : 'before';
-    if (String(draggedSubtask?.taskId) === String(task.id)) {
-      reorderSubtasks(task, draggedId, subtaskId, position);
-    }
+    if (sameParent)
+      reorderSubtaskSiblings(task, parentId, draggedId, subtaskId, position);
   };
 
   const toggleFormTag = (tagId) => {
@@ -979,7 +1008,13 @@ export default function Tasks({ data, save, completeTask }) {
       return area && String(area.id) === String(areaId);
     }).length;
 
-  const renderRuntimeSubtasks = (task, items, depth = 0, status = 'all') =>
+  const renderRuntimeSubtasks = (
+    task,
+    items,
+    depth = 0,
+    status = 'all',
+    parentId = null,
+  ) =>
     (Array.isArray(items) ? items : [])
       .filter(
         (item) =>
@@ -994,13 +1029,13 @@ export default function Tasks({ data, save, completeTask }) {
           Array.isArray(subtask.subtasks) && subtask.subtasks.length > 0;
         const noteCollapsed = Boolean(collapsedSubtaskNotes[noteKey]);
         const isDragging =
-          depth === 0 &&
           draggedSubtask?.subtaskId === subtask.id &&
-          String(draggedSubtask?.taskId) === String(task.id);
+          String(draggedSubtask?.taskId) === String(task.id) &&
+          String(draggedSubtask?.parentId ?? '') === String(parentId ?? '');
         const isDragOver =
-          depth === 0 &&
           dragOverSubtask?.subtaskId === subtask.id &&
-          String(dragOverSubtask?.taskId) === String(task.id);
+          String(dragOverSubtask?.taskId) === String(task.id) &&
+          String(dragOverSubtask?.parentId ?? '') === String(parentId ?? '');
         return (
           <div
             className={`task-subtask-item ${isDragging ? 'is-dragging' : ''} ${isDragOver ? `drag-over-${dragOverSubtask.position}` : ''}`}
@@ -1012,36 +1047,30 @@ export default function Tasks({ data, save, completeTask }) {
                 : undefined,
               paddingLeft: depth ? 10 : undefined,
             }}
-            onDragOver={
-              depth === 0
-                ? (event) => handleSubtaskDragOver(event, task.id, subtask.id)
-                : undefined
+            onDragOver={(event) =>
+              handleSubtaskDragOver(event, task.id, parentId, subtask.id)
             }
-            onDrop={
-              depth === 0
-                ? (event) => handleSubtaskDrop(event, task, subtask.id)
-                : undefined
+            onDrop={(event) =>
+              handleSubtaskDrop(event, task, parentId, subtask.id)
             }
           >
             <div className='task-subtask-row'>
-              {depth === 0 && (
-                <button
-                  type='button'
-                  className='subtask-drag-handle'
-                  draggable
-                  onDragStart={(event) =>
-                    handleSubtaskDragStart(event, task.id, subtask.id)
-                  }
-                  onDragEnd={() => {
-                    setDraggedSubtask(null);
-                    setDragOverSubtask(null);
-                  }}
-                  onClick={(event) => event.preventDefault()}
-                  title='Arraste para reorganizar esta subtarefa'
-                >
-                  ⋮⋮
-                </button>
-              )}
+              <button
+                type='button'
+                className='subtask-drag-handle'
+                draggable
+                onDragStart={(event) =>
+                  handleSubtaskDragStart(event, task.id, parentId, subtask.id)
+                }
+                onDragEnd={() => {
+                  setDraggedSubtask(null);
+                  setDragOverSubtask(null);
+                }}
+                onClick={(event) => event.preventDefault()}
+                title='Arraste para reorganizar esta subtarefa'
+              >
+                ⋮⋮
+              </button>
               <label
                 className={`task-subtask ${subtask.done ? 'is-done' : ''}`}
               >
@@ -1075,7 +1104,13 @@ export default function Tasks({ data, save, completeTask }) {
               </div>
             )}
             {!noteCollapsed &&
-              renderRuntimeSubtasks(task, subtask.subtasks, depth + 1, status)}
+              renderRuntimeSubtasks(
+                task,
+                subtask.subtasks,
+                depth + 1,
+                status,
+                subtask.id,
+              )}
           </div>
         );
       });
