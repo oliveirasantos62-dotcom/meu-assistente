@@ -45,6 +45,45 @@ function formatDate(value) {
   return `${day}/${month}/${year}`;
 }
 
+function updateSubtaskTree(items, targetId, updater) {
+  return (Array.isArray(items) ? items : []).map((item) =>
+    String(item.id) === String(targetId)
+      ? updater(item)
+      : {
+          ...item,
+          subtasks: updateSubtaskTree(item.subtasks, targetId, updater),
+        },
+  );
+}
+function removeSubtaskTree(items, targetId) {
+  return (Array.isArray(items) ? items : [])
+    .filter((item) => String(item.id) !== String(targetId))
+    .map((item) => ({
+      ...item,
+      subtasks: removeSubtaskTree(item.subtasks, targetId),
+    }));
+}
+function resetSubtaskTree(items) {
+  return (Array.isArray(items) ? items : []).map((item) => ({
+    ...item,
+    done: false,
+    subtasks: resetSubtaskTree(item.subtasks),
+  }));
+}
+function countSubtasks(items) {
+  return (Array.isArray(items) ? items : []).reduce(
+    (n, item) => n + 1 + countSubtasks(item.subtasks),
+    0,
+  );
+}
+function countCompletedSubtasks(items) {
+  return (Array.isArray(items) ? items : []).reduce(
+    (n, item) =>
+      n + (item.done ? 1 : 0) + countCompletedSubtasks(item.subtasks),
+    0,
+  );
+}
+
 export default function Tasks({ data, save, completeTask }) {
   const [tab, setTab] = useState('tasks');
   const [filter, setFilter] = useState('all');
@@ -54,6 +93,8 @@ export default function Tasks({ data, save, completeTask }) {
 
   const [showForm, setShowForm] = useState(false);
   const [showAreaForm, setShowAreaForm] = useState(false);
+  const [showResetModal, setShowResetModal] = useState(false);
+  const [subtaskDrafts, setSubtaskDrafts] = useState({});
 
   const [editingId, setEditingId] = useState(null);
   const [editingAreaId, setEditingAreaId] = useState(null);
@@ -160,63 +201,159 @@ export default function Tasks({ data, save, completeTask }) {
     setForm((prev) => ({ ...prev, [field]: value }));
   };
 
-  const addSubtaskToForm = () => {
-    const title = String(form.subtaskDraft || '').trim();
+  const addSubtaskToForm = (parentId = null) => {
+    const title = String(
+      parentId ? subtaskDrafts[parentId] || '' : form.subtaskDraft || '',
+    ).trim();
     if (!title) return;
+    const child = {
+      id: createId(),
+      title,
+      done: false,
+      note: '',
+      subtasks: [],
+      createdAt: new Date().toISOString(),
+    };
     setForm((prev) => ({
       ...prev,
-      subtasks: [
-        ...(Array.isArray(prev.subtasks) ? prev.subtasks : []),
-        {
-          id: createId(),
-          title,
-          done: false,
-          createdAt: new Date().toISOString(),
-        },
-      ],
-      subtaskDraft: '',
+      subtasks: parentId
+        ? updateSubtaskTree(prev.subtasks, parentId, (item) => ({
+            ...item,
+            subtasks: [
+              ...(Array.isArray(item.subtasks) ? item.subtasks : []),
+              child,
+            ],
+          }))
+        : [...(Array.isArray(prev.subtasks) ? prev.subtasks : []), child],
+      subtaskDraft: parentId ? prev.subtaskDraft : '',
     }));
+    if (parentId) setSubtaskDrafts((prev) => ({ ...prev, [parentId]: '' }));
   };
-
-  const toggleFormSubtask = (subtaskId) => {
+  const toggleFormSubtask = (id) =>
     setForm((prev) => ({
       ...prev,
-      subtasks: (Array.isArray(prev.subtasks) ? prev.subtasks : []).map(
-        (item) =>
-          item.id === subtaskId ? { ...item, done: !item.done } : item,
-      ),
+      subtasks: updateSubtaskTree(prev.subtasks, id, (item) => ({
+        ...item,
+        done: !item.done,
+      })),
     }));
-  };
-
-  const updateFormSubtask = (subtaskId, changes) => {
+  const updateFormSubtask = (id, changes) =>
     setForm((prev) => ({
       ...prev,
-      subtasks: (Array.isArray(prev.subtasks) ? prev.subtasks : []).map(
-        (item) =>
-          String(item.id) === String(subtaskId)
-            ? { ...item, ...changes }
-            : item,
-      ),
+      subtasks: updateSubtaskTree(prev.subtasks, id, (item) => ({
+        ...item,
+        ...changes,
+      })),
     }));
-  };
-
-  const deleteFormSubtask = (subtaskId) => {
+  const deleteFormSubtask = (id) =>
     setForm((prev) => ({
       ...prev,
-      subtasks: (Array.isArray(prev.subtasks) ? prev.subtasks : []).filter(
-        (item) => item.id !== subtaskId,
-      ),
+      subtasks: removeSubtaskTree(prev.subtasks, id),
     }));
-  };
+  const renderSubtaskEditor = (items, depth = 0) =>
+    (Array.isArray(items) ? items : []).map((subtask) => (
+      <div
+        className='subtask-edit-item'
+        key={subtask.id}
+        style={{
+          marginLeft: depth ? 18 : 0,
+          borderLeft: depth ? '2px solid var(--border-color, #888)' : undefined,
+          paddingLeft: depth ? 10 : undefined,
+        }}
+      >
+        <div className='subtask-edit-row'>
+          <input
+            type='checkbox'
+            checked={Boolean(subtask.done)}
+            onChange={() => toggleFormSubtask(subtask.id)}
+            aria-label={`Concluir ${subtask.title}`}
+          />
+          <input
+            className='subtask-edit-name'
+            type='text'
+            value={subtask.title || ''}
+            maxLength={160}
+            onChange={(e) =>
+              updateFormSubtask(subtask.id, { title: e.target.value })
+            }
+            placeholder='Nome da subtarefa'
+            aria-label='Nome da subtarefa'
+          />
+          <button
+            type='button'
+            className='ghost subtask-note-action'
+            onClick={() =>
+              setEditingSubtaskNoteId((current) =>
+                String(current) === String(subtask.id) ? null : subtask.id,
+              )
+            }
+            aria-label={subtask.note ? 'Editar nota' : 'Criar nota'}
+            title={subtask.note ? 'Editar nota' : 'Criar nota'}
+          >
+            📝
+          </button>
+          <button
+            type='button'
+            className='ghost subtask-delete-action'
+            onClick={() => deleteFormSubtask(subtask.id)}
+            aria-label={`Excluir ${subtask.title}`}
+            title='Excluir subtarefa'
+          >
+            🗑️
+          </button>
+        </div>
+        {String(editingSubtaskNoteId) === String(subtask.id) && (
+          <textarea
+            className='subtask-edit-note'
+            rows='2'
+            value={subtask.note || ''}
+            onChange={(e) =>
+              updateFormSubtask(subtask.id, { note: e.target.value })
+            }
+            placeholder='Escreva uma nota...'
+            aria-label={`Nota da subtarefa ${subtask.title || ''}`}
+          />
+        )}
+        {renderSubtaskEditor(subtask.subtasks, depth + 1)}
+        <div className='subtask-add-row nested-subtask-add-row'>
+          <input
+            type='text'
+            value={subtaskDrafts[subtask.id] || ''}
+            onChange={(e) =>
+              setSubtaskDrafts((prev) => ({
+                ...prev,
+                [subtask.id]: e.target.value,
+              }))
+            }
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                e.preventDefault();
+                addSubtaskToForm(subtask.id);
+              }
+            }}
+            placeholder='Adicionar subsubtarefa...'
+            aria-label={`Nova subdivisão de ${subtask.title}`}
+          />
+          <button
+            type='button'
+            className='secondary'
+            onClick={() => addSubtaskToForm(subtask.id)}
+          >
+            ＋
+          </button>
+        </div>
+      </div>
+    ));
 
   const toggleSubtasksVisibility = (taskId) => {
     setCollapsedSubtasks((prev) => ({ ...prev, [taskId]: !prev[taskId] }));
   };
 
   const toggleTaskSubtask = (task, subtaskId) => {
-    const subtasks = (Array.isArray(task.subtasks) ? task.subtasks : []).map(
-      (item) => (item.id === subtaskId ? { ...item, done: !item.done } : item),
-    );
+    const subtasks = updateSubtaskTree(task.subtasks, subtaskId, (item) => ({
+      ...item,
+      done: !item.done,
+    }));
     save({
       ...data,
       tasks: tasksList.map((item) =>
@@ -358,6 +495,8 @@ export default function Tasks({ data, save, completeTask }) {
   const openCreate = () => {
     setEditingId(null);
     setForm({ ...EMPTY_FORM });
+    setSubtaskDrafts({});
+    setEditingSubtaskNoteId(null);
     setNewTagName('');
     setShowForm(true);
   };
@@ -376,6 +515,8 @@ export default function Tasks({ data, save, completeTask }) {
       tags: getTagIds(task).map(String),
     });
 
+    setSubtaskDrafts({});
+    setEditingSubtaskNoteId(null);
     setNewTagName('');
     setShowForm(true);
   };
@@ -667,30 +808,14 @@ export default function Tasks({ data, save, completeTask }) {
     });
   };
 
-  const resetDay = () => {
-    const mode = window.prompt(
-      'O que deseja reiniciar?\\n\\n1 = Somente tarefas principais\\n2 = Tarefas principais e subtarefas\\n\\nDigite 1 ou 2:',
-      '1',
-    );
-
-    if (mode === null) return;
-
-    if (mode !== '1' && mode !== '2') {
-      alert(
-        'Escolha 1 para reiniciar somente as tarefas ou 2 para reiniciar também as subtarefas.',
-      );
-      return;
-    }
-
-    const includeSubtasks = mode === '2';
-    const confirmation = window.confirm(
+  const resetDay = () => setShowResetModal(true);
+  const applyResetDay = (includeSubtasks) => {
+    const confirmed = window.confirm(
       includeSubtasks
-        ? 'Reiniciar o status de todas as tarefas e subtarefas?'
-        : 'Reiniciar o status somente das tarefas principais?',
+        ? 'Reiniciar o status de todas as tarefas e de todas as subdivisões?'
+        : 'Reiniciar somente o status das tarefas principais?',
     );
-
-    if (!confirmation) return;
-
+    if (!confirmed) return;
     save({
       ...data,
       tasks: tasksList.map((task) => ({
@@ -698,14 +823,11 @@ export default function Tasks({ data, save, completeTask }) {
         done: false,
         completedAt: null,
         ...(includeSubtasks
-          ? {
-              subtasks: (Array.isArray(task.subtasks) ? task.subtasks : []).map(
-                (subtask) => ({ ...subtask, done: false }),
-              ),
-            }
+          ? { subtasks: resetSubtaskTree(task.subtasks) }
           : {}),
       })),
     });
+    setShowResetModal(false);
   };
 
   // =====================================
@@ -848,6 +970,99 @@ export default function Tasks({ data, save, completeTask }) {
 
       return area && String(area.id) === String(areaId);
     }).length;
+
+  const renderRuntimeSubtasks = (task, items, depth = 0, status = 'all') =>
+    (Array.isArray(items) ? items : [])
+      .filter(
+        (item) =>
+          status === 'all' ||
+          (status === 'done' && item.done) ||
+          (status === 'pending' && !item.done),
+      )
+      .map((subtask) => {
+        const noteKey = `${task.id}:${subtask.id}`;
+        const hasNote = Boolean(String(subtask.note || '').trim());
+        const noteCollapsed = Boolean(collapsedSubtaskNotes[noteKey]);
+        const isDragging =
+          depth === 0 &&
+          draggedSubtask?.subtaskId === subtask.id &&
+          String(draggedSubtask?.taskId) === String(task.id);
+        const isDragOver =
+          depth === 0 &&
+          dragOverSubtask?.subtaskId === subtask.id &&
+          String(dragOverSubtask?.taskId) === String(task.id);
+        return (
+          <div
+            className={`task-subtask-item ${isDragging ? 'is-dragging' : ''} ${isDragOver ? `drag-over-${dragOverSubtask.position}` : ''}`}
+            key={subtask.id}
+            style={{
+              marginLeft: depth ? 18 : 0,
+              borderLeft: depth
+                ? '2px solid var(--border-color, #888)'
+                : undefined,
+              paddingLeft: depth ? 10 : undefined,
+            }}
+            onDragOver={
+              depth === 0
+                ? (event) => handleSubtaskDragOver(event, task.id, subtask.id)
+                : undefined
+            }
+            onDrop={
+              depth === 0
+                ? (event) => handleSubtaskDrop(event, task, subtask.id)
+                : undefined
+            }
+          >
+            <div className='task-subtask-row'>
+              {depth === 0 && (
+                <button
+                  type='button'
+                  className='subtask-drag-handle'
+                  draggable
+                  onDragStart={(event) =>
+                    handleSubtaskDragStart(event, task.id, subtask.id)
+                  }
+                  onDragEnd={() => {
+                    setDraggedSubtask(null);
+                    setDragOverSubtask(null);
+                  }}
+                  onClick={(event) => event.preventDefault()}
+                  title='Arraste para reorganizar esta subtarefa'
+                >
+                  ⋮⋮
+                </button>
+              )}
+              <label
+                className={`task-subtask ${subtask.done ? 'is-done' : ''}`}
+              >
+                <input
+                  type='checkbox'
+                  checked={Boolean(subtask.done)}
+                  onChange={() => toggleTaskSubtask(task, subtask.id)}
+                />
+                <span>{subtask.title}</span>
+              </label>
+              {hasNote && (
+                <button
+                  type='button'
+                  className={`task-subtasks-toggle subtask-note-toggle ${noteCollapsed ? 'is-collapsed' : ''}`}
+                  onClick={() => toggleSubtaskNote(task.id, subtask.id)}
+                  aria-expanded={!noteCollapsed}
+                  title={noteCollapsed ? 'Mostrar nota' : 'Ocultar nota'}
+                >
+                  <span>{noteCollapsed ? '▸' : '▾'}</span>
+                </button>
+              )}
+            </div>
+            {hasNote && !noteCollapsed && (
+              <div className='subtask-note'>
+                <span>{subtask.note}</span>
+              </div>
+            )}
+            {renderRuntimeSubtasks(task, subtask.subtasks, depth + 1, status)}
+          </div>
+        );
+      });
 
   return (
     <div className='card tasks-page'>
@@ -1111,8 +1326,8 @@ export default function Tasks({ data, save, completeTask }) {
                           <div className='task-subtasks-heading'>
                             <strong>Subtarefas</strong>
                             <small>
-                              {task.subtasks.filter((item) => item.done).length}
-                              /{task.subtasks.length} concluídas
+                              {countCompletedSubtasks(task.subtasks)}/
+                              {countSubtasks(task.subtasks)} concluídas
                             </small>
                             <select
                               className='subtask-status-filter'
@@ -1131,114 +1346,12 @@ export default function Tasks({ data, save, completeTask }) {
                             </select>
                           </div>
                           <div className='task-subtasks-list'>
-                            {task.subtasks
-                              .filter((item) => {
-                                const status = subtaskFilters[task.id] || 'all';
-                                return (
-                                  status === 'all' ||
-                                  (status === 'done' && item.done) ||
-                                  (status === 'pending' && !item.done)
-                                );
-                              })
-                              .map((subtask) => {
-                                const noteKey = `${task.id}:${subtask.id}`;
-                                const hasNote = Boolean(
-                                  String(subtask.note || '').trim(),
-                                );
-                                const noteCollapsed = Boolean(
-                                  collapsedSubtaskNotes[noteKey],
-                                );
-                                const isDragging =
-                                  draggedSubtask?.subtaskId === subtask.id &&
-                                  String(draggedSubtask?.taskId) ===
-                                    String(task.id);
-                                const isDragOver =
-                                  dragOverSubtask?.subtaskId === subtask.id &&
-                                  String(dragOverSubtask?.taskId) ===
-                                    String(task.id);
-                                return (
-                                  <div
-                                    className={`task-subtask-item ${isDragging ? 'is-dragging' : ''} ${isDragOver ? `drag-over-${dragOverSubtask.position}` : ''}`}
-                                    key={subtask.id}
-                                    onDragOver={(event) =>
-                                      handleSubtaskDragOver(
-                                        event,
-                                        task.id,
-                                        subtask.id,
-                                      )
-                                    }
-                                    onDrop={(event) =>
-                                      handleSubtaskDrop(event, task, subtask.id)
-                                    }
-                                  >
-                                    <div className='task-subtask-row'>
-                                      <button
-                                        type='button'
-                                        className='subtask-drag-handle'
-                                        draggable
-                                        onDragStart={(event) =>
-                                          handleSubtaskDragStart(
-                                            event,
-                                            task.id,
-                                            subtask.id,
-                                          )
-                                        }
-                                        onDragEnd={() => {
-                                          setDraggedSubtask(null);
-                                          setDragOverSubtask(null);
-                                        }}
-                                        onClick={(event) =>
-                                          event.preventDefault()
-                                        }
-                                        title='Arraste para reorganizar esta subtarefa'
-                                        aria-label={`Arrastar subtarefa ${subtask.title}`}
-                                      >
-                                        ⋮⋮
-                                      </button>
-                                      <label
-                                        className={`task-subtask ${subtask.done ? 'is-done' : ''}`}
-                                      >
-                                        <input
-                                          type='checkbox'
-                                          checked={Boolean(subtask.done)}
-                                          onChange={() =>
-                                            toggleTaskSubtask(task, subtask.id)
-                                          }
-                                        />
-                                        <span>{subtask.title}</span>
-                                      </label>
-                                      {hasNote && (
-                                        <button
-                                          type='button'
-                                          className={`task-subtasks-toggle subtask-note-toggle ${noteCollapsed ? 'is-collapsed' : ''}`}
-                                          onClick={() =>
-                                            toggleSubtaskNote(
-                                              task.id,
-                                              subtask.id,
-                                            )
-                                          }
-                                          aria-label={`${noteCollapsed ? 'Mostrar' : 'Ocultar'} nota de ${subtask.title}`}
-                                          aria-expanded={!noteCollapsed}
-                                          title={
-                                            noteCollapsed
-                                              ? 'Mostrar nota'
-                                              : 'Ocultar nota'
-                                          }
-                                        >
-                                          <span aria-hidden='true'>
-                                            {noteCollapsed ? '▸' : '▾'}
-                                          </span>
-                                        </button>
-                                      )}
-                                    </div>
-                                    {hasNote && !noteCollapsed && (
-                                      <div className='subtask-note'>
-                                        <span>{subtask.note}</span>
-                                      </div>
-                                    )}
-                                  </div>
-                                );
-                              })}
+                            {renderRuntimeSubtasks(
+                              task,
+                              task.subtasks,
+                              0,
+                              subtaskFilters[task.id] || 'all',
+                            )}
                           </div>
                         </div>
                       )}
@@ -1556,6 +1669,63 @@ export default function Tasks({ data, save, completeTask }) {
         </div>
       )}
 
+      {showResetModal && (
+        <div
+          className='task-modal-backdrop'
+          role='presentation'
+          onMouseDown={(e) => {
+            if (e.target === e.currentTarget) setShowResetModal(false);
+          }}
+        >
+          <section
+            className='task-modal card reset-day-modal'
+            role='dialog'
+            aria-modal='true'
+            aria-labelledby='reset-day-title'
+          >
+            <div className='section-title'>
+              <h2 id='reset-day-title'>🔄 Reiniciar dia</h2>
+              <button
+                type='button'
+                className='ghost'
+                onClick={() => setShowResetModal(false)}
+                aria-label='Fechar'
+              >
+                ✕
+              </button>
+            </div>
+            <p>Escolha quais itens terão o status redefinido:</p>
+            <div className='reset-day-options'>
+              <button
+                type='button'
+                className='secondary'
+                onClick={() => applyResetDay(false)}
+              >
+                <strong>Somente tarefas principais</strong>
+                <small>As subtarefas manterão seus status atuais.</small>
+              </button>
+              <button
+                type='button'
+                className='secondary'
+                onClick={() => applyResetDay(true)}
+              >
+                <strong>Tarefas e todas as subdivisões</strong>
+                <small>
+                  Reinicia subtarefas, subsubtarefas e todos os níveis abaixo.
+                </small>
+              </button>
+            </div>
+            <button
+              type='button'
+              className='ghost'
+              onClick={() => setShowResetModal(false)}
+            >
+              Cancelar
+            </button>
+          </section>
+        </div>
+      )}
+
       {/* MODAL DE TAREFAS */}
       {showForm && (
         <div
@@ -1608,79 +1778,11 @@ export default function Tasks({ data, save, completeTask }) {
               <div className='subtask-editor-title'>
                 <strong>☑️ Subtarefas</strong>
                 <small>
-                  {
-                    (Array.isArray(form.subtasks) ? form.subtasks : []).filter(
-                      (item) => item.done,
-                    ).length
-                  }
-                  /{(Array.isArray(form.subtasks) ? form.subtasks : []).length}
+                  {countCompletedSubtasks(form.subtasks)}/
+                  {countSubtasks(form.subtasks)}
                 </small>
               </div>
-              {(Array.isArray(form.subtasks) ? form.subtasks : []).map(
-                (subtask) => (
-                  <div className='subtask-edit-item' key={subtask.id}>
-                    <div className='subtask-edit-row'>
-                      <input
-                        type='checkbox'
-                        checked={Boolean(subtask.done)}
-                        onChange={() => toggleFormSubtask(subtask.id)}
-                        aria-label={`Concluir ${subtask.title}`}
-                      />
-                      <input
-                        className='subtask-edit-name'
-                        type='text'
-                        value={subtask.title || ''}
-                        maxLength={160}
-                        onChange={(e) =>
-                          updateFormSubtask(subtask.id, {
-                            title: e.target.value,
-                          })
-                        }
-                        placeholder='Nome da subtarefa'
-                        aria-label='Nome da subtarefa'
-                      />
-                      <button
-                        type='button'
-                        className='ghost subtask-note-action'
-                        onClick={() =>
-                          setEditingSubtaskNoteId((current) =>
-                            String(current) === String(subtask.id)
-                              ? null
-                              : subtask.id,
-                          )
-                        }
-                        aria-label={subtask.note ? 'Editar nota' : 'Criar nota'}
-                        title={subtask.note ? 'Editar nota' : 'Criar nota'}
-                      >
-                        📝
-                      </button>
-                      <button
-                        type='button'
-                        className='ghost subtask-delete-action'
-                        onClick={() => deleteFormSubtask(subtask.id)}
-                        aria-label={`Excluir ${subtask.title}`}
-                        title='Excluir subtarefa'
-                      >
-                        🗑️
-                      </button>
-                    </div>
-                    {String(editingSubtaskNoteId) === String(subtask.id) && (
-                      <textarea
-                        className='subtask-edit-note'
-                        rows='2'
-                        value={subtask.note || ''}
-                        onChange={(e) =>
-                          updateFormSubtask(subtask.id, {
-                            note: e.target.value,
-                          })
-                        }
-                        placeholder='Escreva uma nota para esta subtarefa...'
-                        aria-label={`Nota da subtarefa ${subtask.title || ''}`}
-                      />
-                    )}
-                  </div>
-                ),
-              )}
+              {renderSubtaskEditor(form.subtasks)}
               <div className='subtask-add-row'>
                 <input
                   type='text'
@@ -1698,7 +1800,7 @@ export default function Tasks({ data, save, completeTask }) {
                 <button
                   type='button'
                   className='secondary'
-                  onClick={addSubtaskToForm}
+                  onClick={() => addSubtaskToForm()}
                 >
                   ＋ Adicionar
                 </button>
@@ -2277,6 +2379,8 @@ export default function Tasks({ data, save, completeTask }) {
         .tasks-page .subtask-edit-note { width: 100%; min-width: 0; box-sizing: border-box; margin-left: 24px; width: calc(100% - 24px); }
         .tasks-page .subtask-edit-row span { flex: 1; overflow-wrap: anywhere; }
         .tasks-page .subtask-add-row input { flex: 1; min-width: 0; }
+        .tasks-page .nested-subtask-add-row { margin: 2px 0 4px 18px; }
+        .tasks-page .nested-subtask-add-row button { flex: 0 0 34px; min-width: 34px; padding: 5px; }
 
         .tasks-page .is-done .completion-icon {
           border-color: rgba(255,255,255,.9);
@@ -2517,6 +2621,11 @@ export default function Tasks({ data, save, completeTask }) {
           max-height: 90vh;
           overflow: auto;
         }
+
+        .reset-day-modal { width: min(480px, 100%); }
+        .reset-day-options { display: grid; gap: 10px; margin: 16px 0; }
+        .reset-day-options button { display: grid; gap: 5px; text-align: left; padding: 13px 15px; }
+        .reset-day-options small { opacity: .75; font-weight: 400; }
 
         .task-modal label {
           display: grid;
