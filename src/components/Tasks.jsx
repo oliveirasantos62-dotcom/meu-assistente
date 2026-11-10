@@ -668,7 +668,28 @@ export default function Tasks({ data, save, completeTask }) {
   };
 
   const resetDay = () => {
-    if (!window.confirm('Reiniciar todas as tarefas?')) return;
+    const mode = window.prompt(
+      'O que deseja reiniciar?\\n\\n1 = Somente tarefas principais\\n2 = Tarefas principais e subtarefas\\n\\nDigite 1 ou 2:',
+      '1',
+    );
+
+    if (mode === null) return;
+
+    if (mode !== '1' && mode !== '2') {
+      alert(
+        'Escolha 1 para reiniciar somente as tarefas ou 2 para reiniciar também as subtarefas.',
+      );
+      return;
+    }
+
+    const includeSubtasks = mode === '2';
+    const confirmation = window.confirm(
+      includeSubtasks
+        ? 'Reiniciar o status de todas as tarefas e subtarefas?'
+        : 'Reiniciar o status somente das tarefas principais?',
+    );
+
+    if (!confirmation) return;
 
     save({
       ...data,
@@ -676,6 +697,13 @@ export default function Tasks({ data, save, completeTask }) {
         ...task,
         done: false,
         completedAt: null,
+        ...(includeSubtasks
+          ? {
+              subtasks: (Array.isArray(task.subtasks) ? task.subtasks : []).map(
+                (subtask) => ({ ...subtask, done: false }),
+              ),
+            }
+          : {}),
       })),
     });
   };
