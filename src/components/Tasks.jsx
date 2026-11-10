@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { getTagIds } from '../utils/analytics';
 
 import { isTaskCancelled, localDateString } from '../utils/taskStatus';
@@ -94,6 +94,18 @@ export default function Tasks({ data, save, completeTask }) {
   const [showForm, setShowForm] = useState(false);
   const [showAreaForm, setShowAreaForm] = useState(false);
   const [showResetModal, setShowResetModal] = useState(false);
+  const resetModalRef = useRef(null);
+
+  useEffect(() => {
+    if (!showResetModal) return;
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    requestAnimationFrame(() =>
+      resetModalRef.current?.scrollIntoView({
+        behavior: 'smooth',
+        block: 'center',
+      }),
+    );
+  }, [showResetModal]);
   const [subtaskDrafts, setSubtaskDrafts] = useState({});
 
   const [editingId, setEditingId] = useState(null);
@@ -287,8 +299,8 @@ export default function Tasks({ data, save, completeTask }) {
                 String(current) === String(subtask.id) ? null : subtask.id,
               )
             }
-            aria-label={subtask.note ? 'Editar nota' : 'Criar nota'}
-            title={subtask.note ? 'Editar nota' : 'Criar nota'}
+            aria-label='Mostrar ou ocultar nota e subdivisões'
+            title='Mostrar/ocultar nota e subdivisões'
           >
             📝
           </button>
@@ -303,45 +315,47 @@ export default function Tasks({ data, save, completeTask }) {
           </button>
         </div>
         {String(editingSubtaskNoteId) === String(subtask.id) && (
-          <textarea
-            className='subtask-edit-note'
-            rows='2'
-            value={subtask.note || ''}
-            onChange={(e) =>
-              updateFormSubtask(subtask.id, { note: e.target.value })
-            }
-            placeholder='Escreva uma nota...'
-            aria-label={`Nota da subtarefa ${subtask.title || ''}`}
-          />
-        )}
-        {renderSubtaskEditor(subtask.subtasks, depth + 1)}
-        <div className='subtask-add-row nested-subtask-add-row'>
-          <input
-            type='text'
-            value={subtaskDrafts[subtask.id] || ''}
-            onChange={(e) =>
-              setSubtaskDrafts((prev) => ({
-                ...prev,
-                [subtask.id]: e.target.value,
-              }))
-            }
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') {
-                e.preventDefault();
-                addSubtaskToForm(subtask.id);
+          <>
+            <textarea
+              className='subtask-edit-note'
+              rows='2'
+              value={subtask.note || ''}
+              onChange={(e) =>
+                updateFormSubtask(subtask.id, { note: e.target.value })
               }
-            }}
-            placeholder='Adicionar subsubtarefa...'
-            aria-label={`Nova subdivisão de ${subtask.title}`}
-          />
-          <button
-            type='button'
-            className='secondary'
-            onClick={() => addSubtaskToForm(subtask.id)}
-          >
-            ＋
-          </button>
-        </div>
+              placeholder='Escreva uma nota...'
+              aria-label={`Nota da subtarefa ${subtask.title || ''}`}
+            />
+            {renderSubtaskEditor(subtask.subtasks, depth + 1)}
+            <div className='subtask-add-row nested-subtask-add-row'>
+              <input
+                type='text'
+                value={subtaskDrafts[subtask.id] || ''}
+                onChange={(e) =>
+                  setSubtaskDrafts((prev) => ({
+                    ...prev,
+                    [subtask.id]: e.target.value,
+                  }))
+                }
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    addSubtaskToForm(subtask.id);
+                  }
+                }}
+                placeholder='Adicionar subsubtarefa...'
+                aria-label={`Nova subdivisão de ${subtask.title}`}
+              />
+              <button
+                type='button'
+                className='secondary'
+                onClick={() => addSubtaskToForm(subtask.id)}
+              >
+                ＋
+              </button>
+            </div>
+          </>
+        )}
       </div>
     ));
 
@@ -810,12 +824,6 @@ export default function Tasks({ data, save, completeTask }) {
 
   const resetDay = () => setShowResetModal(true);
   const applyResetDay = (includeSubtasks) => {
-    const confirmed = window.confirm(
-      includeSubtasks
-        ? 'Reiniciar o status de todas as tarefas e de todas as subdivisões?'
-        : 'Reiniciar somente o status das tarefas principais?',
-    );
-    if (!confirmed) return;
     save({
       ...data,
       tasks: tasksList.map((task) => ({
@@ -982,6 +990,8 @@ export default function Tasks({ data, save, completeTask }) {
       .map((subtask) => {
         const noteKey = `${task.id}:${subtask.id}`;
         const hasNote = Boolean(String(subtask.note || '').trim());
+        const hasChildren =
+          Array.isArray(subtask.subtasks) && subtask.subtasks.length > 0;
         const noteCollapsed = Boolean(collapsedSubtaskNotes[noteKey]);
         const isDragging =
           depth === 0 &&
@@ -1042,24 +1052,30 @@ export default function Tasks({ data, save, completeTask }) {
                 />
                 <span>{subtask.title}</span>
               </label>
-              {hasNote && (
+              {(hasNote || hasChildren) && (
                 <button
                   type='button'
                   className={`task-subtasks-toggle subtask-note-toggle ${noteCollapsed ? 'is-collapsed' : ''}`}
                   onClick={() => toggleSubtaskNote(task.id, subtask.id)}
+                  aria-label={`${noteCollapsed ? 'Mostrar' : 'Ocultar'} ${hasChildren ? 'subtarefas' : 'nota'} de ${subtask.title}`}
                   aria-expanded={!noteCollapsed}
-                  title={noteCollapsed ? 'Mostrar nota' : 'Ocultar nota'}
+                  title={
+                    noteCollapsed
+                      ? `Mostrar ${hasChildren ? 'subtarefas e nota' : 'nota'}`
+                      : `Ocultar ${hasChildren ? 'subtarefas e nota' : 'nota'}`
+                  }
                 >
-                  <span>{noteCollapsed ? '▸' : '▾'}</span>
+                  <span aria-hidden='true'>{noteCollapsed ? '▸' : '▾'}</span>
                 </button>
               )}
             </div>
-            {hasNote && !noteCollapsed && (
+            {!noteCollapsed && hasNote && (
               <div className='subtask-note'>
                 <span>{subtask.note}</span>
               </div>
             )}
-            {renderRuntimeSubtasks(task, subtask.subtasks, depth + 1, status)}
+            {!noteCollapsed &&
+              renderRuntimeSubtasks(task, subtask.subtasks, depth + 1, status)}
           </div>
         );
       });
@@ -1678,6 +1694,7 @@ export default function Tasks({ data, save, completeTask }) {
           }}
         >
           <section
+            ref={resetModalRef}
             className='task-modal card reset-day-modal'
             role='dialog'
             aria-modal='true'
