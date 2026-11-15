@@ -63,6 +63,33 @@ function removeSubtaskTree(items, targetId) {
       subtasks: removeSubtaskTree(item.subtasks, targetId),
     }));
 }
+function extractSubtaskTree(items, targetId) {
+  const list = Array.isArray(items) ? items : [];
+
+  for (let index = 0; index < list.length; index++) {
+    const item = list[index];
+
+    if (String(item.id) === String(targetId)) {
+      return {
+        items: list.filter((_, i) => i !== index),
+        found: item,
+      };
+    }
+
+    const result = extractSubtaskTree(item.subtasks, targetId);
+
+    if (result.found) {
+      return {
+        items: list.map((current, i) =>
+          i === index ? { ...current, subtasks: result.items } : current,
+        ),
+        found: result.found,
+      };
+    }
+  }
+
+  return { items: list, found: null };
+}
 function resetSubtaskTree(items) {
   return (Array.isArray(items) ? items : []).map((item) => ({
     ...item,
@@ -481,6 +508,95 @@ export default function Tasks({ data, save, completeTask }) {
         : 'before';
     if (sameParent)
       reorderSubtaskSiblings(task, parentId, draggedId, subtaskId, position);
+  };
+  const promoteSubtaskToTask = (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+
+    const draggedId =
+      event.dataTransfer.getData('text/plain') || draggedSubtask?.subtaskId;
+
+    const sourceTaskId = draggedSubtask?.taskId;
+
+    if (!draggedId || !sourceTaskId) return;
+
+    const parentTask = tasksList.find(
+      (task) => String(task.id) === String(sourceTaskId),
+    );
+
+    if (!parentTask) return;
+
+    const extracted = extractSubtaskTree(parentTask.subtasks, draggedId);
+
+    if (!extracted.found) return;
+
+    const subtask = extracted.found;
+    const now = new Date().toISOString();
+
+    const promotedTask = {
+      id: createId(),
+
+      name: String(subtask.title || 'Nova tarefa').trim(),
+      description: String(subtask.note || '').trim(),
+
+      priority: parentTask.priority || 'Média',
+      deadline: parentTask.deadline || '',
+      frequency: parentTask.frequency || '1x',
+      xp: Number(parentTask.xp ?? 40),
+
+      projectId: parentTask.projectId ?? null,
+      areaId: parentTask.areaId ?? null,
+      tags: Array.isArray(parentTask.tags) ? [...parentTask.tags] : [],
+
+      // Mantém toda a árvore de subdivisões.
+      subtasks: Array.isArray(subtask.subtasks) ? subtask.subtasks : [],
+
+      // Preserva o estado da subtarefa.
+      done: Boolean(subtask.done),
+      completedAt: subtask.completedAt || null,
+
+      // Preserva outros dados existentes da subtarefa.
+      createdAt: subtask.createdAt || now,
+      updatedAt: now,
+
+      sortOrder: tasksList.length,
+    };
+
+    const updatedTasks = [
+      ...tasksList.map((task) =>
+        String(task.id) === String(parentTask.id)
+          ? {
+              ...task,
+              subtasks: extracted.items,
+              updatedAt: now,
+            }
+          : task,
+      ),
+      promotedTask,
+    ];
+
+    save({
+      ...data,
+      tasks: updatedTasks,
+    });
+
+    setDraggedSubtask(null);
+    setDragOverSubtask(null);
+  };
+
+  const handleSubtaskOutsideDragOver = (event) => {
+    if (!draggedSubtask) return;
+
+    event.preventDefault();
+    event.stopPropagation();
+
+    event.dataTransfer.dropEffect = 'move';
+  };
+
+  const handleSubtaskOutsideDrop = (event) => {
+    if (!draggedSubtask) return;
+
+    promoteSubtaskToTask(event);
   };
 
   const toggleFormTag = (tagId) => {
@@ -1262,6 +1378,20 @@ export default function Tasks({ data, save, completeTask }) {
             ↕️ Arraste pelo ícone ⋮⋮ para definir a ordem das tarefas. A ordem
             fica salva e continua a mesma ao voltar para a página.
           </p>
+
+          {draggedSubtask && (
+            <div
+              className='subtask-promotion-dropzone'
+              onDragOver={handleSubtaskOutsideDragOver}
+              onDrop={handleSubtaskOutsideDrop}
+            >
+              <span>📤</span>
+              <strong>Solte aqui para transformar em tarefa principal</strong>
+              <small>
+                A subtarefa e todas as suas subdivisões serão preservadas.
+              </small>
+            </div>
+          )}
 
           <div className='tasks-list'>
             {visibleTasks.map((task) => {
@@ -2199,6 +2329,48 @@ export default function Tasks({ data, save, completeTask }) {
           padding: 0 30px 0 12px;
           cursor: pointer;
           appearance: auto;
+        }
+
+        .tasks-page .subtask-promotion-dropzone {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          gap: 7px;
+          min-height: 95px;
+          margin: 12px 0;
+          padding: 18px;
+          border: 2px dashed var(--accent-color, #6366f1);
+          border-radius: 14px;
+          background: color-mix(
+            in srgb,
+            var(--accent-color, #6366f1) 8%,
+            transparent
+          );
+          color: var(--text-color, inherit);
+          text-align: center;
+          transition: background .2s ease, border-color .2s ease;
+        }
+
+        .tasks-page .subtask-promotion-dropzone > span {
+          font-size: 24px;
+        }
+
+        .tasks-page .subtask-promotion-dropzone strong {
+          font-size: 14px;
+        }
+
+        .tasks-page .subtask-promotion-dropzone small {
+          opacity: .7;
+          font-size: 12px;
+        }
+
+        .tasks-page .subtask-promotion-dropzone:hover {
+          background: color-mix(
+            in srgb,
+            var(--accent-color, #6366f1) 16%,
+            transparent
+          );
         }
 
         .tasks-list {
