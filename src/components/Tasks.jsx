@@ -470,20 +470,93 @@ export default function Tasks({ data, save, completeTask }) {
     event.dataTransfer.setData('text/plain', String(subtaskId));
   };
 
+  const subtaskTreeContains = (items, targetId) =>
+    (Array.isArray(items) ? items : []).some(
+      (item) =>
+        String(item.id) === String(targetId) ||
+        subtaskTreeContains(item.subtasks, targetId),
+    );
+
+  const moveSubtaskIntoSubtask = (
+    sourceTaskId,
+    draggedId,
+    targetTask,
+    targetId,
+  ) => {
+    if (!sourceTaskId || !draggedId || !targetTask || !targetId) return;
+    if (String(draggedId) === String(targetId)) return;
+
+    const sourceTask = tasksList.find(
+      (item) => String(item.id) === String(sourceTaskId),
+    );
+    if (!sourceTask) return;
+
+    const extracted = extractSubtaskTree(sourceTask.subtasks, draggedId);
+    if (!extracted.found) return;
+    // Impede soltar um item dentro dele mesmo ou de um descendente seu.
+    if (subtaskTreeContains(extracted.found.subtasks, targetId)) return;
+
+    const targetBase =
+      String(sourceTask.id) === String(targetTask.id)
+        ? extracted.items
+        : targetTask.subtasks;
+    let targetFound = false;
+    const nested = updateSubtaskTree(targetBase, targetId, (item) => {
+      targetFound = true;
+      return {
+        ...item,
+        subtasks: [
+          ...(Array.isArray(item.subtasks) ? item.subtasks : []),
+          extracted.found,
+        ],
+      };
+    });
+    if (!targetFound) return;
+
+    const now = new Date().toISOString();
+    const updatedTasks = tasksList.map((item) => {
+      if (String(item.id) === String(sourceTask.id)) {
+        return {
+          ...item,
+          subtasks:
+            String(sourceTask.id) === String(targetTask.id)
+              ? nested
+              : extracted.items,
+          updatedAt: now,
+        };
+      }
+      if (String(item.id) === String(targetTask.id)) {
+        return { ...item, subtasks: nested, updatedAt: now };
+      }
+      return item;
+    });
+    save({ ...data, tasks: updatedTasks });
+    setDraggedSubtask(null);
+    setDragOverSubtask(null);
+  };
+
   const handleSubtaskDragOver = (event, taskId, parentId, subtaskId) => {
+    if (!draggedSubtask) return;
     event.preventDefault();
     event.stopPropagation();
+    if (String(draggedSubtask.subtaskId) === String(subtaskId)) return;
+
+    const sourceTask = tasksList.find(
+      (item) => String(item.id) === String(draggedSubtask.taskId),
+    );
+    const extracted = sourceTask
+      ? extractSubtaskTree(sourceTask.subtasks, draggedSubtask.subtaskId)
+      : { found: null };
     if (
-      !draggedSubtask ||
-      String(draggedSubtask.taskId) !== String(taskId) ||
-      String(draggedSubtask.parentId ?? '') !== String(parentId ?? '') ||
-      String(draggedSubtask.subtaskId) === String(subtaskId)
+      !extracted.found ||
+      subtaskTreeContains(extracted.found.subtasks, subtaskId)
     )
       return;
 
     const rect = event.currentTarget.getBoundingClientRect();
+    const relativeY = (event.clientY - rect.top) / Math.max(rect.height, 1);
     const position =
-      event.clientY < rect.top + rect.height / 2 ? 'before' : 'after';
+      relativeY < 0.25 ? 'before' : relativeY > 0.75 ? 'after' : 'inside';
     setDragOverSubtask({
       taskId,
       parentId: parentId ?? null,
@@ -496,18 +569,35 @@ export default function Tasks({ data, save, completeTask }) {
   const handleSubtaskDrop = (event, task, parentId, subtaskId) => {
     event.preventDefault();
     event.stopPropagation();
-    const draggedId =
-      event.dataTransfer.getData('text/plain') || draggedSubtask?.subtaskId;
-    const sameParent =
-      String(draggedSubtask?.taskId) === String(task.id) &&
-      String(draggedSubtask?.parentId ?? '') === String(parentId ?? '');
+    if (!draggedSubtask) return;
+
     const position =
       dragOverSubtask?.subtaskId === subtaskId &&
-      String(dragOverSubtask?.parentId ?? '') === String(parentId ?? '')
+      String(dragOverSubtask?.taskId) === String(task.id)
         ? dragOverSubtask.position
-        : 'before';
-    if (sameParent)
-      reorderSubtaskSiblings(task, parentId, draggedId, subtaskId, position);
+        : 'inside';
+
+    const sameParent =
+      String(draggedSubtask.taskId) === String(task.id) &&
+      String(draggedSubtask.parentId ?? '') === String(parentId ?? '');
+
+    if (sameParent && position !== 'inside') {
+      reorderSubtaskSiblings(
+        task,
+        parentId,
+        draggedSubtask.subtaskId,
+        subtaskId,
+        position,
+      );
+      return;
+    }
+
+    moveSubtaskIntoSubtask(
+      draggedSubtask.taskId,
+      draggedSubtask.subtaskId,
+      task,
+      subtaskId,
+    );
   };
   const promoteSubtaskToTask = (event) => {
     event.preventDefault();
@@ -1183,7 +1273,7 @@ export default function Tasks({ data, save, completeTask }) {
                   setDragOverSubtask(null);
                 }}
                 onClick={(event) => event.preventDefault()}
-                title='Arraste para reorganizar esta subtarefa'
+                title='Arraste para dentro de outra subtarefa ou para transformar em tarefa principal'
               >
                 ⋮⋮
               </button>
@@ -1232,7 +1322,20 @@ export default function Tasks({ data, save, completeTask }) {
       });
 
   return (
-    <div className='card tasks-page'>
+    <div
+      className='card tasks-page'
+      onDragOver={(event) => {
+        if (!draggedSubtask || event.target.closest('.task-subtask-item'))
+          return;
+        event.preventDefault();
+        event.dataTransfer.dropEffect = 'move';
+      }}
+      onDrop={(event) => {
+        if (!draggedSubtask || event.target.closest('.task-subtask-item'))
+          return;
+        promoteSubtaskToTask(event);
+      }}
+    >
       {/* CABEÇALHO */}
       <div className='section-title'>
         <div>
@@ -1386,9 +1489,10 @@ export default function Tasks({ data, save, completeTask }) {
               onDrop={handleSubtaskOutsideDrop}
             >
               <span>📤</span>
-              <strong>Solte aqui para transformar em tarefa principal</strong>
+              <strong>Transformar em tarefa principal</strong>
               <small>
-                A subtarefa e todas as suas subdivisões serão preservadas.
+                Solte aqui para separar a subtarefa. Para aninhar, solte sobre
+                outra subtarefa.
               </small>
             </div>
           )}
@@ -2332,28 +2436,31 @@ export default function Tasks({ data, save, completeTask }) {
         }
 
         .tasks-page .subtask-promotion-dropzone {
+          position: fixed;
+          z-index: 9999;
+          left: 50%;
+          bottom: 24px;
+          transform: translateX(-50%);
           display: flex;
           flex-direction: column;
           align-items: center;
           justify-content: center;
           gap: 7px;
-          min-height: 95px;
-          margin: 12px 0;
-          padding: 18px;
+          width: min(560px, calc(100vw - 32px));
+          min-height: 88px;
+          margin: 0;
+          padding: 16px 20px;
           border: 2px dashed var(--accent-color, #6366f1);
-          border-radius: 14px;
-          background: color-mix(
-            in srgb,
-            var(--accent-color, #6366f1) 8%,
-            transparent
-          );
+          border-radius: 16px;
+          background: var(--card-bg, #fff);
           color: var(--text-color, inherit);
           text-align: center;
-          transition: background .2s ease, border-color .2s ease;
+          box-shadow: 0 12px 36px rgba(0, 0, 0, .22);
+          pointer-events: auto;
         }
 
         .tasks-page .subtask-promotion-dropzone > span {
-          font-size: 24px;
+          font-size: 22px;
         }
 
         .tasks-page .subtask-promotion-dropzone strong {
@@ -2361,16 +2468,15 @@ export default function Tasks({ data, save, completeTask }) {
         }
 
         .tasks-page .subtask-promotion-dropzone small {
-          opacity: .7;
+          opacity: .75;
           font-size: 12px;
         }
 
-        .tasks-page .subtask-promotion-dropzone:hover {
-          background: color-mix(
-            in srgb,
-            var(--accent-color, #6366f1) 16%,
-            transparent
-          );
+        .tasks-page .task-subtask-item.drag-over-inside {
+          outline: 2px solid var(--accent-color, #6366f1);
+          outline-offset: 2px;
+          border-radius: 8px;
+          background: color-mix(in srgb, var(--accent-color, #6366f1) 14%, transparent);
         }
 
         .tasks-list {
