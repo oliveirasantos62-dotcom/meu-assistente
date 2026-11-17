@@ -9,6 +9,7 @@ const EMPTY_FORM = {
   deadline: '',
   frequency: '1x',
   xp: 40,
+  estimatedMinutes: '',
   projectId: '',
   areaId: '',
   tags: [],
@@ -113,6 +114,7 @@ function countCompletedSubtasks(items) {
 
 export default function Tasks({ data, save, completeTask }) {
   const [tab, setTab] = useState('tasks');
+  const [viewMode, setViewMode] = useState('list');
   const [filter, setFilter] = useState('all');
   const [areaFilter, setAreaFilter] = useState('all');
   const [tagFilter, setTagFilter] = useState('all');
@@ -782,6 +784,10 @@ export default function Tasks({ data, save, completeTask }) {
       name,
       description: form.description.trim(),
       xp: Math.min(10000, Math.max(0, Number(form.xp) || 0)),
+      estimatedMinutes:
+        form.estimatedMinutes === ''
+          ? null
+          : Math.max(0, Number(form.estimatedMinutes) || 0),
       projectId: form.projectId === '' ? null : form.projectId,
       areaId: form.areaId === '' ? null : form.areaId,
       tags: Array.from(
@@ -1181,6 +1187,100 @@ export default function Tasks({ data, save, completeTask }) {
     }
   };
 
+  const setWorkflowStatus = (task, workflowStatus) => {
+    save({
+      ...data,
+      tasks: tasksList.map((item) =>
+        String(item.id) === String(task.id)
+          ? { ...item, workflowStatus, updatedAt: new Date().toISOString() }
+          : item,
+      ),
+    });
+  };
+
+  const applySmartOrder = () => {
+    const priorityScore = (task) => {
+      const priority = String(task.priority || 'Média').toLowerCase();
+      const base = priority === 'alta' ? 30 : priority === 'média' ? 20 : 10;
+      const overdue =
+        task.deadline && task.deadline < localDate() && !task.done ? 100 : 0;
+      const dueToday = task.deadline === localDate() && !task.done ? 50 : 0;
+      const cancelled = isTaskCancelled(task, new Date()) ? -1000 : 0;
+      const completed = task.done ? -2000 : 0;
+      return base + overdue + dueToday + cancelled + completed;
+    };
+    const ordered = [...tasksList].sort((a, b) => {
+      const scoreDiff = priorityScore(b) - priorityScore(a);
+      if (scoreDiff) return scoreDiff;
+      return String(a.deadline || '9999-12-31').localeCompare(
+        String(b.deadline || '9999-12-31'),
+      );
+    });
+    save({
+      ...data,
+      tasks: ordered.map((task, index) => ({ ...task, sortOrder: index })),
+    });
+    setViewMode('list');
+    setFilter('all');
+    setAreaFilter('all');
+    setTagFilter('all');
+    setSearch('');
+  };
+
+  const todayTasks = visibleTasks.filter(
+    (task) =>
+      !task.done &&
+      !isTaskCancelled(task, new Date()) &&
+      (!task.deadline || task.deadline <= localDate()),
+  );
+  const displayTasks = viewMode === 'today' ? todayTasks : visibleTasks;
+  const prioritySortedTasks = [...visibleTasks].sort((a, b) => {
+    const rank = (task) =>
+      ({ alta: 3, média: 2, baixa: 1 })[
+        String(task.priority || 'Média').toLowerCase()
+      ] || 0;
+    return (
+      rank(b) - rank(a) ||
+      String(a.deadline || '9999-12-31').localeCompare(
+        String(b.deadline || '9999-12-31'),
+      )
+    );
+  });
+  const subtaskTotal = tasksList.reduce(
+    (sum, task) => sum + countSubtasks(task.subtasks),
+    0,
+  );
+  const subtaskDone = tasksList.reduce(
+    (sum, task) => sum + countCompletedSubtasks(task.subtasks),
+    0,
+  );
+  const completionRate = tasksList.length
+    ? Math.round((completedCount / tasksList.length) * 100)
+    : 0;
+  const estimatedTotal = tasksList.reduce(
+    (sum, task) => sum + (Number(task.estimatedMinutes) || 0),
+    0,
+  );
+  const completedEstimated = tasksList
+    .filter((task) => task.done)
+    .reduce((sum, task) => sum + (Number(task.estimatedMinutes) || 0), 0);
+  const nextSevenDays = Array.from({ length: 7 }, (_, index) => {
+    const date = new Date();
+    date.setDate(date.getDate() + index);
+    const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+    return {
+      key,
+      label:
+        index === 0
+          ? 'Hoje'
+          : date.toLocaleDateString('pt-BR', {
+              weekday: 'short',
+              day: '2-digit',
+              month: '2-digit',
+            }),
+    };
+  });
+
   // =====================================
   // MÉTRICAS
   // =====================================
@@ -1377,6 +1477,25 @@ export default function Tasks({ data, save, completeTask }) {
           <small>⏸️ Canceladas</small>
         </div>
       </div>
+      <div className='cyber-overview-strip'>
+        <div className='cyber-overview-copy'>
+          <span className='cyber-eyebrow'>CENTRAL DE OPERAÇÕES</span>
+          <strong>Seu progresso está em {completionRate}%</strong>
+          <small>
+            {pendingCount} pendentes · {overdueCount} atrasadas · {subtaskDone}/
+            {subtaskTotal} subtarefas concluídas
+          </small>
+        </div>
+        <div
+          className='cyber-progress-track'
+          role='progressbar'
+          aria-valuenow={completionRate}
+          aria-valuemin='0'
+          aria-valuemax='100'
+        >
+          <span style={{ width: `${completionRate}%` }} />
+        </div>
+      </div>
 
       {/* ABAS */}
       <div className='tabs'>
@@ -1477,6 +1596,32 @@ export default function Tasks({ data, save, completeTask }) {
             </div>
           </div>
 
+          <div
+            className='cyber-viewbar'
+            role='tablist'
+            aria-label='Modos de visualização'
+          >
+            {[
+              ['list', '☷', 'Lista'],
+              ['today', '◷', 'Hoje'],
+              ['kanban', '▥', 'Kanban'],
+              ['calendar', '▦', 'Agenda'],
+              ['analytics', '⌁', 'Análises'],
+            ].map(([key, icon, label]) => (
+              <button
+                key={key}
+                type='button'
+                role='tab'
+                aria-selected={viewMode === key}
+                className={viewMode === key ? 'is-active' : ''}
+                onClick={() => setViewMode(key)}
+              >
+                <span aria-hidden='true'>{icon}</span>
+                {label}
+              </button>
+            ))}
+          </div>
+
           <p className='tasks-order-hint'>
             ↕️ Arraste pelo ícone ⋮⋮ para definir a ordem das tarefas. A ordem
             fica salva e continua a mesma ao voltar para a página.
@@ -1497,271 +1642,573 @@ export default function Tasks({ data, save, completeTask }) {
             </div>
           )}
 
-          <div className='tasks-list'>
-            {visibleTasks.map((task) => {
-              const project = projectsList.find(
-                (p) => String(p.id) === String(task.projectId),
-              );
-
-              const area = getTaskArea(task);
-
-              const cancelled = isTaskCancelled(task, new Date());
-              const indefinitelySuspended =
-                task?.status === 'cancelled' ||
-                task?.cancelled === true ||
-                task?.cancellationScope === 'indefinite';
-
-              const overdue =
-                !task.done &&
-                !cancelled &&
-                task.deadline &&
-                task.deadline < localDate();
-
-              return (
-                <article
-                  className={`task ${task.done ? 'done' : ''} ${cancelled ? 'cancelled' : ''} ${draggedTaskId === task.id ? 'task-dragging' : ''} ${dragOverTask?.id === task.id && dragOverTask.position === 'before' ? 'task-drag-over-before' : ''} ${dragOverTask?.id === task.id && dragOverTask.position === 'after' ? 'task-drag-over-after' : ''}`}
-                  key={task.id}
-                  draggable
-                  onDragStart={(event) => handleTaskDragStart(event, task.id)}
-                  onDragOver={(event) => handleTaskDragOver(event, task.id)}
-                  onDrop={(event) => handleTaskDrop(event, task.id)}
-                  onDragEnd={() => {
-                    setDraggedTaskId(null);
-                    setDragOverTask(null);
-                  }}
+          {viewMode === 'kanban' && (
+            <div className='cyber-kanban' aria-label='Quadro Kanban'>
+              {[
+                {
+                  key: 'pending',
+                  title: 'A fazer',
+                  items: visibleTasks.filter(
+                    (task) =>
+                      !task.done &&
+                      !isTaskCancelled(task, new Date()) &&
+                      !['in_progress', 'waiting'].includes(task.workflowStatus),
+                  ),
+                },
+                {
+                  key: 'progress',
+                  title: 'Em andamento',
+                  items: visibleTasks.filter(
+                    (task) =>
+                      !task.done &&
+                      !isTaskCancelled(task, new Date()) &&
+                      task.workflowStatus === 'in_progress',
+                  ),
+                },
+                {
+                  key: 'paused',
+                  title: 'Em espera',
+                  items: visibleTasks.filter(
+                    (task) =>
+                      !task.done &&
+                      (isTaskCancelled(task, new Date()) ||
+                        task.workflowStatus === 'waiting'),
+                  ),
+                },
+                {
+                  key: 'done',
+                  title: 'Concluídas',
+                  items: visibleTasks.filter((task) => task.done),
+                },
+              ].map((column) => (
+                <section
+                  className={`cyber-kanban-column cyber-column-${column.key}`}
+                  key={column.key}
                 >
-                  <button
-                    type='button'
-                    className='task-drag-handle'
-                    draggable={false}
-                    onClick={(event) => event.preventDefault()}
-                    aria-label={`Arrastar tarefa: ${task.name}`}
-                    title='Arraste para reorganizar'
-                  >
-                    ⋮⋮
-                  </button>
-
-                  <button
-                    type='button'
-                    className={`task-completion-button ${task.done ? 'is-done' : 'is-pending'}`}
-                    onClick={() => toggleTask(task)}
-                    aria-label={
-                      task.done
-                        ? `Reabrir tarefa: ${task.name}`
-                        : `Marcar como concluída: ${task.name}`
-                    }
-                    aria-pressed={Boolean(task.done)}
-                    title={
-                      task.done
-                        ? 'Clique para reabrir esta tarefa'
-                        : 'Clique para concluir esta tarefa'
-                    }
-                  >
-                    <span className='completion-icon' aria-hidden='true'>
-                      {task.done ? '✓' : '○'}
-                    </span>
-                  </button>
-
-                  <div className='task-content'>
-                    <div className='task-title-row'>
-                      <strong className='task-name'>
-                        {task.name}
-                        {cancelled && (
-                          <span className='status-chip status-cancelled'>
-                            {indefinitelySuspended
-                              ? '⏸️ Suspensa'
-                              : '⏸️ Cancelada hoje'}
+                  <header>
+                    <strong>{column.title}</strong>
+                    <span>{column.items.length}</span>
+                  </header>
+                  {column.items.length ? (
+                    column.items.map((task) => (
+                      <article className='cyber-kanban-card' key={task.id}>
+                        <strong>{task.name}</strong>
+                        {task.description && <p>{task.description}</p>}
+                        <div className='cyber-kanban-meta'>
+                          <span
+                            className={`priority priority-${String(task.priority || 'Média').toLowerCase()}`}
+                          >
+                            {task.priority || 'Média'}
                           </span>
-                        )}
-                      </strong>
-                      {Array.isArray(task.subtasks) &&
-                        task.subtasks.length > 0 && (
-                          <button
-                            type='button'
-                            className={`task-subtasks-toggle ${collapsedSubtasks[task.id] ? 'is-collapsed' : ''}`}
-                            onClick={(event) => {
-                              event.stopPropagation();
-                              toggleSubtasksVisibility(task.id);
-                            }}
-                            onMouseDown={(event) => event.stopPropagation()}
-                            draggable={false}
-                            aria-label={`${collapsedSubtasks[task.id] ? 'Mostrar' : 'Ocultar'} subtarefas de ${task.name}`}
-                            aria-expanded={!collapsedSubtasks[task.id]}
-                            title={
-                              collapsedSubtasks[task.id]
-                                ? 'Mostrar subtarefas'
-                                : 'Ocultar subtarefas'
-                            }
-                          >
-                            <span aria-hidden='true'>
-                              {collapsedSubtasks[task.id] ? '▸' : '▾'}
-                            </span>
-                          </button>
-                        )}
-                    </div>
-
-                    {task.description && (
-                      <p className='subtitle'>{task.description}</p>
-                    )}
-
-                    {Array.isArray(task.subtasks) &&
-                      task.subtasks.length > 0 &&
-                      !collapsedSubtasks[task.id] && (
-                        <div className='task-subtasks'>
-                          <div className='task-subtasks-heading'>
-                            <strong>Subtarefas</strong>
-                            <small>
-                              {countCompletedSubtasks(task.subtasks)}/
-                              {countSubtasks(task.subtasks)} concluídas
-                            </small>
-                            <select
-                              className='subtask-status-filter'
-                              value={subtaskFilters[task.id] || 'all'}
-                              onChange={(event) =>
-                                setSubtaskFilters((prev) => ({
-                                  ...prev,
-                                  [task.id]: event.target.value,
-                                }))
-                              }
-                              aria-label={`Filtrar subtarefas de ${task.name}`}
-                            >
-                              <option value='all'>Todas</option>
-                              <option value='done'>Só feitas</option>
-                              <option value='pending'>Só pendentes</option>
-                            </select>
-                          </div>
-                          <div className='task-subtasks-list'>
-                            {renderRuntimeSubtasks(
-                              task,
-                              task.subtasks,
-                              0,
-                              subtaskFilters[task.id] || 'all',
-                            )}
-                          </div>
+                          {task.deadline && (
+                            <small>{formatDate(task.deadline)}</small>
+                          )}
                         </div>
-                      )}
-
-                    <div className='task-meta'>
-                      <span
-                        className={`priority priority-${String(
-                          task.priority || 'Média',
-                        ).toLowerCase()}`}
-                      >
-                        ● {task.priority || 'Média'}
-                      </span>
-
-                      <span className='value'>{Number(task.xp) || 0} XP</span>
-
-                      <span className='frequency'>
-                        {task.frequency || '1x'}
-                      </span>
-
-                      {area && (
-                        <span
-                          className='task-area'
-                          style={{
-                            '--area-color': area.color || '#6366f1',
-                          }}
-                        >
-                          {area.icon} {area.name}
-                        </span>
-                      )}
-
-                      {cancelled && task.cancellationReason && (
-                        <span className='task-cancellation-reason'>
-                          Motivo: {task.cancellationReason}
-                        </span>
-                      )}
-
-                      {task.deadline && (
-                        <span
-                          className={overdue ? 'deadline overdue' : 'deadline'}
-                        >
-                          📅 {formatDate(task.deadline)}
-                          {overdue ? ' · Atrasada' : ''}
-                        </span>
-                      )}
-
-                      {project && (
-                        <span className='tag'>🚀 {project.name}</span>
-                      )}
-
-                      {getTagIds(task).map((tagId) => {
-                        const taskTag = tagsList.find(
-                          (item) => String(item.id) === String(tagId),
-                        );
-                        if (!taskTag) return null;
-                        return (
+                        <div className='cyber-kanban-actions'>
+                          {isTaskCancelled(task, new Date()) ? (
+                            <button
+                              type='button'
+                              onClick={() => toggleCancelled(task)}
+                            >
+                              Reativar
+                            </button>
+                          ) : (
+                            <>
+                              {!task.done &&
+                                task.workflowStatus !== 'in_progress' && (
+                                  <button
+                                    type='button'
+                                    onClick={() =>
+                                      setWorkflowStatus(task, 'in_progress')
+                                    }
+                                  >
+                                    Iniciar
+                                  </button>
+                                )}
+                              {!task.done &&
+                                task.workflowStatus !== 'waiting' && (
+                                  <button
+                                    type='button'
+                                    onClick={() =>
+                                      setWorkflowStatus(task, 'waiting')
+                                    }
+                                  >
+                                    Aguardar
+                                  </button>
+                                )}
+                              {task.workflowStatus !== 'pending' && (
+                                <button
+                                  type='button'
+                                  onClick={() =>
+                                    setWorkflowStatus(task, 'pending')
+                                  }
+                                >
+                                  A fazer
+                                </button>
+                              )}
+                            </>
+                          )}
                           <button
                             type='button'
-                            key={String(tagId)}
-                            className='task-tag-chip'
-                            style={{
-                              '--tag-color': taskTag.color || '#6366f1',
-                            }}
-                            onClick={() => setTagFilter(String(tagId))}
-                            title={`Filtrar por #${taskTag.name}`}
+                            onClick={() => toggleTask(task)}
                           >
-                            #{taskTag.name}
+                            {task.done ? 'Reabrir' : 'Concluir'}
                           </button>
-                        );
-                      })}
+                          <button type='button' onClick={() => openEdit(task)}>
+                            Editar
+                          </button>
+                        </div>
+                      </article>
+                    ))
+                  ) : (
+                    <p className='cyber-empty'>Nenhuma tarefa nesta coluna.</p>
+                  )}
+                </section>
+              ))}
+            </div>
+          )}
+
+          {viewMode === 'calendar' && (
+            <section className='cyber-agenda'>
+              <div className='cyber-panel-heading'>
+                <div>
+                  <span className='cyber-eyebrow'>PRÓXIMOS 7 DIAS</span>
+                  <h3>Agenda de entregas</h3>
+                </div>
+                <span>
+                  {visibleTasks.filter((task) => task.deadline).length} com
+                  prazo
+                </span>
+              </div>
+              {nextSevenDays.map((day) => {
+                const dayTasks = visibleTasks.filter(
+                  (task) => task.deadline === day.key,
+                );
+                return (
+                  <div className='cyber-agenda-day' key={day.key}>
+                    <div className='cyber-agenda-date'>
+                      <strong>{day.label}</strong>
+                      <small>{day.key}</small>
+                    </div>
+                    <div className='cyber-agenda-items'>
+                      {dayTasks.length ? (
+                        dayTasks.map((task) => (
+                          <button
+                            type='button'
+                            className={`cyber-agenda-task ${task.done ? 'is-done' : ''}`}
+                            key={task.id}
+                            onClick={() => openEdit(task)}
+                          >
+                            <span className='cyber-agenda-dot' />
+                            {task.name}
+                            <small>{task.priority || 'Média'}</small>
+                          </button>
+                        ))
+                      ) : (
+                        <span className='cyber-empty-inline'>
+                          Sem tarefas agendadas
+                        </span>
+                      )}
                     </div>
                   </div>
+                );
+              })}
+              <p className='cyber-footnote'>
+                Tarefas sem prazo continuam disponíveis nas visualizações Lista
+                e Hoje.
+              </p>
+            </section>
+          )}
 
-                  <div className='task-actions'>
+          {viewMode === 'analytics' && (
+            <section className='cyber-analytics'>
+              <div className='cyber-panel-heading'>
+                <div>
+                  <span className='cyber-eyebrow'>
+                    INTELIGÊNCIA DE PRODUTIVIDADE
+                  </span>
+                  <h3>Desempenho das tarefas</h3>
+                </div>
+                <span>Dados atuais</span>
+              </div>
+              <div className='cyber-analytics-grid'>
+                <div className='cyber-analytics-card'>
+                  <small>Taxa de conclusão</small>
+                  <strong>{completionRate}%</strong>
+                  <div className='cyber-mini-track'>
+                    <i style={{ width: `${completionRate}%` }} />
+                  </div>
+                </div>
+                <div className='cyber-analytics-card'>
+                  <small>Tempo estimado total</small>
+                  <strong>
+                    {Math.floor(estimatedTotal / 60)}h {estimatedTotal % 60}min
+                  </strong>
+                  <span>Somatório das estimativas informadas</span>
+                </div>
+                <div className='cyber-analytics-card'>
+                  <small>Estimativa concluída</small>
+                  <strong>
+                    {Math.floor(completedEstimated / 60)}h{' '}
+                    {completedEstimated % 60}min
+                  </strong>
+                  <span>Nas tarefas marcadas como concluídas</span>
+                </div>
+                <div className='cyber-analytics-card'>
+                  <small>Subtarefas</small>
+                  <strong>
+                    {subtaskTotal
+                      ? Math.round((subtaskDone / subtaskTotal) * 100)
+                      : 0}
+                    %
+                  </strong>
+                  <span>
+                    {subtaskDone} de {subtaskTotal} concluídas
+                  </span>
+                </div>
+              </div>
+              <div className='cyber-priority-breakdown'>
+                {['Alta', 'Média', 'Baixa'].map((priority) => {
+                  const count = tasksList.filter(
+                    (task) =>
+                      String(task.priority || 'Média').toLowerCase() ===
+                      priority.toLowerCase(),
+                  ).length;
+                  const percent = tasksList.length
+                    ? Math.round((count / tasksList.length) * 100)
+                    : 0;
+                  return (
+                    <div className='cyber-breakdown-row' key={priority}>
+                      <span>{priority}</span>
+                      <div>
+                        <i style={{ width: `${percent}%` }} />
+                      </div>
+                      <b>{count}</b>
+                    </div>
+                  );
+                })}
+              </div>
+              <div className='cyber-automation-panel'>
+                <div>
+                  <span className='cyber-eyebrow'>AUTOMAÇÃO ASSISTIDA</span>
+                  <h3>Plano de ação recomendado</h3>
+                  <p>
+                    {overdueCount
+                      ? `Você tem ${overdueCount} tarefa(s) atrasada(s). Reorganize a fila para priorizar atrasos e prazos de hoje.`
+                      : pendingCount
+                        ? 'Não há tarefas atrasadas. Organize a fila por prioridade e prazo para manter o ritmo.'
+                        : 'Sua lista está em dia. Continue registrando estimativas para enriquecer as análises.'}
+                  </p>
+                </div>
+                <button
+                  type='button'
+                  className='cyber-primary-button'
+                  onClick={applySmartOrder}
+                >
+                  ✦ Aplicar ordem inteligente
+                </button>
+              </div>
+              <div className='cyber-priority-list'>
+                <strong>Fila sugerida</strong>
+                {prioritySortedTasks.slice(0, 5).map((task, index) => (
+                  <div key={task.id}>
+                    <span>{String(index + 1).padStart(2, '0')}</span>
+                    <b>{task.name}</b>
+                    <small>
+                      {task.priority || 'Média'}
+                      {task.deadline ? ` · ${formatDate(task.deadline)}` : ''}
+                    </small>
+                  </div>
+                ))}
+              </div>
+            </section>
+          )}
+
+          {['list', 'today'].includes(viewMode) && (
+            <div className='tasks-list'>
+              {displayTasks.map((task) => {
+                const project = projectsList.find(
+                  (p) => String(p.id) === String(task.projectId),
+                );
+
+                const area = getTaskArea(task);
+
+                const cancelled = isTaskCancelled(task, new Date());
+                const indefinitelySuspended =
+                  task?.status === 'cancelled' ||
+                  task?.cancelled === true ||
+                  task?.cancellationScope === 'indefinite';
+
+                const overdue =
+                  !task.done &&
+                  !cancelled &&
+                  task.deadline &&
+                  task.deadline < localDate();
+
+                return (
+                  <article
+                    className={`task ${task.done ? 'done' : ''} ${cancelled ? 'cancelled' : ''} ${draggedTaskId === task.id ? 'task-dragging' : ''} ${dragOverTask?.id === task.id && dragOverTask.position === 'before' ? 'task-drag-over-before' : ''} ${dragOverTask?.id === task.id && dragOverTask.position === 'after' ? 'task-drag-over-after' : ''}`}
+                    key={task.id}
+                    draggable
+                    onDragStart={(event) => handleTaskDragStart(event, task.id)}
+                    onDragOver={(event) => handleTaskDragOver(event, task.id)}
+                    onDrop={(event) => handleTaskDrop(event, task.id)}
+                    onDragEnd={() => {
+                      setDraggedTaskId(null);
+                      setDragOverTask(null);
+                    }}
+                  >
                     <button
                       type='button'
-                      className='ghost'
-                      onClick={() => toggleCancelled(task)}
+                      className='task-drag-handle'
+                      draggable={false}
+                      onClick={(event) => event.preventDefault()}
+                      aria-label={`Arrastar tarefa: ${task.name}`}
+                      title='Arraste para reorganizar'
+                    >
+                      ⋮⋮
+                    </button>
+
+                    <button
+                      type='button'
+                      className={`task-completion-button ${task.done ? 'is-done' : 'is-pending'}`}
+                      onClick={() => toggleTask(task)}
+                      aria-label={
+                        task.done
+                          ? `Reabrir tarefa: ${task.name}`
+                          : `Marcar como concluída: ${task.name}`
+                      }
+                      aria-pressed={Boolean(task.done)}
                       title={
-                        cancelled ? 'Reativar tarefa' : 'Cancelar sem excluir'
+                        task.done
+                          ? 'Clique para reabrir esta tarefa'
+                          : 'Clique para concluir esta tarefa'
                       }
                     >
-                      {cancelled ? '▶️ Reativar' : '⏸️ Cancelar'}
+                      <span className='completion-icon' aria-hidden='true'>
+                        {task.done ? '✓' : '○'}
+                      </span>
                     </button>
 
-                    <button
-                      type='button'
-                      className='ghost'
-                      onClick={() => openEdit(task)}
-                    >
-                      ✏️ Editar
-                    </button>
+                    <div className='task-content'>
+                      <div className='task-title-row'>
+                        <strong className='task-name'>
+                          {task.name}
+                          {cancelled && (
+                            <span className='status-chip status-cancelled'>
+                              {indefinitelySuspended
+                                ? '⏸️ Suspensa'
+                                : '⏸️ Cancelada hoje'}
+                            </span>
+                          )}
+                        </strong>
+                        {Array.isArray(task.subtasks) &&
+                          task.subtasks.length > 0 && (
+                            <button
+                              type='button'
+                              className={`task-subtasks-toggle ${collapsedSubtasks[task.id] ? 'is-collapsed' : ''}`}
+                              onClick={(event) => {
+                                event.stopPropagation();
+                                toggleSubtasksVisibility(task.id);
+                              }}
+                              onMouseDown={(event) => event.stopPropagation()}
+                              draggable={false}
+                              aria-label={`${collapsedSubtasks[task.id] ? 'Mostrar' : 'Ocultar'} subtarefas de ${task.name}`}
+                              aria-expanded={!collapsedSubtasks[task.id]}
+                              title={
+                                collapsedSubtasks[task.id]
+                                  ? 'Mostrar subtarefas'
+                                  : 'Ocultar subtarefas'
+                              }
+                            >
+                              <span aria-hidden='true'>
+                                {collapsedSubtasks[task.id] ? '▸' : '▾'}
+                              </span>
+                            </button>
+                          )}
+                      </div>
 
-                    <button
-                      type='button'
-                      className='ghost'
-                      onClick={() => deleteTask(task.id)}
-                      aria-label={`Excluir ${task.name}`}
-                    >
-                      🗑️
-                    </button>
-                  </div>
-                </article>
-              );
-            })}
+                      {task.description && (
+                        <p className='subtitle'>{task.description}</p>
+                      )}
 
-            {visibleTasks.length === 0 && (
-              <p className='subtitle'>
-                Nenhuma tarefa encontrada com esses filtros.
-              </p>
-            )}
-          </div>
+                      {Array.isArray(task.subtasks) &&
+                        task.subtasks.length > 0 &&
+                        !collapsedSubtasks[task.id] && (
+                          <div className='task-subtasks'>
+                            <div className='task-subtasks-heading'>
+                              <strong>Subtarefas</strong>
+                              <small>
+                                {countCompletedSubtasks(task.subtasks)}/
+                                {countSubtasks(task.subtasks)} concluídas
+                              </small>
+                              <select
+                                className='subtask-status-filter'
+                                value={subtaskFilters[task.id] || 'all'}
+                                onChange={(event) =>
+                                  setSubtaskFilters((prev) => ({
+                                    ...prev,
+                                    [task.id]: event.target.value,
+                                  }))
+                                }
+                                aria-label={`Filtrar subtarefas de ${task.name}`}
+                              >
+                                <option value='all'>Todas</option>
+                                <option value='done'>Só feitas</option>
+                                <option value='pending'>Só pendentes</option>
+                              </select>
+                            </div>
+                            <div className='cyber-subtask-progress'>
+                              <span
+                                style={{
+                                  width: `${countSubtasks(task.subtasks) ? (countCompletedSubtasks(task.subtasks) / countSubtasks(task.subtasks)) * 100 : 0}%`,
+                                }}
+                              />
+                            </div>
+                            <div className='task-subtasks-list'>
+                              {renderRuntimeSubtasks(
+                                task,
+                                task.subtasks,
+                                0,
+                                subtaskFilters[task.id] || 'all',
+                              )}
+                            </div>
+                          </div>
+                        )}
 
-          <div className='quick' style={{ marginTop: 14 }}>
-            <button type='button' onClick={openCreate}>
-              ➕ Adicionar
-            </button>
+                      <div className='task-meta'>
+                        <span
+                          className={`priority priority-${String(
+                            task.priority || 'Média',
+                          ).toLowerCase()}`}
+                        >
+                          ● {task.priority || 'Média'}
+                        </span>
 
-            <button type='button' onClick={clearCompleted}>
-              🧹 Limpar concluídas
-            </button>
+                        <span className='value'>{Number(task.xp) || 0} XP</span>
+                        {Number(task.estimatedMinutes) > 0 && (
+                          <span className='cyber-time-chip'>
+                            ◷ {task.estimatedMinutes} min
+                          </span>
+                        )}
 
-            <button type='button' onClick={resetDay}>
-              🔄 Reiniciar dia
-            </button>
-          </div>
+                        <span className='frequency'>
+                          {task.frequency || '1x'}
+                        </span>
+
+                        {area && (
+                          <span
+                            className='task-area'
+                            style={{
+                              '--area-color': area.color || '#6366f1',
+                            }}
+                          >
+                            {area.icon} {area.name}
+                          </span>
+                        )}
+
+                        {cancelled && task.cancellationReason && (
+                          <span className='task-cancellation-reason'>
+                            Motivo: {task.cancellationReason}
+                          </span>
+                        )}
+
+                        {task.deadline && (
+                          <span
+                            className={
+                              overdue ? 'deadline overdue' : 'deadline'
+                            }
+                          >
+                            📅 {formatDate(task.deadline)}
+                            {overdue ? ' · Atrasada' : ''}
+                          </span>
+                        )}
+
+                        {project && (
+                          <span className='tag'>🚀 {project.name}</span>
+                        )}
+
+                        {getTagIds(task).map((tagId) => {
+                          const taskTag = tagsList.find(
+                            (item) => String(item.id) === String(tagId),
+                          );
+                          if (!taskTag) return null;
+                          return (
+                            <button
+                              type='button'
+                              key={String(tagId)}
+                              className='task-tag-chip'
+                              style={{
+                                '--tag-color': taskTag.color || '#6366f1',
+                              }}
+                              onClick={() => setTagFilter(String(tagId))}
+                              title={`Filtrar por #${taskTag.name}`}
+                            >
+                              #{taskTag.name}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    <div className='task-actions'>
+                      <button
+                        type='button'
+                        className='ghost'
+                        onClick={() => toggleCancelled(task)}
+                        title={
+                          cancelled ? 'Reativar tarefa' : 'Cancelar sem excluir'
+                        }
+                      >
+                        {cancelled ? '▶️ Reativar' : '⏸️ Cancelar'}
+                      </button>
+
+                      <button
+                        type='button'
+                        className='ghost'
+                        onClick={() => openEdit(task)}
+                      >
+                        ✏️ Editar
+                      </button>
+
+                      <button
+                        type='button'
+                        className='ghost'
+                        onClick={() => deleteTask(task.id)}
+                        aria-label={`Excluir ${task.name}`}
+                      >
+                        🗑️
+                      </button>
+                    </div>
+                  </article>
+                );
+              })}
+
+              {displayTasks.length === 0 && (
+                <p className='subtitle'>
+                  {viewMode === 'today'
+                    ? 'Nenhuma tarefa pendente para hoje.'
+                    : 'Nenhuma tarefa encontrada com esses filtros.'}
+                </p>
+              )}
+            </div>
+          )}
+
+          {['list', 'today'].includes(viewMode) && (
+            <div className='quick' style={{ marginTop: 14 }}>
+              <button type='button' onClick={openCreate}>
+                ➕ Adicionar
+              </button>
+
+              <button type='button' onClick={clearCompleted}>
+                🧹 Limpar concluídas
+              </button>
+
+              <button type='button' onClick={resetDay}>
+                🔄 Reiniciar dia
+              </button>
+            </div>
+          )}
         </>
       )}
 
@@ -2112,6 +2559,21 @@ export default function Tasks({ data, save, completeTask }) {
                   type='date'
                   value={form.deadline || ''}
                   onChange={(e) => updateForm('deadline', e.target.value)}
+                />
+              </label>
+
+              <label>
+                Tempo estimado (minutos)
+                <input
+                  type='number'
+                  min='0'
+                  max='100000'
+                  step='5'
+                  value={form.estimatedMinutes ?? ''}
+                  onChange={(e) =>
+                    updateForm('estimatedMinutes', e.target.value)
+                  }
+                  placeholder='Ex.: 25'
                 />
               </label>
 
@@ -3084,6 +3546,122 @@ export default function Tasks({ data, save, completeTask }) {
             width: 100%;
           }
         }
+
+        /* CYBERPUNK COMMAND CENTER — estilos isolados nesta página */
+        .tasks-page {
+          --cyber-bg: #080b18;
+          --cyber-panel: rgba(17, 23, 46, .88);
+          --cyber-panel-2: rgba(23, 30, 59, .82);
+          --cyber-border: rgba(94, 117, 255, .28);
+          --cyber-purple: #9b5cff;
+          --cyber-cyan: #22d3ee;
+          --cyber-text: #edf0ff;
+          --cyber-muted: #9ca9ca;
+          position: relative;
+          isolation: isolate;
+          overflow: hidden;
+          color: var(--cyber-text);
+          background:
+            radial-gradient(ellipse at 8% 0%, rgba(112, 49, 255, .18), transparent 36%),
+            radial-gradient(ellipse at 94% 8%, rgba(0, 207, 255, .12), transparent 30%),
+            linear-gradient(145deg, #090d1d 0%, #0b1023 52%, #090b18 100%);
+          border: 1px solid rgba(115, 103, 255, .30);
+          border-radius: 18px;
+          box-shadow: 0 0 0 1px rgba(23, 218, 255, .04), 0 18px 60px rgba(0, 0, 0, .28), inset 0 1px rgba(255,255,255,.035);
+        }
+        .tasks-page::before { content: ''; position: absolute; inset: 0; z-index: -1; pointer-events: none; opacity: .18; background-image: linear-gradient(rgba(112,130,255,.10) 1px, transparent 1px), linear-gradient(90deg, rgba(112,130,255,.10) 1px, transparent 1px); background-size: 34px 34px; mask-image: linear-gradient(to bottom, black, transparent 75%); }
+        .tasks-page > * { position: relative; }
+        .tasks-page .section-title h2 { color: #fff; letter-spacing: -.035em; text-shadow: 0 0 22px rgba(150,92,255,.35); }
+        .tasks-page .subtitle, .tasks-page .tasks-order-hint { color: var(--cyber-muted); }
+        .tasks-page .primary, .tasks-page button.primary { background: linear-gradient(115deg, #773cff, #b14cff 55%, #5a6dff); border: 1px solid rgba(203,177,255,.42); color: #fff; box-shadow: 0 0 22px rgba(133,74,255,.28); }
+        .tasks-page .primary:hover, .tasks-page button.primary:hover { filter: brightness(1.12); box-shadow: 0 0 28px rgba(133,74,255,.42); transform: translateY(-1px); }
+        .tasks-page .metrics { display: grid; grid-template-columns: repeat(5, minmax(0,1fr)); gap: 10px; }
+        .tasks-page .metrics .reward { min-width: 0; padding: 15px 16px; border: 1px solid var(--cyber-border); border-radius: 13px; background: linear-gradient(145deg, rgba(28,36,70,.88), rgba(14,19,39,.92)); box-shadow: inset 0 1px rgba(255,255,255,.04), 0 8px 24px rgba(0,0,0,.12); }
+        .tasks-page .metrics .reward strong { color: #f7f7ff; font-size: 1.45rem; }
+        .tasks-page .metrics .reward small { color: #aab7d8; }
+        .cyber-overview-strip { display: grid; grid-template-columns: minmax(180px, 1fr) minmax(120px, 34%); gap: 20px; align-items: center; margin: 12px 0 18px; padding: 13px 16px; border: 1px solid rgba(34,211,238,.20); border-radius: 12px; background: linear-gradient(90deg, rgba(23,37,73,.74), rgba(32,20,66,.55)); }
+        .cyber-overview-copy { display: grid; gap: 3px; }
+        .cyber-overview-copy strong { color: #f4f5ff; }
+        .cyber-overview-copy small { color: var(--cyber-muted); }
+        .cyber-eyebrow { color: #49dff3; font-size: 10px; font-weight: 800; letter-spacing: .16em; }
+        .cyber-progress-track, .cyber-mini-track { height: 8px; overflow: hidden; border-radius: 99px; background: rgba(123,139,190,.18); box-shadow: inset 0 1px 3px rgba(0,0,0,.35); }
+        .cyber-progress-track span, .cyber-mini-track i { display: block; height: 100%; border-radius: inherit; background: linear-gradient(90deg, #22d3ee, #8b5cf6, #ec4cff); box-shadow: 0 0 14px rgba(34,211,238,.6); transition: width .35s ease; }
+        .tasks-page .tabs { display: flex; gap: 7px; flex-wrap: wrap; border-bottom: 1px solid rgba(104,122,192,.20); padding-bottom: 10px; }
+        .tasks-page .tabs button, .cyber-viewbar button { border: 1px solid rgba(111,127,194,.22); background: rgba(22,29,57,.78); color: #b9c5e5; border-radius: 9px; padding: 9px 13px; transition: .18s ease; }
+        .tasks-page .tabs button.active, .cyber-viewbar button.is-active { color: #fff; border-color: rgba(163,103,255,.72); background: linear-gradient(110deg, rgba(111,57,255,.42), rgba(32,179,222,.14)); box-shadow: 0 0 18px rgba(125,75,255,.20), inset 0 0 12px rgba(128,92,255,.10); }
+        .tasks-page .tasks-toolbar { grid-template-columns: minmax(220px,1fr) minmax(130px,170px) minmax(130px,190px) minmax(130px,190px); gap: 10px; margin: 14px 0; }
+        .tasks-page .filter-field label { color: #b9c7e9; font-size: 11px; letter-spacing: .04em; }
+        .tasks-page .tasks-toolbar input, .tasks-page .tasks-toolbar select, .tasks-page .task-modal input, .tasks-page .task-modal select, .tasks-page .task-modal textarea, .tasks-page .observation-entry input { color: #edf0ff; background: rgba(13,19,41,.92); border: 1px solid rgba(103,125,194,.30); border-radius: 9px; }
+        .tasks-page input::placeholder, .tasks-page textarea::placeholder { color: #7482a9; }
+        .tasks-page .tasks-toolbar input:focus, .tasks-page .tasks-toolbar select:focus, .tasks-page .task-modal input:focus, .tasks-page .task-modal select:focus, .tasks-page .task-modal textarea:focus { outline: 2px solid rgba(34,211,238,.48); outline-offset: 1px; border-color: #22d3ee; }
+        .cyber-viewbar { display: flex; gap: 7px; flex-wrap: wrap; margin: 8px 0 12px; }
+        .cyber-viewbar button { display: inline-flex; align-items: center; gap: 7px; padding: 8px 12px; cursor: pointer; }
+        .cyber-viewbar button span { color: #56dff5; font-size: 16px; }
+        .tasks-page .task { border: 1px solid rgba(103,123,190,.24); border-radius: 13px; background: linear-gradient(120deg, rgba(21,28,54,.92), rgba(13,18,37,.96)); box-shadow: inset 0 1px rgba(255,255,255,.025); transition: border-color .18s ease, transform .18s ease, box-shadow .18s ease; }
+        .tasks-page .task:hover { border-color: rgba(34,211,238,.42); box-shadow: 0 0 22px rgba(45,104,255,.10); transform: translateY(-1px); }
+        .tasks-page .task-name { color: #f1f3ff; }
+        .tasks-page .task-meta { color: #b8c5e4; }
+        .tasks-page .task-subtasks { border-color: rgba(113,133,204,.22); background: rgba(8,13,29,.55); }
+        .tasks-page .task-subtask { color: #d4dcf4; }
+        .tasks-page .task-subtask input { accent-color: #a35cff; }
+        .cyber-subtask-progress { height: 4px; margin: 0 0 9px; border-radius: 99px; overflow: hidden; background: rgba(130,144,190,.16); }
+        .cyber-subtask-progress span { display: block; height: 100%; background: linear-gradient(90deg,#20d7ec,#9b5cff); box-shadow: 0 0 10px rgba(34,211,238,.6); }
+        .cyber-time-chip { display: inline-flex; align-items: center; border: 1px solid rgba(34,211,238,.28); color: #6ce7f6; background: rgba(34,211,238,.08); border-radius: 20px; padding: 3px 8px; }
+        .tasks-page .task-actions button, .tasks-page .ghost { color: #c3ccef; border-color: rgba(112,129,191,.25); }
+        .tasks-page .task-actions button:hover, .tasks-page .ghost:hover { color: #fff; border-color: rgba(34,211,238,.48); background: rgba(34,211,238,.08); }
+        .cyber-kanban { display: grid; grid-template-columns: repeat(4,minmax(210px,1fr)); gap: 12px; overflow-x: auto; padding: 3px 1px 12px; }
+        .cyber-kanban-column { min-width: 210px; padding: 11px; border: 1px solid rgba(103,123,190,.25); border-radius: 13px; background: rgba(13,19,40,.75); }
+        .cyber-kanban-column > header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; color: #e5eaff; }
+        .cyber-kanban-column > header span { min-width: 23px; text-align: center; border-radius: 20px; background: rgba(125,92,255,.20); color: #c9b3ff; padding: 2px 7px; font-size: 11px; }
+        .cyber-kanban-card { display: grid; gap: 8px; padding: 11px; margin-bottom: 9px; border: 1px solid rgba(112,132,205,.24); border-radius: 10px; background: linear-gradient(145deg,rgba(28,36,70,.92),rgba(15,21,43,.96)); }
+        .cyber-kanban-card > strong { color: #f0f2ff; overflow-wrap: anywhere; }
+        .cyber-kanban-card p { margin: 0; color: var(--cyber-muted); font-size: 12px; }
+        .cyber-kanban-meta, .cyber-kanban-actions { display: flex; align-items: center; justify-content: space-between; gap: 7px; flex-wrap: wrap; }
+        .cyber-kanban-meta small { color: #9daaca; }
+        .cyber-kanban-actions button { border: 1px solid rgba(34,211,238,.25); border-radius: 7px; padding: 5px 8px; color: #bcecf6; background: rgba(34,211,238,.06); cursor: pointer; }
+        .cyber-empty, .cyber-empty-inline { color: #7886a9; font-size: 12px; }
+        .cyber-agenda, .cyber-analytics { padding: 15px; border: 1px solid rgba(103,123,190,.25); border-radius: 14px; background: rgba(13,19,40,.72); }
+        .cyber-panel-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 14px; }
+        .cyber-panel-heading h3, .cyber-automation-panel h3 { margin: 3px 0 0; color: #f1f3ff; }
+        .cyber-panel-heading > span { color: #91a1c9; font-size: 12px; }
+        .cyber-agenda-day { display: grid; grid-template-columns: 145px minmax(0,1fr); gap: 13px; padding: 12px 0; border-top: 1px solid rgba(104,122,185,.17); }
+        .cyber-agenda-date { display: grid; align-content: start; gap: 3px; color: #e8edff; }
+        .cyber-agenda-date small { color: #7e8cad; font-size: 10px; }
+        .cyber-agenda-items { display: grid; gap: 6px; }
+        .cyber-agenda-task { display: flex; align-items: center; gap: 9px; text-align: left; padding: 8px 10px; border: 1px solid rgba(105,127,194,.20); border-radius: 8px; color: #dce5ff; background: rgba(28,36,70,.55); cursor: pointer; }
+        .cyber-agenda-task small { margin-left: auto; color: #8d9dc4; }
+        .cyber-agenda-task.is-done { opacity: .55; text-decoration: line-through; }
+        .cyber-agenda-dot { width: 7px; height: 7px; flex: 0 0 7px; border-radius: 50%; background: #23d6ee; box-shadow: 0 0 9px #23d6ee; }
+        .cyber-footnote { margin: 12px 0 0; color: #8190b3; font-size: 11px; }
+        .cyber-analytics-grid { display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); gap: 10px; }
+        .cyber-analytics-card { display: grid; gap: 7px; padding: 13px; border: 1px solid rgba(106,126,196,.24); border-radius: 11px; background: linear-gradient(145deg,rgba(28,36,70,.8),rgba(13,19,40,.9)); }
+        .cyber-analytics-card small, .cyber-analytics-card span { color: #98a7ca; font-size: 11px; }
+        .cyber-analytics-card strong { color: #f5f5ff; font-size: 22px; }
+        .cyber-mini-track { height: 5px; }
+        .cyber-priority-breakdown { display: grid; gap: 11px; margin: 18px 0; }
+        .cyber-breakdown-row { display: grid; grid-template-columns: 55px minmax(0,1fr) 30px; gap: 10px; align-items: center; color: #c4cdea; font-size: 12px; }
+        .cyber-breakdown-row > div { height: 7px; border-radius: 99px; overflow: hidden; background: rgba(123,139,190,.16); }
+        .cyber-breakdown-row i { display: block; height: 100%; border-radius: inherit; background: linear-gradient(90deg,#22d3ee,#a855f7); }
+        .cyber-breakdown-row b { text-align: right; color: #edf0ff; }
+        .cyber-automation-panel { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 15px; border: 1px solid rgba(153,91,255,.34); border-radius: 12px; background: linear-gradient(110deg,rgba(83,42,155,.22),rgba(17,95,126,.16)); }
+        .cyber-automation-panel p { max-width: 640px; margin: 7px 0 0; color: #aab8d8; font-size: 12px; }
+        .cyber-primary-button { flex: 0 0 auto; border: 1px solid rgba(196,159,255,.48); border-radius: 9px; padding: 10px 14px; color: #fff; font-weight: 700; background: linear-gradient(110deg,#763cff,#a344e9); box-shadow: 0 0 18px rgba(140,75,255,.22); cursor: pointer; }
+        .cyber-priority-list { display: grid; gap: 8px; margin-top: 16px; }
+        .cyber-priority-list > strong { margin-bottom: 2px; color: #e9edff; }
+        .cyber-priority-list > div { display: grid; grid-template-columns: 30px minmax(0,1fr) auto; align-items: center; gap: 9px; padding: 8px 10px; border-radius: 8px; background: rgba(28,36,70,.48); }
+        .cyber-priority-list > div > span { color: #55dced; font-size: 11px; }
+        .cyber-priority-list b { color: #e5eaff; font-size: 12px; overflow-wrap: anywhere; }
+        .cyber-priority-list small { color: #91a1c7; font-size: 10px; }
+        .tasks-page .task-modal-backdrop { background: rgba(3,6,18,.82); backdrop-filter: blur(10px); }
+        .tasks-page .task-modal { color: #edf0ff; border: 1px solid rgba(132,105,255,.36); border-radius: 16px; background: linear-gradient(145deg,#141b37,#0b1022); box-shadow: 0 20px 70px rgba(0,0,0,.55), 0 0 35px rgba(121,75,255,.12); }
+        .tasks-page .subtask-editor, .tasks-page .area-preview, .tasks-page .observation-panel { border-color: rgba(103,123,190,.25); background: rgba(10,16,34,.58); }
+        .tasks-page .area-card { border-color: rgba(103,123,190,.25); background: linear-gradient(145deg,rgba(25,32,63,.86),rgba(12,17,36,.92)); }
+        .tasks-page .daily-row { border-color: rgba(103,123,190,.20); }
+        .tasks-page button:focus-visible, .tasks-page input:focus-visible, .tasks-page select:focus-visible { outline-color: #22d3ee; }
+        @media (max-width: 1000px) { .tasks-page .metrics { grid-template-columns: repeat(3,minmax(0,1fr)); } .tasks-page .tasks-toolbar { grid-template-columns: repeat(2,minmax(0,1fr)); } .cyber-analytics-grid { grid-template-columns: repeat(2,minmax(0,1fr)); } }
+        @media (max-width: 620px) { .tasks-page { padding: 12px; border-radius: 12px; } .tasks-page .metrics { grid-template-columns: repeat(2,minmax(0,1fr)); } .cyber-overview-strip { grid-template-columns: 1fr; gap: 10px; } .tasks-page .tasks-toolbar { grid-template-columns: 1fr; } .cyber-agenda-day { grid-template-columns: 1fr; gap: 7px; } .cyber-automation-panel { align-items: stretch; flex-direction: column; } .cyber-primary-button { width: 100%; } .cyber-priority-list > div { grid-template-columns: 25px minmax(0,1fr); } .cyber-priority-list small { grid-column: 2; } .cyber-analytics-grid { grid-template-columns: 1fr 1fr; } }
+        @media (prefers-reduced-motion: reduce) { .tasks-page *, .tasks-page *::before, .tasks-page *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; animation-duration: .01ms !important; } }
+
       `}</style>
     </div>
   );
