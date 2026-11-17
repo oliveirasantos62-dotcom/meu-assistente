@@ -1246,6 +1246,7 @@ export default function Tasks({ data, save, completeTask }) {
       )
     );
   });
+  const completedCount = tasksList.filter((task) => task.done).length;
   const subtaskTotal = tasksList.reduce(
     (sum, task) => sum + countSubtasks(task.subtasks),
     0,
@@ -1284,8 +1285,6 @@ export default function Tasks({ data, save, completeTask }) {
   // =====================================
   // MÉTRICAS
   // =====================================
-
-  const completedCount = tasksList.filter((task) => task.done).length;
 
   const pendingCount = tasksList.filter(
     (task) => !task.done && task.status !== 'cancelled' && !task.cancelled,
