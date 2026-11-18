@@ -46,6 +46,51 @@ function formatDate(value) {
   return `${day}/${month}/${year}`;
 }
 
+const WEEK_DAYS = [
+  'Domingo',
+  'Segunda-feira',
+  'Terça-feira',
+  'Quarta-feira',
+  'Quinta-feira',
+  'Sexta-feira',
+  'Sábado',
+];
+
+function taskOccursOnDate(task, dateKey) {
+  const frequency = task.frequency || '1x';
+  const date = new Date(`${dateKey}T12:00:00`);
+  const dayNumber = date.getDate();
+  const weekDay = date.getDay();
+
+  if (frequency === 'Diária') return true;
+
+  const specific =
+    task.scheduleMode === 'specific' ||
+    (!task.scheduleMode && frequency === '1x' && Boolean(task.deadline));
+
+  if (specific) {
+    if (frequency === '1x') return task.deadline === dateKey;
+    if (frequency === 'Semanal') {
+      return String(task.recurrenceDay ?? '') === String(weekDay);
+    }
+    if (frequency === 'Mensal') {
+      return Number(task.recurrenceDay) === dayNumber;
+    }
+  }
+
+  // "Até ser marcada": aparece diariamente enquanto não for concluída.
+  return !task.done;
+}
+
+function isOccurrenceDone(task, dateKey) {
+  if ((task.frequency || '1x') === '1x' || task.scheduleMode === 'untilDone') {
+    return Boolean(task.done);
+  }
+  return (
+    Array.isArray(task.completedDates) ? task.completedDates : []
+  ).includes(dateKey);
+}
+
 function updateSubtaskTree(items, targetId, updater) {
   return (Array.isArray(items) ? items : []).map((item) =>
     String(item.id) === String(targetId)
@@ -760,6 +805,15 @@ export default function Tasks({ data, save, completeTask }) {
     setForm({
       ...EMPTY_FORM,
       ...task,
+      scheduleMode:
+        task.frequency === 'Diária'
+          ? 'everyDay'
+          : task.scheduleMode ||
+            (task.frequency === '1x' && task.deadline
+              ? 'specific'
+              : 'untilDone'),
+      recurrenceDay:
+        task.recurrenceDay == null ? '' : String(task.recurrenceDay),
       xp: Number(task.xp ?? 40),
       projectId: task.projectId == null ? '' : String(task.projectId),
       areaId: taskArea ? String(taskArea.id) : '',
@@ -790,6 +844,12 @@ export default function Tasks({ data, save, completeTask }) {
           : Math.max(0, Number(form.estimatedMinutes) || 0),
       projectId: form.projectId === '' ? null : form.projectId,
       areaId: form.areaId === '' ? null : form.areaId,
+      scheduleMode:
+        form.frequency === 'Diária'
+          ? 'everyDay'
+          : form.scheduleMode || 'untilDone',
+      recurrenceDay:
+        form.recurrenceDay === '' ? null : Number(form.recurrenceDay),
       tags: Array.from(
         new Set(
           (Array.isArray(form.tags) ? form.tags : [])
@@ -833,25 +893,58 @@ export default function Tasks({ data, save, completeTask }) {
     setForm({ ...EMPTY_FORM });
   };
 
-  const toggleTask = (task) => {
+  const toggleTask = (task, occurrenceDate = localDate()) => {
     if (isTaskCancelled(task, new Date())) return;
 
-    if (completeTask) {
-      completeTask(task.id);
+    const frequency = task.frequency || '1x';
+    // Tarefas únicas continuam usando o fluxo central de XP/conclusão.
+    if (frequency === '1x') {
+      if (completeTask) {
+        completeTask(task.id);
+        return;
+      }
+      save({
+        ...data,
+        tasks: tasksList.map((item) =>
+          String(item.id) === String(task.id)
+            ? {
+                ...item,
+                done: !item.done,
+                completedAt: !item.done ? new Date().toISOString() : null,
+              }
+            : item,
+        ),
+      });
       return;
     }
 
+    // "Até ser marcada" conclui a tarefa de forma definitiva.
+    // No modo de dia específico, cada ocorrência tem sua própria conclusão.
     save({
       ...data,
-      tasks: tasksList.map((item) =>
-        item.id === task.id
-          ? {
-              ...item,
-              done: !item.done,
-              completedAt: !item.done ? new Date().toISOString() : null,
-            }
-          : item,
-      ),
+      tasks: tasksList.map((item) => {
+        if (String(item.id) !== String(task.id)) return item;
+        if (item.scheduleMode === 'untilDone') {
+          return {
+            ...item,
+            done: !item.done,
+            completedAt: !item.done ? new Date().toISOString() : null,
+            updatedAt: new Date().toISOString(),
+          };
+        }
+        const completedDates = Array.isArray(item.completedDates)
+          ? item.completedDates
+          : [];
+        const alreadyDone = completedDates.includes(occurrenceDate);
+        return {
+          ...item,
+          done: false,
+          completedDates: alreadyDone
+            ? completedDates.filter((date) => date !== occurrenceDate)
+            : [...completedDates, occurrenceDate],
+          updatedAt: new Date().toISOString(),
+        };
+      }),
     });
   };
 
@@ -1781,7 +1874,9 @@ export default function Tasks({ data, save, completeTask }) {
               </div>
               {nextSevenDays.map((day) => {
                 const dayTasks = visibleTasks.filter(
-                  (task) => task.deadline === day.key,
+                  (task) =>
+                    taskOccursOnDate(task, day.key) &&
+                    !isTaskCancelled(task, new Date(`${day.key}T12:00:00`)),
                 );
                 return (
                   <div className='cyber-agenda-day' key={day.key}>
@@ -1794,13 +1889,39 @@ export default function Tasks({ data, save, completeTask }) {
                         dayTasks.map((task) => (
                           <button
                             type='button'
-                            className={`cyber-agenda-task ${task.done ? 'is-done' : ''}`}
-                            key={task.id}
+                            className={`cyber-agenda-task ${isOccurrenceDone(task, day.key) ? 'is-done' : ''}`}
+                            key={`${task.id}-${day.key}`}
                             onClick={() => openEdit(task)}
                           >
                             <span className='cyber-agenda-dot' />
                             {task.name}
                             <small>{task.priority || 'Média'}</small>
+                            <span
+                              role='button'
+                              tabIndex={0}
+                              className='cyber-agenda-mark'
+                              title={
+                                isOccurrenceDone(task, day.key)
+                                  ? 'Reabrir ocorrência'
+                                  : 'Marcar ocorrência'
+                              }
+                              onClick={(event) => {
+                                event.stopPropagation();
+                                toggleTask(task, day.key);
+                              }}
+                              onKeyDown={(event) => {
+                                if (
+                                  event.key === 'Enter' ||
+                                  event.key === ' '
+                                ) {
+                                  event.preventDefault();
+                                  event.stopPropagation();
+                                  toggleTask(task, day.key);
+                                }
+                              }}
+                            >
+                              {isOccurrenceDone(task, day.key) ? '✓' : '○'}
+                            </span>
                           </button>
                         ))
                       ) : (
@@ -2587,6 +2708,60 @@ export default function Tasks({ data, save, completeTask }) {
                   ))}
                 </select>
               </label>
+
+              {form.frequency !== 'Diária' && (
+                <label>
+                  Quando deve aparecer?
+                  <select
+                    value={form.scheduleMode || 'untilDone'}
+                    onChange={(e) => updateForm('scheduleMode', e.target.value)}
+                  >
+                    <option value='untilDone'>
+                      Todos os dias até ser marcada
+                    </option>
+                    <option value='specific'>Somente em dia específico</option>
+                  </select>
+                </label>
+              )}
+
+              {form.scheduleMode === 'specific' &&
+                form.frequency === 'Semanal' && (
+                  <label>
+                    Dia da semana
+                    <select
+                      value={form.recurrenceDay ?? ''}
+                      onChange={(e) =>
+                        updateForm('recurrenceDay', e.target.value)
+                      }
+                      required
+                    >
+                      <option value=''>Selecione o dia</option>
+                      {WEEK_DAYS.map((day, index) => (
+                        <option key={day} value={String(index)}>
+                          {day}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                )}
+
+              {form.scheduleMode === 'specific' &&
+                form.frequency === 'Mensal' && (
+                  <label>
+                    Dia do mês
+                    <input
+                      type='number'
+                      min='1'
+                      max='31'
+                      value={form.recurrenceDay ?? ''}
+                      onChange={(e) =>
+                        updateForm('recurrenceDay', e.target.value)
+                      }
+                      placeholder='Ex.: 15'
+                      required
+                    />
+                  </label>
+                )}
 
               <label>
                 Recompensa XP
@@ -3629,6 +3804,7 @@ export default function Tasks({ data, save, completeTask }) {
         .cyber-agenda-items { display: grid; gap: 6px; }
         .cyber-agenda-task { display: flex; align-items: center; gap: 9px; text-align: left; padding: 8px 10px; border: 1px solid rgba(105,127,194,.20); border-radius: 8px; color: #dce5ff; background: rgba(28,36,70,.55); cursor: pointer; }
         .cyber-agenda-task small { margin-left: auto; color: #8d9dc4; }
+        .cyber-agenda-mark { display: inline-grid; place-items: center; width: 22px; height: 22px; margin-left: 8px; border: 1px solid rgba(35,214,238,.4); border-radius: 6px; color: #8cecf5; cursor: pointer; }
         .cyber-agenda-task.is-done { opacity: .55; text-decoration: line-through; }
         .cyber-agenda-dot { width: 7px; height: 7px; flex: 0 0 7px; border-radius: 50%; background: #23d6ee; box-shadow: 0 0 9px #23d6ee; }
         .cyber-footnote { margin: 12px 0 0; color: #8190b3; font-size: 11px; }
