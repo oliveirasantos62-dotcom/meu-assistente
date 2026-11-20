@@ -337,95 +337,34 @@ export default function Tasks({ data, save, completeTask }) {
       ...prev,
       subtasks: removeSubtaskTree(prev.subtasks, id),
     }));
-  const addSubtaskColumn = () =>
-    updateForm('subtaskColumns', [
-      ...(form.subtaskColumns || []),
-      { id: createId(), title: '', items: [] },
-    ]);
-  const updateSubtaskColumn = (columnId, changes) =>
-    setForm((prev) => ({
-      ...prev,
-      subtaskColumns: (prev.subtaskColumns || []).map((col) =>
-        col.id === columnId ? { ...col, ...changes } : col,
-      ),
-    }));
-  const deleteSubtaskColumn = (columnId) =>
-    setForm((prev) => ({
-      ...prev,
-      subtaskColumns: (prev.subtaskColumns || []).filter(
-        (col) => col.id !== columnId,
-      ),
-    }));
-  const addSubtaskColumnItem = (columnId) =>
-    updateSubtaskColumn(columnId, {
-      items: [
-        ...((form.subtaskColumns || []).find((c) => c.id === columnId)?.items ||
-          []),
-        { id: createId(), text: '' },
-      ],
-    });
-  const updateSubtaskColumnItem = (columnId, itemId, text) =>
-    updateSubtaskColumn(columnId, {
-      items: (
-        (form.subtaskColumns || []).find((c) => c.id === columnId)?.items || []
-      ).map((item) => (item.id === itemId ? { ...item, text } : item)),
-    });
-  const deleteSubtaskColumnItem = (columnId, itemId) =>
-    updateSubtaskColumn(columnId, {
-      items: (
-        (form.subtaskColumns || []).find((c) => c.id === columnId)?.items || []
-      ).filter((item) => item.id !== itemId),
-    });
+  const addSubtaskColumn = () => updateForm('subtaskColumns', [...(form.subtaskColumns || []), { id: createId(), title: '', items: [] }]);
+  const updateSubtaskColumn = (columnId, changes) => setForm((prev) => ({ ...prev, subtaskColumns: (prev.subtaskColumns || []).map((col) => col.id === columnId ? { ...col, ...changes } : col) }));
+  const deleteSubtaskColumn = (columnId) => setForm((prev) => ({ ...prev, subtaskColumns: (prev.subtaskColumns || []).filter((col) => col.id !== columnId) }));
+  const addSubtaskColumnItem = (columnId) => updateSubtaskColumn(columnId, { items: [...((form.subtaskColumns || []).find(c => c.id === columnId)?.items || []), { id: createId(), text: '', done: false }] });
+  const updateSubtaskColumnItem = (columnId, itemId, text) => updateSubtaskColumn(columnId, { items: ((form.subtaskColumns || []).find(c => c.id === columnId)?.items || []).map(item => item.id === itemId ? { ...item, text } : item) });
+  const toggleFormColumnItem = (columnId, itemId) => updateSubtaskColumn(columnId, { items: ((form.subtaskColumns || []).find(c => c.id === columnId)?.items || []).map(item => item.id === itemId ? { ...item, done: !item.done } : item) });
+  const toggleTaskColumnItem = (task, columnId, itemId) => {
+    const subtaskColumns = (task.subtaskColumns || []).map(column => column.id !== columnId ? column : { ...column, items: (column.items || []).map(item => item.id === itemId ? { ...item, done: !item.done } : item) });
+    save({ ...data, tasks: tasksList.map(item => item.id === task.id ? { ...item, subtaskColumns, updatedAt: new Date().toISOString() } : item) });
+  };
+  const deleteSubtaskColumnItem = (columnId, itemId) => updateSubtaskColumn(columnId, { items: ((form.subtaskColumns || []).find(c => c.id === columnId)?.items || []).filter(item => item.id !== itemId) });
 
-  const renderIndependentSubtaskColumns = () =>
-    (form.subtaskColumns || []).map((column) => (
-      <div className='subtask-independent-column' key={column.id}>
-        <div className='subtask-independent-column-heading'>
-          <input
-            value={column.title || ''}
-            placeholder='Título da coluna'
-            aria-label='Título da coluna'
-            onChange={(e) =>
-              updateSubtaskColumn(column.id, { title: e.target.value })
-            }
-          />
-          <button
-            type='button'
-            className='ghost'
-            title='Excluir coluna'
-            onClick={() => deleteSubtaskColumn(column.id)}
-          >
-            🗑️
-          </button>
-        </div>
-        {(column.items || []).map((item) => (
-          <div className='subtask-independent-item' key={item.id}>
-            <input
-              value={item.text || ''}
-              placeholder='Item...'
-              onChange={(e) =>
-                updateSubtaskColumnItem(column.id, item.id, e.target.value)
-              }
-            />
-            <button
-              type='button'
-              className='ghost'
-              title='Excluir item'
-              onClick={() => deleteSubtaskColumnItem(column.id, item.id)}
-            >
-              ×
-            </button>
-          </div>
-        ))}
-        <button
-          type='button'
-          className='secondary'
-          onClick={() => addSubtaskColumnItem(column.id)}
-        >
-          ＋ Item
-        </button>
+  const renderIndependentSubtaskColumns = () => (form.subtaskColumns || []).map((column) => (
+    <div className='subtask-independent-column' key={column.id}>
+      <div className='subtask-independent-column-heading'>
+        <input value={column.title || ''} placeholder='Título da coluna' aria-label='Título da coluna' onChange={(e) => updateSubtaskColumn(column.id, { title: e.target.value })} />
+        <button type='button' className='ghost' title='Excluir coluna' onClick={() => deleteSubtaskColumn(column.id)}>🗑️</button>
       </div>
-    ));
+      {(column.items || []).map((item) => (
+        <div className='subtask-independent-item' key={item.id}>
+          <input type='checkbox' checked={!!item.done} aria-label='Marcar item' onChange={() => toggleFormColumnItem(column.id, item.id)} />
+          <input value={item.text || ''} placeholder='Item...' onChange={(e) => updateSubtaskColumnItem(column.id, item.id, e.target.value)} />
+          <button type='button' className='ghost' title='Excluir item' onClick={() => deleteSubtaskColumnItem(column.id, item.id)}>×</button>
+        </div>
+      ))}
+      <button type='button' className='secondary' onClick={() => addSubtaskColumnItem(column.id)}>＋ Item</button>
+    </div>
+  ));
 
   const renderSubtaskEditor = (items, depth = 0) =>
     (Array.isArray(items) ? items : []).map((subtask) => (
@@ -955,15 +894,10 @@ export default function Tasks({ data, save, completeTask }) {
           note: String(item.note || '').trim(),
         }))
         .filter((item) => item.title),
-      subtaskColumns: (Array.isArray(form.subtaskColumns)
-        ? form.subtaskColumns
-        : []
-      ).map((column) => ({
+      subtaskColumns: (Array.isArray(form.subtaskColumns) ? form.subtaskColumns : []).map((column) => ({
         ...column,
         title: String(column.title || '').trim(),
-        items: (Array.isArray(column.items) ? column.items : []).map(
-          (item) => ({ ...item, text: String(item.text || '').trim() }),
-        ),
+        items: (Array.isArray(column.items) ? column.items : []).map((item) => ({ ...item, text: String(item.text || '').trim(), done: !!item.done })),
       })),
       updatedAt: new Date().toISOString(),
     };
@@ -2252,22 +2186,16 @@ export default function Tasks({ data, save, completeTask }) {
                       {task.description && (
                         <p className='subtitle'>{task.description}</p>
                       )}
-                      {Array.isArray(task.subtaskColumns) &&
-                        task.subtaskColumns.length > 0 && (
-                          <div className='task-independent-columns-display'>
-                            {task.subtaskColumns.map((column) => (
-                              <section
-                                className='task-independent-column-display'
-                                key={column.id}
-                              >
-                                <strong>{column.title || 'Coluna'}</strong>
-                                {(column.items || []).map((item) => (
-                                  <div key={item.id}>{item.text || '—'}</div>
-                                ))}
-                              </section>
-                            ))}
-                          </div>
-                        )}
+                      {Array.isArray(task.subtaskColumns) && task.subtaskColumns.length > 0 && (
+                        <div className='task-independent-columns-display'>
+                          {task.subtaskColumns.map((column) => (
+                            <section className='task-independent-column-display' key={column.id}>
+                              <strong>{column.title || 'Coluna'}</strong>
+                              {(column.items || []).map((item) => <label className={`task-independent-column-item${item.done ? ' is-done' : ''}`} key={item.id}><input type='checkbox' checked={!!item.done} onChange={() => toggleTaskColumnItem(task, column.id, item.id)} /><span>{item.text || '—'}</span></label>)}
+                            </section>
+                          ))}
+                        </div>
+                      )}
 
                       {Array.isArray(task.subtasks) &&
                         task.subtasks.length > 0 &&
@@ -2745,19 +2673,8 @@ export default function Tasks({ data, save, completeTask }) {
             </label>
 
             <section className='subtask-editor' aria-label='Subtarefas'>
-              <div className='subtask-editor-title'>
-                <strong>▦ Colunas independentes</strong>
-                <button
-                  type='button'
-                  className='secondary'
-                  onClick={addSubtaskColumn}
-                >
-                  ＋ Criar coluna
-                </button>
-              </div>
-              <div className='subtask-independent-columns'>
-                {renderIndependentSubtaskColumns()}
-              </div>
+              <div className='subtask-editor-title'><strong>▦ Colunas independentes</strong><button type='button' className='secondary' onClick={addSubtaskColumn}>＋ Criar coluna</button></div>
+              <div className='subtask-independent-columns'>{renderIndependentSubtaskColumns()}</div>
               <div className='subtask-editor-title'>
                 <strong>☑️ Subtarefas tradicionais</strong>
                 <small>
@@ -3469,6 +3386,10 @@ export default function Tasks({ data, save, completeTask }) {
         .tasks-page .task-independent-columns-display { display:flex; gap:10px; overflow-x:auto; margin:8px 0; }
         .tasks-page .task-independent-column-display { min-width:160px; max-width:260px; flex:1; display:grid; gap:5px; border:1px solid var(--border-color, rgba(120,120,120,.2)); border-radius:9px; padding:8px; }
         .tasks-page .task-independent-column-display > div { overflow-wrap:anywhere; }
+        .tasks-page .task-independent-column-item { display:flex; align-items:flex-start; gap:7px; overflow-wrap:anywhere; cursor:pointer; }
+        .tasks-page .task-independent-column-item span { overflow-wrap:anywhere; }
+        .tasks-page .task-independent-column-item.is-done span { text-decoration:line-through; opacity:.65; }
+        .tasks-page .subtask-independent-item input[type='checkbox'] { flex:0 0 auto; width:auto; }
         .tasks-page .subtask-independent-columns { display:flex; gap:12px; overflow-x:auto; align-items:flex-start; }
         .tasks-page .subtask-independent-column { min-width:220px; flex:1; display:grid; gap:8px; border:1px solid var(--border-color, rgba(120,120,120,.2)); border-radius:10px; padding:10px; }
         .tasks-page .subtask-independent-column-heading, .tasks-page .subtask-independent-item { display:flex; gap:6px; align-items:center; }
