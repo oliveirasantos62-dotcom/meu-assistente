@@ -18,7 +18,7 @@ const DISTRICTS = [
     name: 'Distrito Acadêmico',
     icon: '🎓',
     desc: 'Laboratórios, bibliotecas e centros de pesquisa alimentados pelo conhecimento.',
-    metric: 'minutes',
+    metric: 'studyMinutes',
     threshold: 60,
     color: 'violet',
   },
@@ -61,8 +61,6 @@ const DISTRICTS = [
 ];
 
 // Grade oficial dos sprites: todos os quadros são alinhados à mesma origem.
-// Jogador: 4 colunas x 4 direções (32x32 por quadro).
-// Moradores: 4 colunas x 5 personagens (32x48 por quadro).
 const SPRITE_SHEET_LAYOUT = Object.freeze({
   player: Object.freeze({
     frameWidth: 32,
@@ -90,14 +88,31 @@ const RESIDENTS = [
     role: 'Estudante de cibernética',
     avatar: '👩🏻‍🎓',
     district: 'academy',
+    workBuilding: 'university',
     focus: 'study',
     spriteRow: 0,
     schedule: {
-      morning: { x: 9, y: 2, label: 'Entrada da Universidade' },
-      afternoon: { x: 10, y: 4, label: 'Pátio Acadêmico' },
-      sunset: { x: 9, y: 5, label: 'Praça Central' },
-      night: { x: 10, y: 1, label: 'Observatório' },
+      morning: {
+        x: 9,
+        y: 3,
+        label: 'Entrada da Universidade',
+        activity: 'working',
+      },
+      afternoon: { x: 11, y: 4, label: 'Pátio Acadêmico', activity: 'working' },
+      sunset: { x: 9, y: 5, label: 'Praça Central', activity: 'chatting' },
+      night: { x: 8, y: 5, label: 'Banco da Praça', activity: 'resting' },
     },
+    roamPoints: [
+      { x: 9, y: 3 },
+      { x: 11, y: 4 },
+      { x: 9, y: 5 },
+      { x: 8, y: 5 },
+      { x: 12, y: 5 },
+    ],
+    relations: [
+      { targetId: 'iris', label: 'Parceiras de Pesquisa', bond: 88 },
+      { targetId: 'nox', label: 'Estudo Bio-Luminescente', bond: 74 },
+    ],
     storyChapters: [
       {
         affinity: 15,
@@ -122,14 +137,31 @@ const RESIDENTS = [
     role: 'Engenheiro de sistemas',
     avatar: '🧑🏽‍💻',
     district: 'innovation',
+    workBuilding: 'innovation-lab',
     focus: 'tasks',
     spriteRow: 1,
     schedule: {
-      morning: { x: 4, y: 9, label: 'Oficina Sul' },
-      afternoon: { x: 5, y: 9, label: 'Laboratório de Inovação' },
-      sunset: { x: 7, y: 7, label: 'Avenida Central' },
-      night: { x: 5, y: 8, label: 'Poste de Calibração' },
+      morning: { x: 4, y: 10, label: 'Oficina Sul', activity: 'working' },
+      afternoon: {
+        x: 6,
+        y: 8,
+        label: 'Corredor de Inovação',
+        activity: 'working',
+      },
+      sunset: { x: 7, y: 5, label: 'Avenida Central', activity: 'strolling' },
+      night: { x: 5, y: 8, label: 'Poste de Calibração', activity: 'resting' },
     },
+    roamPoints: [
+      { x: 4, y: 10 },
+      { x: 6, y: 8 },
+      { x: 7, y: 5 },
+      { x: 5, y: 8 },
+      { x: 8, y: 8 },
+    ],
+    relations: [
+      { targetId: 'maya', label: 'Logística & Protótipos', bond: 82 },
+      { targetId: 'luna', label: 'Rede Energética', bond: 76 },
+    ],
     storyChapters: [
       {
         affinity: 15,
@@ -154,14 +186,31 @@ const RESIDENTS = [
     role: 'Comerciante do Mercado Neon',
     avatar: '👩🏽‍🔧',
     district: 'commerce',
+    workBuilding: 'neon-market',
     focus: 'coins',
     spriteRow: 2,
     schedule: {
-      morning: { x: 15, y: 8, label: 'Banca do Mercado' },
-      afternoon: { x: 14, y: 8, label: 'Mercado Neon' },
-      sunset: { x: 16, y: 7, label: 'Alameda das Lanternas' },
-      night: { x: 15, y: 9, label: 'Feira Noturna' },
+      morning: { x: 15, y: 9, label: 'Banca do Mercado', activity: 'working' },
+      afternoon: { x: 14, y: 9, label: 'Mercado Neon', activity: 'working' },
+      sunset: {
+        x: 15,
+        y: 8,
+        label: 'Alameda das Lanternas',
+        activity: 'chatting',
+      },
+      night: { x: 13, y: 8, label: 'Calçadão Noturno', activity: 'strolling' },
     },
+    roamPoints: [
+      { x: 15, y: 9 },
+      { x: 14, y: 9 },
+      { x: 15, y: 8 },
+      { x: 13, y: 8 },
+      { x: 12, y: 8 },
+    ],
+    relations: [
+      { targetId: 'nox', label: 'Parceria Orgânica', bond: 85 },
+      { targetId: 'kai', label: 'Restauração de Módulos', bond: 82 },
+    ],
     storyChapters: [
       {
         affinity: 15,
@@ -183,17 +232,39 @@ const RESIDENTS = [
   {
     id: 'nox',
     name: 'Nox',
-    role: 'Treinador de rotina',
+    role: 'Treinador de rotina & botânico',
     avatar: '🧑🏻‍🚀',
     district: 'green',
+    workBuilding: 'greenhouse',
     focus: 'habits',
     spriteRow: 3,
     schedule: {
-      morning: { x: 17, y: 4, label: 'Trilha dos Jardins' },
-      afternoon: { x: 16, y: 5, label: 'Horta Comunitária' },
-      sunset: { x: 18, y: 4, label: 'Mirante Verde' },
-      night: { x: 17, y: 3, label: 'Ronda Noturna' },
+      morning: {
+        x: 16,
+        y: 5,
+        label: 'Trilha dos Jardins',
+        activity: 'working',
+      },
+      afternoon: {
+        x: 15,
+        y: 5,
+        label: 'Horta Comunitária',
+        activity: 'working',
+      },
+      sunset: { x: 17, y: 5, label: 'Mirante Verde', activity: 'resting' },
+      night: { x: 15, y: 6, label: 'Ronda Botânica', activity: 'strolling' },
     },
+    roamPoints: [
+      { x: 16, y: 5 },
+      { x: 15, y: 5 },
+      { x: 17, y: 5 },
+      { x: 15, y: 6 },
+      { x: 13, y: 5 },
+    ],
+    relations: [
+      { targetId: 'maya', label: 'Colheitas & Feira', bond: 85 },
+      { targetId: 'luna', label: 'Flora Sensorial', bond: 74 },
+    ],
     storyChapters: [
       {
         affinity: 15,
@@ -218,14 +289,31 @@ const RESIDENTS = [
     role: 'Bibliotecária de dados',
     avatar: '🧝🏻‍♀️',
     district: 'academy',
+    workBuilding: 'university',
     focus: 'reading',
     spriteRow: 4,
     schedule: {
-      morning: { x: 7, y: 2, label: 'Alameda Oeste' },
-      afternoon: { x: 9, y: 3, label: 'Jardim de Leitura' },
-      sunset: { x: 8, y: 5, label: 'Praça do Núcleo' },
-      night: { x: 11, y: 2, label: 'Arquivo Silencioso' },
+      morning: { x: 7, y: 3, label: 'Alameda Oeste', activity: 'strolling' },
+      afternoon: {
+        x: 10,
+        y: 3,
+        label: 'Jardim de Leitura',
+        activity: 'working',
+      },
+      sunset: { x: 9, y: 5, label: 'Praça do Núcleo', activity: 'chatting' },
+      night: { x: 11, y: 3, label: 'Arquivo Silencioso', activity: 'working' },
     },
+    roamPoints: [
+      { x: 7, y: 3 },
+      { x: 10, y: 3 },
+      { x: 9, y: 5 },
+      { x: 11, y: 3 },
+      { x: 8, y: 4 },
+    ],
+    relations: [
+      { targetId: 'luna', label: 'Arquivo & Pesquisa', bond: 88 },
+      { targetId: 'kai', label: 'Catalogação Digital', bond: 70 },
+    ],
     storyChapters: [
       {
         affinity: 15,
@@ -246,6 +334,90 @@ const RESIDENTS = [
   },
 ];
 
+// Cidadãos autônomos que caminham livremente pelas calçadas, passeiam, trabalham e descansam
+const INITIAL_CITIZENS = [
+  {
+    id: 'cit-alex',
+    name: 'Alex',
+    role: 'Entregador Eco',
+    color: '#6ec2c9',
+    hat: '#f5c451',
+    x: 4,
+    y: 5,
+    activity: 'strolling',
+    waypoints: [
+      { x: 4, y: 5 },
+      { x: 10, y: 5 },
+      { x: 15, y: 5 },
+      { x: 15, y: 8 },
+      { x: 6, y: 8 },
+    ],
+    wpIndex: 1,
+    quote: 'As calçadas arborizadas deixam qualquer entrega mais leve!',
+  },
+  {
+    id: 'cit-sora',
+    name: 'Sora',
+    role: 'Artista Urbana',
+    color: '#c7b3eb',
+    hat: '#6b5399',
+    x: 12,
+    y: 5,
+    activity: 'strolling',
+    waypoints: [
+      { x: 12, y: 5 },
+      { x: 8, y: 5 },
+      { x: 8, y: 8 },
+      { x: 12, y: 8 },
+    ],
+    wpIndex: 1,
+    quote: 'Estou desenhando o pôr do sol refletido nos canais do Vale Neo.',
+  },
+  {
+    id: 'cit-teo',
+    name: 'Téo',
+    role: 'Técnico Solar',
+    color: '#7ec272',
+    hat: '#236373',
+    x: 5,
+    y: 8,
+    activity: 'working',
+    waypoints: [
+      { x: 5, y: 8 },
+      { x: 5, y: 5 },
+      { x: 8, y: 5 },
+      { x: 8, y: 10 },
+    ],
+    wpIndex: 1,
+    quote: 'Os painéis solares da cidade carregam com cada meta concluída!',
+  },
+  {
+    id: 'cit-bia',
+    name: 'Bia',
+    role: 'Pesquisadora Júnior',
+    color: '#f5c451',
+    hat: '#388e99',
+    x: 11,
+    y: 3,
+    activity: 'resting',
+    waypoints: [
+      { x: 11, y: 3 },
+      { x: 9, y: 5 },
+      { x: 6, y: 5 },
+      { x: 6, y: 3 },
+    ],
+    wpIndex: 1,
+    quote: 'Pausa rápida na calçada antes de voltar para a biblioteca.',
+  },
+];
+
+const ACTIVITY_META = {
+  working: { icon: '💼', label: 'Trabalhando', color: '#7ec272' },
+  chatting: { icon: '💬', label: 'Conversando', color: '#f5c451' },
+  strolling: { icon: '🚶', label: 'Passeando', color: '#6ec2c9' },
+  resting: { icon: '☕', label: 'Descansando', color: '#c7b3eb' },
+};
+
 const WORLD_BUILDINGS = [
   {
     id: 'player-home',
@@ -259,6 +431,8 @@ const WORLD_BUILDINGS = [
     door: { x: 2, y: 3 },
     spriteCol: 0,
     spriteRow: 2,
+    openHour: 0,
+    closeHour: 24,
     isHome: true,
     description: 'Seu refúgio pessoal no Vale Neo com cômodos decoráveis.',
     rooms: ['Sala de Estar', 'Estúdio & Quarto', 'Varanda Botânica'],
@@ -275,7 +449,10 @@ const WORLD_BUILDINGS = [
     door: { x: 9, y: 6 },
     spriteCol: 0,
     spriteRow: 0,
-    description: 'Central de operações, tarefas reais e ponto de encontro.',
+    openHour: 0,
+    closeHour: 24,
+    description:
+      'Central cívica 24h, painel de tarefas reais e ponto de encontro.',
     rooms: ['Painel de tarefas', 'Central de missões', 'Terminal cívico'],
   },
   {
@@ -290,7 +467,9 @@ const WORLD_BUILDINGS = [
     door: { x: 9, y: 2 },
     spriteCol: 1,
     spriteRow: 0,
-    description: 'Salas de estudo, biblioteca e laboratório de foco.',
+    openHour: 7,
+    closeHour: 22,
+    description: 'Salas de estudo, biblioteca e laboratório de foco (07h–22h).',
     rooms: [
       'Biblioteca holográfica',
       'Cabine de foco profundo',
@@ -309,7 +488,9 @@ const WORLD_BUILDINGS = [
     door: { x: 16, y: 5 },
     spriteCol: 2,
     spriteRow: 0,
-    description: 'Um refúgio verde alimentado por seus hábitos e foco.',
+    openHour: 6,
+    closeHour: 19,
+    description: 'Um refúgio verde alimentado por seus hábitos (06h–19h).',
     rooms: ['Jardim de hábitos', 'Laboratório botânico', 'Banco de sementes'],
   },
   {
@@ -324,7 +505,9 @@ const WORLD_BUILDINGS = [
     door: { x: 4, y: 10 },
     spriteCol: 0,
     spriteRow: 1,
-    description: 'Oficinas, protótipos e incubadoras de projetos.',
+    openHour: 8,
+    closeHour: 21,
+    description: 'Oficinas, protótipos e incubadoras de projetos (08h–21h).',
     rooms: ['Oficina de protótipos', 'Sala de projetos', 'Núcleo de robótica'],
   },
   {
@@ -339,7 +522,9 @@ const WORLD_BUILDINGS = [
     door: { x: 15, y: 9 },
     spriteCol: 1,
     spriteRow: 1,
-    description: 'Lojas, móveis para sua casa e equipamentos.',
+    openHour: 9,
+    closeHour: 21,
+    description: 'Lojas, móveis para sua casa e equipamentos (09h–21h).',
     rooms: ['Loja de móveis', 'Ateliê de roupas', 'Balcão de trocas'],
   },
   {
@@ -354,9 +539,19 @@ const WORLD_BUILDINGS = [
     door: { x: 14, y: 2 },
     spriteCol: 2,
     spriteRow: 1,
-    description: 'Salão de jogos, corrida hoverboard e desafios lógicos.',
+    openHour: 12,
+    closeHour: 24,
+    description:
+      'Salão de jogos, corrida hoverboard e desafios lógicos (12h–00h).',
     rooms: ['Arena de memória', 'Pista Hoverboard', 'Circuito lógico'],
   },
+];
+
+// Estações de transporte público (VLT / Expresso Urbano)
+const TRANSIT_STOPS = [
+  { id: 'stop-west', x: 3, y: 6, name: 'Estação Oeste' },
+  { id: 'stop-central', x: 9, y: 6, name: 'Estação Central' },
+  { id: 'stop-market', x: 15, y: 6, name: 'Estação Mercado' },
 ];
 
 // Canteiros cultiváveis no jardim (sincronizados com foco real e ciclos)
@@ -572,7 +767,7 @@ const SEASONAL_FESTIVALS = [
   {
     id: 'lantern-festival',
     season: 'Primavera',
-    months: [8, 9, 10], // Set, Out, Nov
+    months: [8, 9, 10],
     name: 'Festival das Lanternas Douradas',
     icon: '🏮',
     bannerColor: 'Y3',
@@ -583,7 +778,7 @@ const SEASONAL_FESTIVALS = [
   {
     id: 'solstice-market',
     season: 'Verão',
-    months: [11, 0, 1], // Dez, Jan, Fev
+    months: [11, 0, 1],
     name: 'Feira Solar & Copa Hoverboard',
     icon: '☀️',
     bannerColor: 'T4',
@@ -594,7 +789,7 @@ const SEASONAL_FESTIVALS = [
   {
     id: 'harvest-bio',
     season: 'Outono',
-    months: [2, 3, 4], // Mar, Abr, Mai
+    months: [2, 3, 4],
     name: 'Colheita BioTech',
     icon: '🍂',
     bannerColor: 'G4',
@@ -605,13 +800,77 @@ const SEASONAL_FESTIVALS = [
   {
     id: 'starlight-academy',
     season: 'Inverno',
-    months: [5, 6, 7], // Jun, Jul, Ago
+    months: [5, 6, 7],
     name: 'Noite das Estrelas Acadêmicas',
     icon: '✨',
     bannerColor: 'L3',
     desc: 'Luna e Íris abrem o observatório para sessões coletivas de leitura e estudo.',
     bonusText: '+10 XP bônus por sessão de foco registrada.',
     giftItem: 'study-desk',
+  },
+];
+
+const CITY_EVENTS = [
+  {
+    id: 'lantern-parade',
+    name: 'Desfile das Lanternas Flutuantes',
+    icon: '🏮',
+    effect: 'Mercado Neon aberto até 23h · +20% moedas',
+    extendedMarket: true,
+  },
+  {
+    id: 'tech-expo',
+    name: 'Mostra de Drones & Mobilidade',
+    icon: '🛸',
+    effect: 'Drones extra no céu · VLT expresso gratuito',
+    extendedMarket: false,
+  },
+  {
+    id: 'botanical-bloom',
+    name: 'Florada Bio-Luminescente',
+    icon: '🌸',
+    effect: 'Pétalas douradas pelas ruas · Canteiros energizados',
+    extendedMarket: false,
+  },
+  {
+    id: 'night-bazaar',
+    name: 'Bazar Noturno da Comunidade',
+    icon: '🎪',
+    effect: 'Comércio estendido até 23h · Moradores na praça',
+    extendedMarket: true,
+  },
+];
+
+const WEATHER_TYPES = [
+  {
+    id: 'clear',
+    label: 'Céu Limpo',
+    icon: '☀️',
+    desc: 'Visibilidade total e energia solar plena nos distritos.',
+  },
+  {
+    id: 'breeze',
+    label: 'Brisa Urbana',
+    icon: '🍃',
+    desc: 'Folhas e partículas douradas flutuam pelas alamedas.',
+  },
+  {
+    id: 'rain',
+    label: 'Chuva Neon',
+    icon: '🌧️',
+    desc: 'Rega automaticamente todos os canteiros plantados na cidade!',
+  },
+  {
+    id: 'mist',
+    label: 'Neblina BioTech',
+    icon: '🌫️',
+    desc: 'Névoa suave azul-petróleo envolve os parques e o lago.',
+  },
+  {
+    id: 'storm',
+    label: 'Tempestade Elétrica',
+    icon: '⛈️',
+    desc: 'Sobrecarga limpa na rede: +15% XP em sessões e desafios!',
   },
 ];
 
@@ -643,7 +902,6 @@ const WORLD_PROPS = [
 
 /* ============================================================================
    SPRITE FORGE 16-BIT — GERADOR PROCEDURAL DE SPRITESHEETS PNG TRANSPARENTES
-   Paleta: Verde natural, Madeira, Azul-petróleo, Lilás e Luzes Douradas
    ============================================================================ */
 const PALETTE = {
   O: '#1c262b',
@@ -712,7 +970,6 @@ function createPixelCanvas(width, height) {
   };
 }
 
-// 1. Jogador 32x32 px customizável — 4 direções x 4 quadros de caminhada (128x128 px)
 function generatePlayerSheet(appearance = {}) {
   const g = createPixelCanvas(
     SPRITE_SHEET_LAYOUT.player.width,
@@ -886,7 +1143,6 @@ function generatePlayerSheet(appearance = {}) {
   return g.canvas.toDataURL('image/png');
 }
 
-// 2. Moradores 32x48 px — Luna, Kai, Maya, Nox e Íris (128x240 px)
 function generateResidentsSheet() {
   const g = createPixelCanvas(
     SPRITE_SHEET_LAYOUT.residents.width,
@@ -1000,11 +1256,9 @@ function generateResidentsSheet() {
   return g.canvas.toDataURL('image/png');
 }
 
-// 3. Terrenos, 4 estágios de plantas e móveis de casa (128x112 px)
 function generateTerrainSheet() {
   const g = createPixelCanvas(128, 112);
 
-  // Row 0 (y = 0): Grama (5), Arbusto, Cristais (2)
   for (let i = 0; i < 5; i++) {
     const ox = i * 16;
     g.rect(ox, 0, 16, 16, i === 4 ? 'G2' : 'G3');
@@ -1049,7 +1303,6 @@ function generateTerrainSheet() {
     g.box(cx + 10, 7, 3, 5, 'L3');
   }
 
-  // Row 1 (y = 16): Terra (2), Pedra (2), Calçada madeira, Piso casa, Parede casa, Tapete
   g.rect(0, 16, 16, 16, 'W3');
   g.px(3, 19, 'W4');
   g.px(11, 21, 'W2');
@@ -1089,7 +1342,6 @@ function generateTerrainSheet() {
   g.rect(114, 18, 12, 12, 'L2');
   g.rect(116, 20, 8, 8, 'L3');
 
-  // Row 2 (y = 32): 6 frames Água Animada + Andaime Construção (col 6) + Canteiro Vazio (col 7)
   for (let f = 0; f < 6; f++) {
     const wx = f * 16;
     g.rect(wx, 32, 16, 16, 'T2');
@@ -1100,44 +1352,37 @@ function generateTerrainSheet() {
     g.rect(wx + ((4 + shift) % 11), 44, 4, 1, 'T4');
   }
 
-  // (6, 2) Andaime de construção de bairro
   g.rect(97, 34, 2, 13, 'W3');
   g.rect(109, 34, 2, 13, 'W3');
   g.rect(96, 37, 16, 2, 'W4');
   g.rect(96, 43, 16, 2, 'W4');
   g.rect(99, 33, 10, 3, 'Y3');
 
-  // (7, 2) Canteiro arado vazio
   g.box(113, 33, 14, 14, 'W2', 'W1');
   g.rect(115, 35, 10, 2, 'W1');
   g.rect(115, 39, 10, 2, 'W1');
   g.rect(115, 43, 10, 2, 'W1');
 
-  // Row 3 (y = 48): 4 Estágios de Plantas (cols 0..3) + 4 Móveis de Casa (cols 4..7)
   for (let stage = 0; stage < 4; stage++) {
     const sx = stage * 16;
     g.box(sx + 1, 49, 14, 14, 'W2', 'W1');
     if (stage === 0) {
-      // Sementes
       [4, 8, 11].forEach((pxX) => {
         g.rect(sx + pxX, 53, 2, 2, 'Y3');
         g.rect(sx + pxX, 58, 2, 2, 'Y3');
       });
     } else if (stage === 1) {
-      // Brotos verdes
       [4, 8, 11].forEach((pxX) => {
         g.rect(sx + pxX, 52, 2, 3, 'G4');
         g.rect(sx + pxX, 57, 2, 3, 'G4');
       });
     } else if (stage === 2) {
-      // Folhagem cheia
       [3, 7, 10].forEach((pxX) => {
         g.rect(sx + pxX, 51, 3, 4, 'G3');
         g.px(sx + pxX + 1, 51, 'G5');
         g.rect(sx + pxX, 56, 3, 4, 'G3');
       });
     } else {
-      // Pronta para colheita com flores douradas e lilás
       [3, 7, 10].forEach((pxX) => {
         g.rect(sx + pxX, 50, 3, 5, 'G4');
         g.rect(sx + pxX, 50, 2, 2, 'Y3');
@@ -1147,30 +1392,25 @@ function generateTerrainSheet() {
     }
   }
 
-  // (4, 3) Sofá de madeira e linho
   g.box(65, 51, 14, 11, 'W3');
   g.rect(67, 54, 10, 6, 'L3');
   g.rect(67, 54, 10, 2, 'L4');
 
-  // (5, 3) Cama artesanal lilás
   g.box(81, 49, 14, 14, 'W2');
   g.rect(82, 50, 12, 4, 'C2');
   g.rect(82, 54, 12, 8, 'L2');
   g.rect(82, 54, 12, 2, 'Y3');
 
-  // (6, 3) Mesa de estudo & terminal
   g.box(97, 53, 14, 9, 'W3');
   g.box(100, 49, 8, 5, 'T2');
   g.rect(101, 50, 6, 3, 'T4');
   g.px(103, 51, 'Y4');
 
-  // (7, 3) Planta holográfica / luminária
   g.box(116, 56, 8, 6, 'W3');
   g.rect(117, 51, 6, 5, 'G4');
   g.rect(118, 49, 4, 3, 'Y3');
   g.px(119, 50, 'Y4');
 
-  // Rows 4..6 (y = 64..111): Árvore 1 (0,64), Árvore Lanterna (32,64), Mini-Estufa (64,64)
   g.rect(10, 104, 12, 4, 'rgba(20, 38, 30, 0.35)');
   g.box(12, 90, 8, 16, 'W2');
   g.box(4, 70, 24, 22, 'G1');
@@ -1197,7 +1437,6 @@ function generateTerrainSheet() {
   return g.canvas.toDataURL('image/png');
 }
 
-// 4. Construções 96x64 px (3 cols x 3 rows = 288x192 px)
 function generateBuildingsSheet() {
   const g = createPixelCanvas(288, 192);
 
@@ -1213,7 +1452,6 @@ function generateBuildingsSheet() {
     g.rect(ox + 4, oy + 24, 88, 2, 'Y3');
   };
 
-  // (0, 0) Núcleo Central
   {
     const ox = 0;
     const oy = 0;
@@ -1232,7 +1470,6 @@ function generateBuildingsSheet() {
     g.rect(ox + 49, oy + 39, 4, 14, 'W3');
   }
 
-  // (96, 0) Universidade Neon
   {
     const ox = 96;
     const oy = 0;
@@ -1248,7 +1485,6 @@ function generateBuildingsSheet() {
     g.rect(ox + 44, oy + 39, 8, 4, 'L4');
   }
 
-  // (192, 0) Estufa BioTech
   {
     const ox = 192;
     const oy = 0;
@@ -1266,7 +1502,6 @@ function generateBuildingsSheet() {
     g.rect(ox + 44, oy + 40, 8, 12, 'G4');
   }
 
-  // (0, 64) Laboratório de Inovação
   {
     const ox = 0;
     const oy = 64;
@@ -1284,7 +1519,6 @@ function generateBuildingsSheet() {
     g.rect(ox + 43, oy + 39, 10, 14, 'T3');
   }
 
-  // (96, 64) Mercado Neon
   {
     const ox = 96;
     const oy = 64;
@@ -1302,7 +1536,6 @@ function generateBuildingsSheet() {
     g.rect(ox + 43, oy + 38, 10, 15, 'Y3');
   }
 
-  // (192, 64) Arcade 88
   {
     const ox = 192;
     const oy = 64;
@@ -1322,15 +1555,12 @@ function generateBuildingsSheet() {
     g.rect(ox + 43, oy + 38, 10, 15, 'T3');
   }
 
-  // (0, 128) Minha Casa (Chalé de madeira acolhedor com telhado verde-petróleo e floreiras)
   {
     const ox = 0;
     const oy = 128;
     drawBaseStructure(ox, oy, 'W4', 'W2', 'G2', 'G3');
-    // Chaminé de pedra
     g.box(ox + 68, oy + 2, 10, 14, 'R2');
     g.rect(ox + 67, oy + 2, 12, 3, 'R3');
-    // Janelas com floreiras
     [18, 62].forEach((wx) => {
       g.box(ox + wx, oy + 30, 12, 12, 'Y3');
       g.rect(ox + wx + 1, oy + 31, 10, 5, 'Y4');
@@ -1339,7 +1569,6 @@ function generateBuildingsSheet() {
       g.px(ox + wx + 3, oy + 39, 'L4');
       g.px(ox + wx + 8, oy + 39, 'Y3');
     });
-    // Porta da casa
     g.box(ox + 41, oy + 35, 14, 19, 'W1');
     g.rect(ox + 43, oy + 37, 10, 16, 'W3');
     g.px(ox + 50, oy + 45, 'Y4');
@@ -1348,11 +1577,9 @@ function generateBuildingsSheet() {
   return g.canvas.toDataURL('image/png');
 }
 
-// 5. Objetos e Decoração (128x96 px)
 function generatePropsSheet() {
   const g = createPixelCanvas(128, 96);
 
-  // Banco de madeira (32x16)
   g.rect(3, 13, 26, 2, 'rgba(20, 32, 34, 0.3)');
   g.box(3, 4, 26, 5, 'W3');
   g.rect(4, 5, 24, 1, 'W4');
@@ -1360,7 +1587,6 @@ function generatePropsSheet() {
   g.rect(5, 13, 2, 3, 'W1');
   g.rect(25, 13, 2, 3, 'W1');
 
-  // Poste com luminária dourada (2 frames)
   for (let f = 0; f < 2; f++) {
     const ox = 32 + f * 16;
     g.rect(ox + 6, 29, 4, 2, 'rgba(20, 32, 34, 0.35)');
@@ -1371,7 +1597,6 @@ function generatePropsSheet() {
     g.rect(ox + 4, 3, 8, 2, 'T2');
   }
 
-  // Placa holográfica (2 frames)
   for (let f = 0; f < 2; f++) {
     const ox = 64 + f * 16;
     g.box(ox + 5, 24, 6, 6, 'W2');
@@ -1382,19 +1607,16 @@ function generatePropsSheet() {
     g.rect(ox + 4, 12, 5, 2, 'L4');
   }
 
-  // Vaso botânico
   g.box(100, 9, 8, 6, 'W3');
   g.rect(101, 5, 6, 5, 'G3');
   g.rect(102, 3, 4, 3, 'G4');
   g.px(103, 4, 'Y3');
 
-  // Terminal
   g.box(114, 9, 12, 6, 'W2');
   g.box(115, 2, 10, 8, 'R2');
   g.rect(116, 3, 8, 6, 'T3');
   g.rect(117, 4, 5, 2, 'Y4');
 
-  // Estante
   g.box(97, 17, 14, 14, 'W2');
   g.rect(98, 18, 12, 5, 'W1');
   g.rect(98, 25, 12, 5, 'W1');
@@ -1403,12 +1625,10 @@ function generatePropsSheet() {
   g.rect(105, 19, 2, 4, 'L3');
   g.rect(100, 26, 2, 4, 'G3');
 
-  // Bancada
   g.box(113, 22, 14, 8, 'W3');
   g.box(117, 18, 6, 4, 'L2');
   g.px(119, 19, 'Y4');
 
-  // Drone (4 frames)
   for (let f = 0; f < 4; f++) {
     const ox = f * 16;
     const hover = f === 1 || f === 2 ? -1 : 0;
@@ -1419,7 +1639,6 @@ function generatePropsSheet() {
     g.px(ox + 7, 38 + hover, 'Y4');
   }
 
-  // Robô Jardineiro (4 frames)
   for (let f = 0; f < 4; f++) {
     const ox = 64 + f * 16;
     const bob = f % 2 === 1 ? -1 : 0;
@@ -1433,7 +1652,7 @@ function generatePropsSheet() {
 }
 
 /* ============================================================================
-   HELPERS DE TEMPO, HORÁRIO, ESTAÇÕES E ESTADO
+   HELPERS DE TEMPO, HORÁRIO, CLIMA, ESTAÇÕES E ESTADO
    ============================================================================ */
 const localDay = () => {
   const now = new Date();
@@ -1448,6 +1667,13 @@ function getPeriodFromHour(hour) {
   if (hour >= 12 && hour < 17) return 'afternoon';
   if (hour >= 17 && hour < 20) return 'sunset';
   return 'night';
+}
+
+function formatClock(totalMinutes) {
+  const normalized = ((Math.floor(totalMinutes) % 1440) + 1440) % 1440;
+  const h = Math.floor(normalized / 60);
+  const m = normalized % 60;
+  return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
 }
 
 const PERIOD_LABELS = {
@@ -1465,6 +1691,14 @@ function getCurrentFestival() {
   );
 }
 
+function getRelationshipTier(aff) {
+  if (aff >= 80) return 'Confidente do Vale';
+  if (aff >= 55) return 'Amigo Próximo';
+  if (aff >= 30) return 'Aliado';
+  if (aff >= 12) return 'Colega';
+  return 'Conhecido';
+}
+
 function cityWorldStart(data) {
   const saved = data?.neoCity?.world?.player;
   return saved && Number.isFinite(saved.x) && Number.isFinite(saved.y)
@@ -1473,19 +1707,23 @@ function cityWorldStart(data) {
 }
 
 /* ============================================================================
-   COMPONENTE PRINCIPAL — NEO-LIFE CITY (EXPANSÃO COMPLETA)
+   COMPONENTE PRINCIPAL — NEO-LIFE CITY (VIDA URBANA COMPLETA)
    ============================================================================ */
 export default function NeoLifeCity({ data = {}, save, onNavigate }) {
   const [activeTab, setActiveTab] = useState('explore');
   const [selectedResident, setSelectedResident] = useState(null);
   const [dialogueStep, setDialogueStep] = useState('root');
   const [worldBubble, setWorldBubble] = useState(null);
+  const [citizenBubble, setCitizenBubble] = useState(null);
   const [notice, setNotice] = useState('');
-  // Sincronização automática estritamente local: usa apenas registros já existentes no app.
+
+  // Sincronização automática local
   const [lifeSync, setLifeSync] = useState(() => {
     try {
       const saved = window.localStorage.getItem('neolifecity_life_sync_v1');
-      return saved ? JSON.parse(saved) : { snapshot: null, affinity: {}, lastReaction: '' };
+      return saved
+        ? JSON.parse(saved)
+        : { snapshot: null, affinity: {}, lastReaction: '' };
     } catch {
       return { snapshot: null, affinity: {}, lastReaction: '' };
     }
@@ -1501,20 +1739,101 @@ export default function NeoLifeCity({ data = {}, save, onNavigate }) {
   const [interiorPlayer, setInteriorPlayer] = useState({ x: 5, y: 4 });
   const [lastDirection, setLastDirection] = useState('down');
 
-  // Horário dinâmico (auto = relógio real, ou manual para testar rotinas e iluminação)
-  const [timeOverride, setTimeOverride] = useState('auto');
-  const currentPeriod = useMemo(() => {
-    if (timeOverride !== 'auto') return timeOverride;
-    return getPeriodFromHour(new Date().getHours());
-  }, [timeOverride]);
+  // 1. CICLO DE DIA E NOITE (relógio simulado + auto/manual)
+  const [timeMode, setTimeMode] = useState('cycle'); // 'cycle' | 'realtime' | 'manual'
+  const [simMinutes, setSimMinutes] = useState(() => {
+    const now = new Date();
+    return now.getHours() * 60 + now.getMinutes();
+  });
 
-  // Posições dinâmicas dos NPCs que caminham até o ponto da rotina atual
-  const [npcPositions, setNpcPositions] = useState(() => {
+  const currentHour = useMemo(() => {
+    if (timeMode === 'realtime') return new Date().getHours();
+    return Math.floor((((simMinutes % 1440) + 1440) % 1440) / 60);
+  }, [timeMode, simMinutes]);
+
+  const currentPeriod = useMemo(
+    () => getPeriodFromHour(currentHour),
+    [currentHour],
+  );
+
+  // 2. CLIMA DINÂMICO
+  const [weatherMode, setWeatherMode] = useState('auto'); // 'auto' | 'manual'
+  const [weatherId, setWeatherId] = useState('clear');
+  const [lightningFlash, setLightningFlash] = useState(false);
+
+  // 3. EVENTOS URBANOS & FESTIVAIS
+  const [cityEventIndex, setCityEventIndex] = useState(0);
+  const activeCityEvent = CITY_EVENTS[cityEventIndex % CITY_EVENTS.length];
+
+  // 4. NPCs ANDANDO LIVREMENTE PELAS RUAS E CALÇADAS + ATIVIDADES
+  const [npcState, setNpcState] = useState(() => {
     const init = {};
     RESIDENTS.forEach((r) => {
-      init[r.id] = { ...r.schedule[getPeriodFromHour(new Date().getHours())] };
+      const start = r.schedule[getPeriodFromHour(new Date().getHours())];
+      init[r.id] = {
+        x: start.x,
+        y: start.y,
+        activity: start.activity || 'strolling',
+        waypointIdx: 0,
+        chatPartner: null,
+      };
     });
     return init;
+  });
+
+  const [citizens, setCitizens] = useState(INITIAL_CITIZENS);
+
+  // 5. VEÍCULOS: CARROS, BICICLETAS, DRONES E TRANSPORTE PÚBLICO (VLT)
+  const [vehicles, setVehicles] = useState([
+    {
+      id: 'car-1',
+      type: 'car',
+      lane: 'east',
+      pos: 8,
+      speed: 1.4,
+      color: '#6ec2c9',
+    },
+    {
+      id: 'car-2',
+      type: 'car',
+      lane: 'west',
+      pos: 88,
+      speed: 1.2,
+      color: '#f5c451',
+    },
+    {
+      id: 'car-3',
+      type: 'car',
+      lane: 'east',
+      pos: 54,
+      speed: 1.5,
+      color: '#c7b3eb',
+    },
+    {
+      id: 'bike-1',
+      type: 'bike',
+      lane: 'bike-east',
+      pos: 20,
+      speed: 0.75,
+      color: '#7ec272',
+    },
+    {
+      id: 'bike-2',
+      type: 'bike',
+      lane: 'bike-west',
+      pos: 72,
+      speed: 0.7,
+      color: '#f5c451',
+    },
+    { id: 'drone-1', type: 'drone', route: 0, phase: 0 },
+    { id: 'drone-2', type: 'drone', route: 1, phase: 45 },
+  ]);
+
+  const [transitState, setTransitState] = useState({
+    x: 3,
+    dir: 1,
+    dwellTicks: 0,
+    atStop: 'Estação Oeste',
   });
 
   // Jardim — semente selecionada
@@ -1524,29 +1843,22 @@ export default function NeoLifeCity({ data = {}, save, onNavigate }) {
   const [invCategory, setInvCategory] = useState('Todos');
 
   // Minijogos
-  const [minigameMode, setMinigameMode] = useState('memory'); // 'memory' | 'fishing' | 'hoverboard' | 'circuit'
-  // 1. Memory
+  const [minigameMode, setMinigameMode] = useState('memory');
   const [sequence, setSequence] = useState([]);
   const [playerSequence, setPlayerSequence] = useState([]);
   const [gameState, setGameState] = useState('idle');
   const [gameSeed, setGameSeed] = useState(0);
-  // 2. Pesca Tecnológica
-  const [fishPhase, setFishPhase] = useState('idle'); // 'idle' | 'casting' | 'bite'
+  const [fishPhase, setFishPhase] = useState('idle');
   const [fishBarPos, setFishBarPos] = useState(50);
   const [fishDir, setFishDir] = useState(1);
   const [lastCaughtFish, setLastCaughtFish] = useState(null);
-  // 3. Corrida de Hoverboard
   const [raceActive, setRaceActive] = useState(false);
-  const [raceLane, setRaceLane] = useState(1); // 0, 1, 2
+  const [raceLane, setRaceLane] = useState(1);
   const [raceScore, setRaceScore] = useState(0);
-  const [raceObstacles, setRaceObstacles] = useState([]); // { id, lane, y, isOrb }
-  // 4. Circuito Bio-Energético (3x3 rotações)
+  const [raceObstacles, setRaceObstacles] = useState([]);
   const [circuitGrid, setCircuitGrid] = useState([1, 0, 2, 1, 2, 0, 2, 1, 0]);
 
-  // Input rápido de integração bidirecional nos interiores
   const [quickInput, setQuickInput] = useState('');
-
-  // Animações 16-bit
   const [animTick, setAnimTick] = useState(0);
   const [walkFrame, setWalkFrame] = useState(0);
   const [isWalking, setIsWalking] = useState(false);
@@ -1559,8 +1871,11 @@ export default function NeoLifeCity({ data = {}, save, onNavigate }) {
   const talks = city.talks && typeof city.talks === 'object' ? city.talks : {};
   const storedAffinity =
     city.affinity && typeof city.affinity === 'object' ? city.affinity : {};
-  // Afinidade originada da evolução real fica no armazenamento local do dispositivo.
   const affinity = { ...storedAffinity, ...(lifeSync.affinity || {}) };
+  const npcMemories =
+    city.npcMemories && typeof city.npcMemories === 'object'
+      ? city.npcMemories
+      : {};
   const arcade =
     city.arcade && typeof city.arcade === 'object' ? city.arcade : {};
   const garden =
@@ -1602,7 +1917,6 @@ export default function NeoLifeCity({ data = {}, save, onNavigate }) {
           items: [],
         };
 
-  // Spritesheets regenerados dinamicamente quando a aparência ou roupa equipada muda
   const effectiveOutfitColor = useMemo(() => {
     if (equipped.outfit === 'streetwear') return 'lilac';
     if (equipped.outfit === 'botanist-coat') return 'green';
@@ -1658,12 +1972,67 @@ export default function NeoLifeCity({ data = {}, save, onNavigate }) {
         (goal) => goal.status === 'completed' || Number(goal.progress) >= 100,
       ).length,
       projects: projects.length,
-      projectProgress: projects.reduce((sum, project) => sum + (project.status === 'completed' ? 100 : Math.max(0, Number(project.progress) || 0)), 0),
+      projectProgress: projects.reduce(
+        (sum, project) =>
+          sum +
+          (project.status === 'completed'
+            ? 100
+            : Math.max(0, Number(project.progress) || 0)),
+        0,
+      ),
       coins,
       xp,
     }),
     [tasks, sessions, habits, readings, goals, projects, coins, xp],
   );
+
+  // EVOLUÇÃO REAL DA CIDADE CONFORME PROGRESSO DO JOGADOR
+  const cityEvolution = useMemo(() => {
+    const score =
+      stats.tasks * 10 +
+      Math.floor(stats.studyMinutes / 5) * 4 +
+      stats.habits * 12 +
+      stats.readings * 8 +
+      stats.goals * 25 +
+      stats.projects * 20 +
+      Math.floor(stats.xp / 25);
+
+    if (score >= 350) {
+      return {
+        tier: 4,
+        name: 'Metrópole Neo-Viva',
+        score,
+        nextThreshold: 500,
+        perks:
+          'Cúpula solar ativa · Monotrilho pleno · Jardins bioluminescentes',
+      };
+    }
+    if (score >= 150) {
+      return {
+        tier: 3,
+        name: 'Distrito Florescente',
+        score,
+        nextThreshold: 350,
+        perks: 'Alamedas iluminadas · Rede de drones · Cristais energizados',
+      };
+    }
+    if (score >= 50) {
+      return {
+        tier: 2,
+        name: 'Vila Conectada',
+        score,
+        nextThreshold: 150,
+        perks: 'Postes solares ativos · Transporte VLT regular · Praças vivas',
+      };
+    }
+    return {
+      tier: 1,
+      name: 'Assentamento Inicial',
+      score,
+      nextThreshold: 50,
+      perks: 'Conclua tarefas, hábitos e estudos reais para expandir a cidade',
+    };
+  }, [stats]);
 
   const districtValue = (district) => stats[district.metric] || 0;
   const districtOpen = (district) =>
@@ -1671,14 +2040,52 @@ export default function NeoLifeCity({ data = {}, save, onNavigate }) {
   const openCount = DISTRICTS.filter(districtOpen).length;
   const today = localDay();
   const attemptedToday = arcade.lastAttemptDate === today;
-  const ownedIds = new Set(inventory);
   const activeFestival = useMemo(() => getCurrentFestival(), []);
+  const activeWeather = useMemo(
+    () => WEATHER_TYPES.find((w) => w.id === weatherId) || WEATHER_TYPES[0],
+    [weatherId],
+  );
 
   const persistCity = (nextCity, extra = {}) =>
     save?.({ ...data, ...extra, neoCity: nextCity });
 
-  // Observa automaticamente mudanças nos dados reais já registrados no app.
-  // Nenhum dado é enviado a serviços externos por este mecanismo.
+  // Registra memória nos NPCs
+  const recordNpcMemory = (currentMemories, residentId, entryText) => {
+    const existing = safeArray(currentMemories[residentId]);
+    const entry = {
+      text: entryText,
+      time: formatClock(simMinutes),
+      weather: activeWeather.label,
+      date: today,
+    };
+    return {
+      ...currentMemories,
+      [residentId]: [entry, ...existing].slice(0, 6),
+    };
+  };
+
+  // Verifica se loja/prédio está aberto no horário atual
+  const getBuildingOpenStatus = (building) => {
+    if (building.openHour === 0 && building.closeHour === 24) {
+      return { isOpen: true, hoursText: '24h', badge: 'ABERTO 24H' };
+    }
+    const effectiveClose =
+      building.id === 'neon-market' && activeCityEvent.extendedMarket
+        ? 23
+        : building.closeHour;
+    const isOpen =
+      currentHour >= building.openHour && currentHour < effectiveClose;
+    const hoursText = `${String(building.openHour).padStart(2, '0')}h–${String(effectiveClose).padStart(2, '0')}h`;
+    return {
+      isOpen,
+      hoursText,
+      badge: isOpen
+        ? `ABERTO (${hoursText})`
+        : `FECHADO (Abre ${String(building.openHour).padStart(2, '0')}h)`,
+    };
+  };
+
+  // Observa automaticamente mudanças nos dados reais já registrados no app
   useEffect(() => {
     const snapshot = {
       tasks: stats.tasks,
@@ -1690,35 +2097,83 @@ export default function NeoLifeCity({ data = {}, save, onNavigate }) {
       projectProgress: stats.projectProgress,
     };
     if (!lifeSync.snapshot) {
-      const baseline = { ...lifeSync, snapshot, lastReaction: 'Sincronização local ativada. Seu progresso registrado começa a influenciar o Vale Neo.' };
+      const baseline = {
+        ...lifeSync,
+        snapshot,
+        lastReaction:
+          'Sincronização local ativada. Seu progresso registrado começa a transformar o Vale Neo.',
+      };
       setLifeSync(baseline);
-      try { window.localStorage.setItem('neolifecity_life_sync_v1', JSON.stringify(baseline)); } catch {}
+      try {
+        window.localStorage.setItem(
+          'neolifecity_life_sync_v1',
+          JSON.stringify(baseline),
+        );
+      } catch {}
       return;
     }
     const previous = lifeSync.snapshot;
-    const delta = Object.keys(snapshot).reduce((sum, key) => sum + Math.max(0, snapshot[key] - (Number(previous[key]) || 0)), 0);
+    const delta = Object.keys(snapshot).reduce(
+      (sum, key) =>
+        sum + Math.max(0, snapshot[key] - (Number(previous[key]) || 0)),
+      0,
+    );
     if (delta <= 0) return;
 
     const nextAffinity = { ...(lifeSync.affinity || {}) };
     const reactions = [];
     const addAffinity = (id, amount, message) => {
-      nextAffinity[id] = Math.min(100, (Number(nextAffinity[id] ?? storedAffinity[id]) || 0) + amount);
+      nextAffinity[id] = Math.min(
+        100,
+        (Number(nextAffinity[id] ?? storedAffinity[id]) || 0) + amount,
+      );
       reactions.push(message);
     };
-    if (snapshot.studyMinutes > (previous.studyMinutes || 0) || snapshot.readings > (previous.readings || 0))
+    if (
+      snapshot.studyMinutes > (previous.studyMinutes || 0) ||
+      snapshot.readings > (previous.readings || 0)
+    )
       addAffinity('luna', 2, 'Luna percebeu sua dedicação ao conhecimento.');
-    if (snapshot.tasks > (previous.tasks || 0) || snapshot.projects > (previous.projects || 0) || snapshot.projectProgress > (previous.projectProgress || 0))
+    if (
+      snapshot.tasks > (previous.tasks || 0) ||
+      snapshot.projects > (previous.projects || 0) ||
+      snapshot.projectProgress > (previous.projectProgress || 0)
+    )
       addAffinity('kai', 2, 'Kai viu você transformar planos em entregas.');
     if (snapshot.habits > (previous.habits || 0))
       addAffinity('nox', 2, 'Nox notou sua constância e celebrou seu ritmo.');
     if (snapshot.goals > (previous.goals || 0))
-      addAffinity('maya', 2, 'Maya preparou uma novidade para celebrar sua meta concluída.');
+      addAffinity(
+        'maya',
+        2,
+        'Maya preparou uma novidade para celebrar sua meta concluída.',
+      );
 
-    const updated = { snapshot, affinity: nextAffinity, lastReaction: reactions[0] || 'A cidade registrou um novo passo da sua jornada.' };
+    const updated = {
+      snapshot,
+      affinity: nextAffinity,
+      lastReaction:
+        reactions[0] || 'A cidade registrou um novo passo da sua jornada.',
+    };
     setLifeSync(updated);
-    try { window.localStorage.setItem('neolifecity_life_sync_v1', JSON.stringify(updated)); } catch {}
-    setNotice(`Vida real sincronizada neste dispositivo. ${reactions.join(' ')}`);
-  }, [stats.tasks, stats.studyMinutes, stats.habits, stats.readings, stats.goals, stats.projects, stats.projectProgress]);
+    try {
+      window.localStorage.setItem(
+        'neolifecity_life_sync_v1',
+        JSON.stringify(updated),
+      );
+    } catch {}
+    setNotice(
+      `Vida real sincronizada neste dispositivo. ${reactions.join(' ')}`,
+    );
+  }, [
+    stats.tasks,
+    stats.studyMinutes,
+    stats.habits,
+    stats.readings,
+    stats.goals,
+    stats.projects,
+    stats.projectProgress,
+  ]);
 
   // Tick global de animação 16-bit
   useEffect(() => {
@@ -1731,35 +2186,265 @@ export default function NeoLifeCity({ data = {}, save, onNavigate }) {
     };
   }, []);
 
-  // Rotinas diárias e deslocamento gradual dos NPCs pelo mapa
+  // Avanço do ciclo de Dia e Noite
   useEffect(() => {
-    const moveTimer = window.setInterval(() => {
-      setNpcPositions((prev) => {
+    if (timeMode !== 'cycle') return;
+    const clockTimer = window.setInterval(() => {
+      setSimMinutes((prev) => (prev + 5) % 1440);
+    }, 2200);
+    return () => window.clearInterval(clockTimer);
+  }, [timeMode]);
+
+  // Clima dinâmico automático
+  useEffect(() => {
+    if (weatherMode !== 'auto') return;
+    const weatherTimer = window.setInterval(() => {
+      setWeatherId((prev) => {
+        const idx = WEATHER_TYPES.findIndex((w) => w.id === prev);
+        const nextIdx =
+          (idx + 1 + Math.floor(Math.random() * 2)) % WEATHER_TYPES.length;
+        return WEATHER_TYPES[nextIdx].id;
+      });
+    }, 38000);
+    return () => window.clearInterval(weatherTimer);
+  }, [weatherMode]);
+
+  // Relâmpago ocasional durante tempestade
+  useEffect(() => {
+    if (weatherId !== 'storm') {
+      setLightningFlash(false);
+      return;
+    }
+    const boltTimer = window.setInterval(() => {
+      setLightningFlash(true);
+      window.setTimeout(() => setLightningFlash(false), 180);
+    }, 6500);
+    return () => window.clearInterval(boltTimer);
+  }, [weatherId]);
+
+  // Chuva rega os canteiros automaticamente
+  useEffect(() => {
+    if (weatherId !== 'rain' && weatherId !== 'storm') return;
+    const plantedKeys = Object.keys(garden);
+    if (!plantedKeys.length) return;
+    const nextGarden = { ...garden };
+    let wateredAny = false;
+    plantedKeys.forEach((key) => {
+      if ((Number(nextGarden[key]?.waterCount) || 0) < 3) {
+        nextGarden[key] = {
+          ...nextGarden[key],
+          waterCount: (Number(nextGarden[key]?.waterCount) || 0) + 1,
+        };
+        wateredAny = true;
+      }
+    });
+    if (wateredAny) {
+      persistCity({ ...city, garden: nextGarden });
+    }
+  }, [weatherId]);
+
+  /* ==========================================================================
+     COLISÕES E CAMINHABILIDADE (JOGADOR + NPCs LIVRES NAS RUAS E CALÇADAS)
+     ========================================================================== */
+  const isWaterTile = (x, y) =>
+    (x >= 0 && x <= 2 && y >= 0 && y <= 2) ||
+    (x >= 17 && x <= 19 && y >= 9 && y <= 11);
+
+  const isSidewalkOrStreet = (x, y) => {
+    if (x < 0 || x > 19 || y < 0 || y > 11) return false;
+    if (isWaterTile(x, y)) return false;
+    const hitBuilding = WORLD_BUILDINGS.some(
+      (b) => x >= b.x && x < b.x + b.w && y >= b.y && y < b.y + b.h,
+    );
+    if (hitBuilding) return false;
+    const hitSolidProp = WORLD_PROPS.some(
+      (p) => p.solid && p.x === x && p.y === y,
+    );
+    if (hitSolidProp) return false;
+    return true;
+  };
+
+  // Movimentação autônoma dos NPCs residentes e cidadãos pelas ruas e calçadas
+  useEffect(() => {
+    const npcMoveTimer = window.setInterval(() => {
+      setNpcState((prev) => {
         const next = { ...prev };
-        RESIDENTS.forEach((res) => {
-          const target = res.schedule[currentPeriod] || res.worldPos;
-          const cur = prev[res.id] || target;
-          if (cur.x === target.x && cur.y === target.y) return;
-          const stepX = cur.x < target.x ? 1 : cur.x > target.x ? -1 : 0;
-          const stepY =
-            stepX === 0
-              ? cur.y < target.y
-                ? 1
-                : cur.y > target.y
-                  ? -1
-                  : 0
-              : 0;
-          const nx = cur.x + stepX;
-          const ny = cur.y + stepY;
-          if (!(nx === player.x && ny === player.y)) {
-            next[res.id] = { x: nx, y: ny };
+        RESIDENTS.forEach((res, idx) => {
+          const cur = prev[res.id] || {
+            x: res.schedule[currentPeriod].x,
+            y: res.schedule[currentPeriod].y,
+            activity: 'strolling',
+            waypointIdx: 0,
+            chatPartner: null,
+          };
+
+          const sched = res.schedule[currentPeriod];
+          const bld = WORLD_BUILDINGS.find((b) => b.id === res.workBuilding);
+          const bldOpen = bld ? getBuildingOpenStatus(bld).isOpen : true;
+
+          const points = res.roamPoints || [sched];
+          const target =
+            sched.activity === 'working' && bldOpen && (animTick + idx) % 6 < 4
+              ? { x: sched.x, y: sched.y }
+              : points[cur.waypointIdx % points.length];
+
+          let nx = cur.x;
+          let ny = cur.y;
+          let nextWpIdx = cur.waypointIdx;
+
+          if (cur.x === target.x && cur.y === target.y) {
+            nextWpIdx = (cur.waypointIdx + 1) % points.length;
+          } else {
+            const dx = target.x > cur.x ? 1 : target.x < cur.x ? -1 : 0;
+            const dy = target.y > cur.y ? 1 : target.y < cur.y ? -1 : 0;
+            const candidates =
+              dx !== 0 && dy !== 0
+                ? [
+                    { x: cur.x + dx, y: cur.y },
+                    { x: cur.x, y: cur.y + dy },
+                  ]
+                : [
+                    { x: cur.x + dx, y: cur.y + dy },
+                    {
+                      x: cur.x + (dy !== 0 ? 1 : 0),
+                      y: cur.y + (dx !== 0 ? 1 : 0),
+                    },
+                  ];
+
+            const validMove = candidates.find(
+              (c) =>
+                isSidewalkOrStreet(c.x, c.y) &&
+                !(c.x === player.x && c.y === player.y),
+            );
+            if (validMove) {
+              nx = validMove.x;
+              ny = validMove.y;
+            } else {
+              nextWpIdx = (cur.waypointIdx + 1) % points.length;
+            }
           }
+
+          const nearbyOther = RESIDENTS.find((other) => {
+            if (other.id === res.id) return false;
+            const oPos = next[other.id] || prev[other.id];
+            return oPos && Math.abs(oPos.x - nx) + Math.abs(oPos.y - ny) <= 1;
+          });
+
+          const nearBench = WORLD_PROPS.some(
+            (p) =>
+              p.type === 'bench' &&
+              Math.abs(p.x - nx) + Math.abs(p.y - ny) <= 1,
+          );
+
+          let activity = 'strolling';
+          if (nearbyOther) {
+            activity = 'chatting';
+          } else if (
+            sched.activity === 'working' &&
+            bldOpen &&
+            Math.abs(nx - sched.x) + Math.abs(ny - sched.y) <= 1
+          ) {
+            activity = 'working';
+          } else if (
+            (currentPeriod === 'night' || nearBench) &&
+            nx === target.x &&
+            ny === target.y
+          ) {
+            activity = 'resting';
+          }
+
+          next[res.id] = {
+            x: nx,
+            y: ny,
+            activity,
+            waypointIdx: nextWpIdx,
+            chatPartner: nearbyOther ? nearbyOther.name : null,
+          };
         });
         return next;
       });
-    }, 1400);
-    return () => window.clearInterval(moveTimer);
-  }, [currentPeriod, player.x, player.y]);
+
+      setCitizens((prev) =>
+        prev.map((cit, i) => {
+          const target = cit.waypoints[cit.wpIndex % cit.waypoints.length];
+          if (cit.x === target.x && cit.y === target.y) {
+            const nextIdx = (cit.wpIndex + 1) % cit.waypoints.length;
+            const actPool = ['strolling', 'resting', 'working', 'chatting'];
+            return {
+              ...cit,
+              wpIndex: nextIdx,
+              activity:
+                currentPeriod === 'night'
+                  ? 'resting'
+                  : actPool[(nextIdx + i) % actPool.length],
+            };
+          }
+          const dx = target.x > cit.x ? 1 : target.x < cit.x ? -1 : 0;
+          const dy = target.y > cit.y ? 1 : target.y < cit.y ? -1 : 0;
+          const step =
+            dx !== 0 && isSidewalkOrStreet(cit.x + dx, cit.y)
+              ? { x: cit.x + dx, y: cit.y }
+              : dy !== 0 && isSidewalkOrStreet(cit.x, cit.y + dy)
+                ? { x: cit.x, y: cit.y + dy }
+                : { x: cit.x, y: cit.y };
+          if (step.x === player.x && step.y === player.y) return cit;
+          return {
+            ...cit,
+            x: step.x,
+            y: step.y,
+            activity: currentPeriod === 'night' ? 'resting' : 'strolling',
+          };
+        }),
+      );
+    }, 1150);
+
+    return () => window.clearInterval(npcMoveTimer);
+  }, [
+    currentPeriod,
+    player.x,
+    player.y,
+    animTick,
+    activeCityEvent.extendedMarket,
+  ]);
+
+  // Movimentação de Carros, Bicicletas, Drones e Transporte Público (VLT)
+  useEffect(() => {
+    const trafficTimer = window.setInterval(() => {
+      setVehicles((prev) =>
+        prev.map((v) => {
+          if (v.type === 'drone') {
+            return { ...v, phase: (v.phase + 2.5) % 100 };
+          }
+          if (v.lane === 'east' || v.lane === 'bike-east') {
+            const nextPos = v.pos + v.speed;
+            return { ...v, pos: nextPos > 103 ? -4 : nextPos };
+          }
+          const nextPos = v.pos - v.speed;
+          return { ...v, pos: nextPos < -4 ? 103 : nextPos };
+        }),
+      );
+
+      setTransitState((prev) => {
+        if (prev.dwellTicks > 0) {
+          return { ...prev, dwellTicks: prev.dwellTicks - 1 };
+        }
+        const nextX = prev.x + prev.dir * 0.5;
+        let nextDir = prev.dir;
+        if (nextX >= 17) nextDir = -1;
+        if (nextX <= 2) nextDir = 1;
+
+        const stopHit = TRANSIT_STOPS.find((s) => Math.abs(s.x - nextX) < 0.26);
+        return {
+          x: nextX,
+          dir: nextDir,
+          dwellTicks: stopHit ? 5 : 0,
+          atStop: stopHit ? stopHit.name : null,
+        };
+      });
+    }, 260);
+
+    return () => window.clearInterval(trafficTimer);
+  }, []);
 
   // Loop da Pesca Tecnológica
   useEffect(() => {
@@ -1791,7 +2476,6 @@ export default function NeoLifeCity({ data = {}, save, onNavigate }) {
           .map((o) => ({ ...o, y: o.y + 12 }))
           .filter((o) => o.y <= 105);
 
-        // Colisão com jogador em y ~ 82..94
         const hitObstacle = moved.find(
           (o) => !o.isOrb && o.lane === raceLane && o.y >= 78 && o.y <= 92,
         );
@@ -1827,13 +2511,6 @@ export default function NeoLifeCity({ data = {}, save, onNavigate }) {
     return () => window.clearInterval(interval);
   }, [raceActive, raceLane, raceScore]);
 
-  /* ==========================================================================
-     COLISÕES E MOVIMENTAÇÃO (MUNDO 20x12 E INTERIORES 10x6)
-     ========================================================================== */
-  const isWaterTile = (x, y) =>
-    (x >= 0 && x <= 2 && y >= 0 && y <= 2) ||
-    (x >= 17 && x <= 19 && y >= 9 && y <= 11);
-
   const isBlocked = (x, y) => {
     if (x < 0 || x > 19 || y < 0 || y > 11) return true;
     if (isWaterTile(x, y)) return true;
@@ -1847,7 +2524,7 @@ export default function NeoLifeCity({ data = {}, save, onNavigate }) {
     if (hitProp) return true;
 
     const hitNpc = RESIDENTS.some((r) => {
-      const pos = npcPositions[r.id];
+      const pos = npcState[r.id];
       return pos && pos.x === x && pos.y === y;
     });
     if (hitNpc) return true;
@@ -1916,6 +2593,7 @@ export default function NeoLifeCity({ data = {}, save, onNavigate }) {
     if (targetX !== player.x || targetY !== player.y) {
       setPlayer({ x: targetX, y: targetY });
       setWorldBubble(null);
+      setCitizenBubble(null);
     }
   };
 
@@ -1923,7 +2601,7 @@ export default function NeoLifeCity({ data = {}, save, onNavigate }) {
      JARDIM — CICLOS DE CRESCIMENTO SINCRONIZADOS COM SESSÕES REAIS DE FOCO
      ========================================================================== */
   const getPlotStage = (plotData) => {
-    if (!plotData) return -1; // vazio
+    if (!plotData) return -1;
     const focusAtPlant = Number(plotData.focusMinutesAtPlant) || 0;
     const gainedFocus = Math.max(0, stats.studyMinutes - focusAtPlant);
     const waterBonus = (Number(plotData.waterCount) || 0) * 10;
@@ -1931,10 +2609,10 @@ export default function NeoLifeCity({ data = {}, save, onNavigate }) {
     const species =
       SEED_SPECIES.find((s) => s.id === plotData.seedId) || SEED_SPECIES[0];
     const ratio = totalProgress / species.focusMinutesNeeded;
-    if (ratio >= 1) return 3; // colheita pronta
-    if (ratio >= 0.6) return 2; // florescendo
-    if (ratio >= 0.25) return 1; // broto
-    return 0; // semente
+    if (ratio >= 1) return 3;
+    if (ratio >= 0.6) return 2;
+    if (ratio >= 0.25) return 1;
+    return 0;
   };
 
   const handlePlotAction = (plot) => {
@@ -1947,7 +2625,7 @@ export default function NeoLifeCity({ data = {}, save, onNavigate }) {
         [plot.id]: {
           seedId: selectedSeedId,
           focusMinutesAtPlant: stats.studyMinutes,
-          waterCount: 0,
+          waterCount: weatherId === 'rain' || weatherId === 'storm' ? 1 : 0,
           plantedAt: today,
         },
       };
@@ -1974,13 +2652,15 @@ export default function NeoLifeCity({ data = {}, save, onNavigate }) {
       return;
     }
 
-    // Colher planta madura
     const sp =
       SEED_SPECIES.find((s) => s.id === existing.seedId) || SEED_SPECIES[0];
     const festivalBonus =
-      activeFestival.id === 'lantern-festival'
+      activeFestival.id === 'lantern-festival' ||
+      activeCityEvent.id === 'lantern-parade'
         ? Math.round(sp.sellPrice * 1.2)
         : sp.sellPrice;
+    const stormXpBonus =
+      weatherId === 'storm' ? Math.round(sp.xpReward * 1.15) : sp.xpReward;
     const nextGarden = { ...garden };
     delete nextGarden[plot.id];
     const nextPlants = Array.from(
@@ -1995,15 +2675,15 @@ export default function NeoLifeCity({ data = {}, save, onNavigate }) {
         inventory: [...inventory, harvestItemId],
         collections: { ...collections, plants: nextPlants },
       },
-      { coins: coins + festivalBonus, xp: xp + sp.xpReward },
+      { coins: coins + festivalBonus, xp: xp + stormXpBonus },
     );
     setNotice(
-      `Colheita concluída: ${sp.name}! +${festivalBonus} moedas, +${sp.xpReward} XP e item guardado na mochila.`,
+      `Colheita concluída: ${sp.name}! +${festivalBonus} moedas, +${stormXpBonus} XP e item guardado na mochila.`,
     );
   };
 
   /* ==========================================================================
-     INTERAÇÕES NO MAPA, DIÁLOGOS RAMIFICADOS E INTEGRAÇÃO BIDIRECIONAL
+     INTERAÇÕES NO MAPA, DIÁLOGOS COM MEMÓRIA E RELACIONAMENTOS
      ========================================================================== */
   const openResidentDialogue = (resident, inWorld = false) => {
     const nextTalks = {
@@ -2014,8 +2694,22 @@ export default function NeoLifeCity({ data = {}, save, onNavigate }) {
       ...affinity,
       [resident.id]: Math.min(100, (Number(affinity[resident.id]) || 0) + 3),
     };
-    persistCity({ ...city, talks: nextTalks, affinity: nextAffinity });
+    const act = npcState[resident.id]?.activity || 'strolling';
+    const actLabel = ACTIVITY_META[act]?.label.toLowerCase() || 'passeando';
+    const nextMemories = recordNpcMemory(
+      npcMemories,
+      resident.id,
+      `Conversamos enquanto eu estava ${actLabel} (${activeWeather.label}).`,
+    );
+
+    persistCity({
+      ...city,
+      talks: nextTalks,
+      affinity: nextAffinity,
+      npcMemories: nextMemories,
+    });
     setDialogueStep('root');
+    setCitizenBubble(null);
 
     if (inWorld) {
       setWorldBubble(resident);
@@ -2028,6 +2722,7 @@ export default function NeoLifeCity({ data = {}, save, onNavigate }) {
     const curAff = Number(affinity[resident.id]) || 0;
     const nextAff = Math.min(100, Math.max(0, curAff + choice.affinityDelta));
     let extraRoot = {};
+    let nextMemories = npcMemories;
     let nextCity = {
       ...city,
       affinity: { ...affinity, [resident.id]: nextAff },
@@ -2043,27 +2738,41 @@ export default function NeoLifeCity({ data = {}, save, onNavigate }) {
         );
         return;
       }
+      const giftId = inventory[giftIdx];
       const nextInv = [...inventory];
       nextInv.splice(giftIdx, 1);
+      nextMemories = recordNpcMemory(
+        npcMemories,
+        resident.id,
+        `Você me presenteou com ${giftId.replace('harvest-', '').replace('fish-', '')}!`,
+      );
       nextCity = {
         ...nextCity,
         inventory: nextInv,
         affinity: { ...affinity, [resident.id]: Math.min(100, curAff + 12) },
+        npcMemories: nextMemories,
       };
       setNotice(
-        `${resident.name} adorou o presente artesanal! (+12 de afinidade)`,
+        `${resident.name} adorou o presente artesanal e guardou na memória! (+12 de afinidade)`,
       );
     } else if (choice.action === 'sync-task') {
       const pendingTask = tasks.find((t) => !completed(t));
       if (pendingTask) {
+        const taskTitle = pendingTask.title || pendingTask.text || 'Tarefa';
         const nextTasks = tasks.map((t) =>
           t === pendingTask
             ? { ...t, done: true, completed: true, status: 'done' }
             : t,
         );
+        nextMemories = recordNpcMemory(
+          npcMemories,
+          resident.id,
+          `Concluímos juntos a tarefa real "${taskTitle}".`,
+        );
+        nextCity = { ...nextCity, npcMemories: nextMemories };
         extraRoot = { tasks: nextTasks, coins: coins + 15, xp: xp + 20 };
         setNotice(
-          `Tarefa real "${pendingTask.title || pendingTask.text || 'Tarefa'}" concluída com ${resident.name}! +15 moedas e +20 XP.`,
+          `Tarefa real "${taskTitle}" concluída com ${resident.name}! +15 moedas e +20 XP.`,
         );
       } else {
         setNotice('Todas as suas tarefas atuais já estão concluídas!');
@@ -2075,17 +2784,24 @@ export default function NeoLifeCity({ data = {}, save, onNavigate }) {
         minutes: 25,
         date: today,
       };
+      nextMemories = recordNpcMemory(
+        npcMemories,
+        resident.id,
+        'Registramos 25 minutos de foco profundo na cidade.',
+      );
+      nextCity = { ...nextCity, npcMemories: nextMemories };
       extraRoot = {
         studySessions: [...sessions, newSession],
         coins: coins + 15,
         xp: xp + 25,
       };
       setNotice(
-        'Sessão de foco de 25 min registrada no Meu Assistente! Seus canteiros cresceram e você ganhou +25 XP.',
+        'Sessão de foco de 25 min registrada! Seus canteiros cresceram e você ganhou +25 XP.',
       );
     } else if (choice.action === 'sync-habit') {
       const firstHabit = habits[0];
       if (firstHabit) {
+        const hTitle = firstHabit.name || firstHabit.title || 'Hábito';
         const nextHabits = habits.map((h, i) =>
           i === 0
             ? {
@@ -2097,13 +2813,26 @@ export default function NeoLifeCity({ data = {}, save, onNavigate }) {
               }
             : h,
         );
+        nextMemories = recordNpcMemory(
+          npcMemories,
+          resident.id,
+          `Celebramos a constância no hábito "${hTitle}".`,
+        );
+        nextCity = { ...nextCity, npcMemories: nextMemories };
         extraRoot = { habits: nextHabits, coins: coins + 12, xp: xp + 18 };
         setNotice(
-          `Hábito "${firstHabit.name || firstHabit.title || 'Hábito'}" registrado para hoje! +12 moedas e +18 XP.`,
+          `Hábito "${hTitle}" registrado para hoje! +12 moedas e +18 XP.`,
         );
       } else {
         setNotice('Crie um hábito no Meu Assistente para sincronizar com Nox.');
       }
+    } else {
+      nextMemories = recordNpcMemory(
+        npcMemories,
+        resident.id,
+        `Trocamos ideias sobre a evolução da cidade (${cityEvolution.name}).`,
+      );
+      nextCity = { ...nextCity, npcMemories: nextMemories };
     }
 
     persistCity(nextCity, extraRoot);
@@ -2111,7 +2840,6 @@ export default function NeoLifeCity({ data = {}, save, onNavigate }) {
   };
 
   const interactInWorld = () => {
-    // 1. Porta adjacente
     const nearbyDoor = WORLD_BUILDINGS.find(
       (b) => Math.abs(b.door.x - player.x) + Math.abs(b.door.y - player.y) <= 1,
     );
@@ -2120,9 +2848,8 @@ export default function NeoLifeCity({ data = {}, save, onNavigate }) {
       return;
     }
 
-    // 2. Morador adjacente (posição dinâmica)
     const nearbyResident = RESIDENTS.find((r) => {
-      const pos = npcPositions[r.id];
+      const pos = npcState[r.id];
       return (
         pos && Math.abs(pos.x - player.x) + Math.abs(pos.y - player.y) <= 1
       );
@@ -2132,7 +2859,27 @@ export default function NeoLifeCity({ data = {}, save, onNavigate }) {
       return;
     }
 
-    // 3. Canteiro de jardim adjacente
+    const nearbyCitizen = citizens.find(
+      (c) => Math.abs(c.x - player.x) + Math.abs(c.y - player.y) <= 1,
+    );
+    if (nearbyCitizen) {
+      setCitizenBubble(nearbyCitizen);
+      return;
+    }
+
+    const nearbyStop = TRANSIT_STOPS.find(
+      (s) => Math.abs(s.x - player.x) + Math.abs(s.y - player.y) <= 1,
+    );
+    if (nearbyStop) {
+      const idx = TRANSIT_STOPS.indexOf(nearbyStop);
+      const nextStop = TRANSIT_STOPS[(idx + 1) % TRANSIT_STOPS.length];
+      setPlayer({ x: nextStop.x, y: nextStop.y });
+      setNotice(
+        `🚆 Expresso VLT: você embarcou na ${nearbyStop.name} e desembarcou na ${nextStop.name}!`,
+      );
+      return;
+    }
+
     const nearbyPlot = GARDEN_PLOTS.find(
       (p) => Math.abs(p.x - player.x) + Math.abs(p.y - player.y) <= 1,
     );
@@ -2141,7 +2888,6 @@ export default function NeoLifeCity({ data = {}, save, onNavigate }) {
       return;
     }
 
-    // 4. Ponto de Pesca ou Pista Hoverboard ou Placa Holográfica
     const nearbyProp = WORLD_PROPS.find(
       (p) => Math.abs(p.x - player.x) + Math.abs(p.y - player.y) <= 1,
     );
@@ -2159,7 +2905,7 @@ export default function NeoLifeCity({ data = {}, save, onNavigate }) {
     }
     if (nearbyProp?.type === 'holo' || nearbyProp?.type === 'terminal') {
       setNotice(
-        `Painel da Cidade: ${openCount}/${DISTRICTS.length} distritos ativos · ${stats.tasks} tarefas · ${stats.studyMinutes} min de foco.`,
+        `Painel Urbano (${cityEvolution.name}): ${openCount}/${DISTRICTS.length} distritos ativos · Clima: ${activeWeather.label} · Hora: ${formatClock(simMinutes)}.`,
       );
     }
   };
@@ -2174,7 +2920,6 @@ export default function NeoLifeCity({ data = {}, save, onNavigate }) {
 
       const key = event.key.toLowerCase();
 
-      // Controles da Corrida Hoverboard
       if (
         activeTab === 'arcade' &&
         minigameMode === 'hoverboard' &&
@@ -2232,6 +2977,7 @@ export default function NeoLifeCity({ data = {}, save, onNavigate }) {
       }
       if (key === 'escape') {
         if (worldBubble) setWorldBubble(null);
+        else if (citizenBubble) setCitizenBubble(null);
         else if (insideBuilding) leaveBuilding();
       }
     };
@@ -2253,7 +2999,17 @@ export default function NeoLifeCity({ data = {}, save, onNavigate }) {
       );
       return;
     }
+
+    const openStatus = getBuildingOpenStatus(building);
+    if (!openStatus.isOpen) {
+      setNotice(
+        `🔒 ${building.name} está fechado agora (horário de funcionamento: ${openStatus.hoursText}). Ajuste o relógio ou aguarde amanhecer!`,
+      );
+      return;
+    }
+
     setWorldBubble(null);
+    setCitizenBubble(null);
     setDecorateMode(false);
     setHomeRoomIndex(0);
     setInteriorPlayer({ x: 5, y: 4 });
@@ -2280,7 +3036,7 @@ export default function NeoLifeCity({ data = {}, save, onNavigate }) {
   const handleHomeTileClick = (x, y) => {
     if (!decorateMode) return;
     if (x < 1 || x > 8 || y < 1 || y > 4) return;
-    if (x === 5 && y === 4) return; // mantém entrada livre
+    if (x === 5 && y === 4) return;
 
     const currentRoomItems = safeArray(homeLayouts[homeRoomIndex]);
     const existingIdx = currentRoomItems.findIndex(
@@ -2288,7 +3044,6 @@ export default function NeoLifeCity({ data = {}, save, onNavigate }) {
     );
 
     if (existingIdx !== -1) {
-      // Recolhe o móvel de volta ao inventário
       const removed = currentRoomItems[existingIdx];
       const nextRoomItems = currentRoomItems.filter(
         (_, i) => i !== existingIdx,
@@ -2361,13 +3116,14 @@ export default function NeoLifeCity({ data = {}, save, onNavigate }) {
         date: today,
       };
       const festivalXp = activeFestival.id === 'starlight-academy' ? 10 : 0;
+      const stormXp = weatherId === 'storm' ? 5 : 0;
       persistCity(city, {
         studySessions: [...sessions, newSession],
         coins: coins + Math.round(mins / 2),
-        xp: xp + mins + festivalXp,
+        xp: xp + mins + festivalXp + stormXp,
       });
       setNotice(
-        `Sessão real de ${mins} min salva! +${Math.round(mins / 2)} moedas, +${mins + festivalXp} XP e crescimento nas plantas.`,
+        `Sessão real de ${mins} min salva! +${Math.round(mins / 2)} moedas, +${mins + festivalXp + stormXp} XP e crescimento nas plantas.`,
       );
     } else if (insideBuilding.id === 'innovation-lab') {
       const newProj = {
@@ -2392,7 +3148,7 @@ export default function NeoLifeCity({ data = {}, save, onNavigate }) {
   };
 
   /* ==========================================================================
-     MISSÕES VERIFICÁVEIS (CAMPANHA PRINCIPAL + SECUNDÁRIAS)
+     MISSÕES VERIFICÁVEIS
      ========================================================================== */
   const questsList = useMemo(() => {
     const totalAffinity = Object.values(affinity).reduce(
@@ -2552,7 +3308,6 @@ export default function NeoLifeCity({ data = {}, save, onNavigate }) {
     const next = [...circuitGrid];
     next[idx] = (next[idx] + 1) % 3;
     setCircuitGrid(next);
-    // Vitória quando a diagonal principal está alinhada em estado 2
     if (next[0] === 2 && next[4] === 2 && next[8] === 2) {
       persistCity(city, { coins: coins + 15, xp: xp + 25 });
       setNotice('Circuito Bio-Energético estabilizado! +15 moedas e +25 XP.');
@@ -2563,7 +3318,16 @@ export default function NeoLifeCity({ data = {}, save, onNavigate }) {
   /* ==========================================================================
      LOJA, INVENTÁRIO E EQUIPAMENTOS
      ========================================================================== */
+  const marketBuilding = WORLD_BUILDINGS.find((b) => b.id === 'neon-market');
+  const marketOpenStatus = getBuildingOpenStatus(marketBuilding);
+
   const buyItem = (item) => {
+    if (!marketOpenStatus.isOpen) {
+      setNotice(
+        `🔒 O Mercado Neon está fechado agora (${marketOpenStatus.hoursText}). Avance o relógio para o horário comercial!`,
+      );
+      return;
+    }
     if (coins < item.price) {
       setNotice(
         `Faltam ${item.price - coins} moedas para comprar ${item.name}.`,
@@ -2597,7 +3361,6 @@ export default function NeoLifeCity({ data = {}, save, onNavigate }) {
     );
   };
 
-  // Arcade Memory
   const startGame = () => {
     if (attemptedToday) {
       setNotice('Você já participou do desafio de memória hoje. Volte amanhã!');
@@ -2677,15 +3440,14 @@ export default function NeoLifeCity({ data = {}, save, onNavigate }) {
   const tabs = [
     ['explore', '🕹️ Cidade & Casa'],
     ['residents', '💬 Moradores'],
-    ['quests', '📜 Missões & História'],
-    ['market', '🛍️ Mercado'],
+    ['quests', '📜 Missões & Evolução'],
+    ['market', `🛍️ Mercado ${marketOpenStatus.isOpen ? '🟢' : '🔴'}`],
     ['inventory', '🎒 Inventário'],
     ['arcade', '🎮 Minijogos'],
-    ['collections', '📖 Coleções & Eventos'],
+    ['collections', '📖 Coleções & Festivais'],
     ['avatar', '🧑 Personagem'],
   ];
 
-  // Agrupamento do inventário
   const inventoryEntries = useMemo(() => {
     const counts = {};
     inventory.forEach((id) => {
@@ -2740,63 +3502,95 @@ export default function NeoLifeCity({ data = {}, save, onNavigate }) {
         <div className='neo-hero-copy'>
           <span className='neo-kicker'>
             NEO-LIFE // {activeFestival.icon}{' '}
-            {activeFestival.name.toUpperCase()}
+            {activeFestival.name.toUpperCase()} · {activeCityEvent.icon}{' '}
+            {activeCityEvent.name.toUpperCase()}
           </span>
           <h1>
-            Sua vida real. <em>Sua cidade.</em>
+            Sua vida real. <em>Sua cidade viva.</em>
           </h1>
           <p>
-            Explore o Vale Neo em pixel art 16-bit, decore sua casa, cultive
-            jardins sincronizados com seu foco e acompanhe as rotinas dos
-            moradores.
+            Explore o Vale Neo em tempo real: moradores caminham pelas calçadas,
+            lojas abrem e fecham conforme o horário, veículos cruzam as avenidas
+            e a cidade evolui com suas conquistas reais.
           </p>
           <div className='neo-hero-actions'>
             <button onClick={() => onNavigate?.('tasks')}>
               ＋ Registrar no Meu Assistente
             </button>
             <span>
-              {PERIOD_LABELS[currentPeriod].icon}{' '}
-              {PERIOD_LABELS[currentPeriod].name} · {openCount}/
-              {DISTRICTS.length} distritos ativos
+              🏛️ Nível {cityEvolution.tier}: <b>{cityEvolution.name}</b> (
+              {cityEvolution.score} pts) · {openCount}/{DISTRICTS.length}{' '}
+              distritos
             </span>
           </div>
         </div>
 
         <div className='neo-hero-right'>
           <div className='neo-wallet'>
-            <span>CARTEIRA & EVOLUÇÃO</span>
+            <span>CARTEIRA & EVOLUÇÃO DA CIDADE</span>
             <strong>
               🪙 {coins.toLocaleString('pt-BR')} · ⚡{' '}
               {xp.toLocaleString('pt-BR')} XP
             </strong>
             <small>
               {stats.tasks} tarefas · {stats.studyMinutes}m foco ·{' '}
-              {stats.habits} hábitos
+              {stats.habits} hábitos · {cityEvolution.name}
             </small>
           </div>
+
           <div className='neo-life-sync-card' aria-live='polite'>
-            <strong>↻ VIDA REAL · SINCRONIZAÇÃO LOCAL</strong>
-            <span>Automática com tarefas, hábitos, estudos, leituras, metas e projetos registrados no Meu Assistente.</span>
-            <small>🔒 Dados desta sincronização guardados neste dispositivo. Sem conexão com apps externos de saúde.</small>
-            {lifeSync.lastReaction && <small className='neo-life-sync-reaction'>{lifeSync.lastReaction}</small>}
+            <strong>↻ VIDA REAL · EVOLUÇÃO URBANA ATIVA</strong>
+            <span>{cityEvolution.perks}</span>
+            {lifeSync.lastReaction && (
+              <small className='neo-life-sync-reaction'>
+                {lifeSync.lastReaction}
+              </small>
+            )}
           </div>
+
+          {/* Controles de Ciclo Dia/Noite */}
           <div
             className='neo-time-switcher'
             role='group'
-            aria-label='Período do dia'
+            aria-label='Ciclo de dia e noite'
           >
+            <span className='neo-clock-pill'>
+              {PERIOD_LABELS[currentPeriod].icon} {formatClock(simMinutes)}
+            </span>
+            <button
+              type='button'
+              className={timeMode === 'cycle' ? 'active' : ''}
+              onClick={() => setTimeMode('cycle')}
+              title='Relógio dinâmico acelerado'
+            >
+              🔄 Ciclo
+            </button>
+            <button
+              type='button'
+              className={timeMode === 'realtime' ? 'active' : ''}
+              onClick={() => setTimeMode('realtime')}
+              title='Sincronizado com o relógio real'
+            >
+              🕒 Real
+            </button>
             {[
-              ['auto', '🕒 Auto'],
-              ['morning', '🌅 Manhã'],
-              ['afternoon', '☀️ Tarde'],
-              ['sunset', '🌇 Tarde-Fim'],
-              ['night', '🌙 Noite'],
-            ].map(([val, label]) => (
+              ['morning', 510, '🌅 08:30'],
+              ['afternoon', 870, '☀️ 14:30'],
+              ['sunset', 1095, '🌇 18:15'],
+              ['night', 1350, '🌙 22:30'],
+            ].map(([periodKey, mins, label]) => (
               <button
-                key={val}
+                key={periodKey}
                 type='button'
-                className={timeOverride === val ? 'active' : ''}
-                onClick={() => setTimeOverride(val)}
+                className={
+                  timeMode === 'manual' && currentPeriod === periodKey
+                    ? 'active'
+                    : ''
+                }
+                onClick={() => {
+                  setTimeMode('manual');
+                  setSimMinutes(mins);
+                }}
               >
                 {label}
               </button>
@@ -2834,7 +3628,7 @@ export default function NeoLifeCity({ data = {}, save, onNavigate }) {
       )}
 
       {/* ======================================================================
-          ABA 1: EXPLORAR CIDADE, JARDIM, BAIRROS EM CONSTRUÇÃO E MINHA CASA
+          ABA 1: EXPLORAR CIDADE VIVA, TRÂNSITO, CLIMA, LOJAS E MINHA CASA
           ====================================================================== */}
       {activeTab === 'explore' && (
         <>
@@ -2843,21 +3637,21 @@ export default function NeoLifeCity({ data = {}, save, onNavigate }) {
               <span>
                 {insideBuilding
                   ? `INTERIOR // ${insideBuilding.name.toUpperCase()}`
-                  : `MUNDO ABERTO 16-BIT // ${PERIOD_LABELS[currentPeriod].name.toUpperCase()}`}
+                  : `CIDADE VIVA // ${PERIOD_LABELS[currentPeriod].name.toUpperCase()} (${formatClock(simMinutes)}) · ${activeWeather.icon} ${activeWeather.label.toUpperCase()}`}
               </span>
               <h2>
                 {insideBuilding
                   ? insideBuilding.isHome
                     ? `Minha Casa — ${insideBuilding.rooms[homeRoomIndex]}`
                     : insideBuilding.name
-                  : 'Vale Neo'}
+                  : `Vale Neo — ${cityEvolution.name}`}
               </h2>
               <p>
                 {insideBuilding
                   ? insideBuilding.isHome
                     ? 'Explore os 3 cômodos e ative o Modo Decoração para posicionar móveis livremente na grade.'
                     : insideBuilding.description
-                  : 'Use WASD/setas para caminhar, E para interagir com portas, canteiros, moradores, cais de pesca e pista hoverboard.'}
+                  : 'Use WASD/setas para andar, E para entrar em lojas abertas, conversar com moradores nas calçadas ou embarcar no Expresso VLT.'}
               </p>
             </div>
 
@@ -2904,49 +3698,243 @@ export default function NeoLifeCity({ data = {}, save, onNavigate }) {
 
           {!insideBuilding ? (
             <>
+              {/* BARRA DE CLIMA DINÂMICO, EVENTO ATIVO E ATALHOS URBANOS */}
               <div className='neo-world-toolbar'>
-                <span>
-                  ✦ {PERIOD_LABELS[currentPeriod].icon} Luz{' '}
-                  {PERIOD_LABELS[currentPeriod].light}
-                  {equipped.mobility === 'skyboard'
-                    ? ' · 🛹 Hoverboard Ativo (2×)'
-                    : ''}
-                </span>
+                <div className='neo-weather-controls'>
+                  <span>Clima:</span>
+                  <button
+                    type='button'
+                    className={weatherMode === 'auto' ? 'active' : ''}
+                    onClick={() => setWeatherMode('auto')}
+                  >
+                    🔄 Auto
+                  </button>
+                  {WEATHER_TYPES.map((w) => (
+                    <button
+                      key={w.id}
+                      type='button'
+                      className={weatherId === w.id ? 'active' : ''}
+                      onClick={() => {
+                        setWeatherMode('manual');
+                        setWeatherId(w.id);
+                      }}
+                      title={w.desc}
+                    >
+                      {w.icon} {w.label}
+                    </button>
+                  ))}
+                </div>
+
                 <div className='neo-toolbar-btns'>
                   <button
-                    onClick={() => {
-                      const home = WORLD_BUILDINGS[0];
-                      enterBuilding(home);
-                    }}
+                    type='button'
+                    onClick={() =>
+                      setCityEventIndex((i) => (i + 1) % CITY_EVENTS.length)
+                    }
+                    title={activeCityEvent.effect}
                   >
-                    🏡 Entrar em Minha Casa
+                    {activeCityEvent.icon} Evento: {activeCityEvent.name}
                   </button>
                   <button
+                    type='button'
+                    onClick={() => enterBuilding(WORLD_BUILDINGS[0])}
+                  >
+                    🏡 Minha Casa
+                  </button>
+                  <button
+                    type='button'
                     onClick={() => {
                       setPlayer({ x: 8, y: 6 });
                       setWorldBubble(null);
+                      setCitizenBubble(null);
                     }}
                   >
-                    Praça Central
+                    🧭 Praça Central
                   </button>
+                </div>
+              </div>
+
+              {/* FAIXA DE STATUS DE LOJAS E ATIVIDADE DOS MORADORES */}
+              <div className='neo-city-telemetry'>
+                <div className='neo-telemetry-group'>
+                  <b>🏪 Horário das Lojas:</b>
+                  {WORLD_BUILDINGS.filter((b) => !b.isHome).map((b) => {
+                    const st = getBuildingOpenStatus(b);
+                    return (
+                      <button
+                        key={b.id}
+                        type='button'
+                        className={`neo-store-pill ${st.isOpen ? 'open' : 'closed'}`}
+                        onClick={() => enterBuilding(b)}
+                        title={`${b.name}: ${st.badge}`}
+                      >
+                        {b.icon} {b.name.split(' ')[0]} ·{' '}
+                        {st.isOpen ? 'Aberto' : 'Fechado'}
+                      </button>
+                    );
+                  })}
+                </div>
+                <div className='neo-telemetry-group'>
+                  <b>👥 Moradores ao Vivo:</b>
+                  {RESIDENTS.map((r) => {
+                    const st = npcState[r.id];
+                    const act = ACTIVITY_META[st?.activity || 'strolling'];
+                    return (
+                      <button
+                        key={r.id}
+                        type='button'
+                        className='neo-npc-pill'
+                        onClick={() => openResidentDialogue(r, true)}
+                      >
+                        {act.icon} {r.name}: {act.label}
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
 
               <div className='neo-world-scroll'>
                 <div
-                  className={`neo-world-map period-${currentPeriod}`}
+                  className={`neo-world-map period-${currentPeriod} weather-${weatherId} evo-tier-${cityEvolution.tier} ${lightningFlash ? 'lightning-flash' : ''}`}
                   role='application'
                   aria-label='Mapa 16-bit do Vale Neo'
                 >
+                  {/* CAMADA DE TRÂNSITO URBANO: CARROS, BICICLETAS, DRONES E VLT */}
                   <div className='neo-city-life' aria-hidden='true'>
-                    <span className='neo-hovercar neo-hovercar-one' />
-                    <span className='neo-hovercar neo-hovercar-two' />
-                    <span className='neo-hovercar neo-hovercar-three' />
-                    <span className='neo-city-drone neo-city-drone-one' />
-                    <span className='neo-city-drone neo-city-drone-two' />
-                    <span className='neo-city-glow city-glow-one' />
-                    <span className='neo-city-glow city-glow-two' />
+                    {TRANSIT_STOPS.map((stop) => (
+                      <div
+                        key={stop.id}
+                        className='neo-transit-stop-marker'
+                        style={{
+                          left: `${(stop.x + 0.5) * 50.4}px`,
+                          top: `${stop.y * 47.25 - 6}px`,
+                        }}
+                      >
+                        🚏 {stop.name.replace('Estação ', '')}
+                      </div>
+                    ))}
+
+                    <div
+                      className={`neo-public-transit ${transitState.dwellTicks > 0 ? 'stopped' : ''}`}
+                      style={{
+                        left: `${transitState.x * 50.4}px`,
+                        top: `${6 * 47.25 + 10}px`,
+                        transform: transitState.dir < 0 ? 'scaleX(-1)' : 'none',
+                      }}
+                    >
+                      <div className='neo-vlt-car'>
+                        <span>🚆</span>
+                      </div>
+                      <div className='neo-vlt-car trailer' />
+                      {transitState.atStop && (
+                        <b
+                          style={{
+                            transform:
+                              transitState.dir < 0 ? 'scaleX(-1)' : 'none',
+                          }}
+                        >
+                          PARADA
+                        </b>
+                      )}
+                    </div>
+
+                    {vehicles.map((v) => {
+                      if (v.type === 'car') {
+                        const topPx =
+                          v.lane === 'east' ? 7 * 47.25 + 14 : 6 * 47.25 + 26;
+                        return (
+                          <div
+                            key={v.id}
+                            className={`neo-vehicle-car ${v.lane}`}
+                            style={{
+                              left: `${v.pos}%`,
+                              top: `${topPx}px`,
+                              '--veh-color': v.color,
+                            }}
+                          />
+                        );
+                      }
+                      if (v.type === 'bike') {
+                        const topPx =
+                          v.lane === 'bike-east'
+                            ? 5 * 47.25 + 34
+                            : 8 * 47.25 + 4;
+                        return (
+                          <div
+                            key={v.id}
+                            className={`neo-vehicle-bike ${v.lane}`}
+                            style={{
+                              left: `${v.pos}%`,
+                              top: `${topPx}px`,
+                            }}
+                          >
+                            🚲
+                          </div>
+                        );
+                      }
+                      const rad = (v.phase / 100) * Math.PI * 2 + v.route;
+                      const dx =
+                        v.route === 0
+                          ? 460 + Math.cos(rad) * 260
+                          : 620 + Math.sin(rad) * 220;
+                      const dy =
+                        v.route === 0
+                          ? 180 + Math.sin(rad) * 95
+                          : 340 + Math.cos(rad) * 85;
+                      return (
+                        <div
+                          key={v.id}
+                          className='neo-city-drone-unit'
+                          style={{ left: `${dx}px`, top: `${dy}px` }}
+                        >
+                          🛸
+                        </div>
+                      );
+                    })}
+
+                    {cityEvolution.tier >= 2 && (
+                      <span className='neo-city-glow city-glow-one' />
+                    )}
+                    {cityEvolution.tier >= 3 && (
+                      <span className='neo-city-glow city-glow-two' />
+                    )}
+                    {cityEvolution.tier >= 4 && (
+                      <span className='neo-city-glow city-glow-three' />
+                    )}
                   </div>
+
+                  {/* CAMADA DE CLIMA E FESTIVAIS */}
+                  <div className='neo-weather-overlay' aria-hidden='true'>
+                    {(weatherId === 'rain' || weatherId === 'storm') &&
+                      Array.from({ length: 28 }, (_, i) => (
+                        <span
+                          key={i}
+                          className='neo-rain-drop'
+                          style={{
+                            left: `${(i * 3.7) % 100}%`,
+                            animationDelay: `${(i % 7) * 0.14}s`,
+                          }}
+                        />
+                      ))}
+                    {(weatherId === 'breeze' ||
+                      activeCityEvent.id === 'botanical-bloom' ||
+                      activeCityEvent.id === 'lantern-parade') &&
+                      Array.from({ length: 14 }, (_, i) => (
+                        <span
+                          key={i}
+                          className={`neo-ambient-mote ${activeCityEvent.id === 'lantern-parade' ? 'lantern' : ''}`}
+                          style={{
+                            left: `${(i * 7.3) % 96}%`,
+                            top: `${(i * 13) % 88}%`,
+                            animationDelay: `${i * 0.35}s`,
+                          }}
+                        >
+                          {activeCityEvent.id === 'lantern-parade' ? '🏮' : '✦'}
+                        </span>
+                      ))}
+                  </div>
+
+                  {/* GRADE DO MAPA 20×12 */}
                   {Array.from({ length: 20 * 12 }, (_, index) => {
                     const x = index % 20;
                     const y = Math.floor(index / 20);
@@ -2957,13 +3945,9 @@ export default function NeoLifeCity({ data = {}, save, onNavigate }) {
                     );
                     const isBuildingAnchor =
                       building && x === building.x && y === building.y;
-                    const buildingDistrict = building
-                      ? DISTRICTS.find((d) => d.id === building.district)
+                    const bOpenStatus = building
+                      ? getBuildingOpenStatus(building)
                       : null;
-                    const isBuildingBuilt =
-                      !building ||
-                      building.isHome ||
-                      (buildingDistrict && districtOpen(buildingDistrict));
 
                     const door = WORLD_BUILDINGS.find(
                       (b) => b.door.x === x && b.door.y === y,
@@ -2974,13 +3958,16 @@ export default function NeoLifeCity({ data = {}, save, onNavigate }) {
                     const plot = GARDEN_PLOTS.find(
                       (p) => p.x === x && p.y === y,
                     );
+
                     const residentHere = RESIDENTS.find((r) => {
-                      const pos = npcPositions[r.id];
+                      const pos = npcState[r.id];
                       return pos && pos.x === x && pos.y === y;
                     });
 
-                    // Malha urbana: avenidas principais, ruas secundárias e seis zonas
-                    // inspiradas no mapa metropolitano neon.
+                    const citizenHere = citizens.find(
+                      (c) => c.x === x && c.y === y,
+                    );
+
                     const isRoad =
                       y === 6 ||
                       y === 7 ||
@@ -2991,149 +3978,34 @@ export default function NeoLifeCity({ data = {}, save, onNavigate }) {
                       (x === 5 && y >= 1 && y <= 10) ||
                       (x === 15 && y >= 1 && y <= 10);
                     const isWater = isWaterTile(x, y);
-                    const cityZone =
-                      x <= 7 && y <= 5
-                        ? 'central'
-                        : x >= 8 && x <= 13 && y <= 5
-                          ? 'academy'
-                          : x >= 14 && y <= 7
-                            ? 'green'
-                            : x <= 6 && y >= 8
-                              ? 'innovation'
-                              : x >= 7 && x <= 13 && y >= 8
-                                ? 'commerce'
-                                : x >= 14 && y >= 8
-                                  ? 'arcade'
-                                  : 'boulevard';
-                    const districtSign =
-                      (x === 3 && y === 4) ||
-                      (x === 10 && y === 4) ||
-                      (x === 17 && y === 4) ||
-                      (x === 3 && y === 11) ||
-                      (x === 9 && y === 11) ||
-                      (x === 17 && y === 11);
-                    const isPark =
-                      (x >= 7 && x <= 8 && y >= 1 && y <= 3) ||
-                      (x >= 14 && x <= 14 && y >= 8 && y <= 10);
-                    const isPath =
-                      !isRoad &&
-                      !building &&
-                      !isWater &&
-                      ((y === 3 && x >= 4 && x <= 16) ||
-                        (y === 8 && x >= 3 && x <= 16) ||
-                        (x === 2 && y >= 3 && y <= 7));
-
-                    let terrainCol = (x * 3 + y * 5) % 4 === 0 ? 1 : 0;
-                    let terrainRow = 0;
-                    if (isWater) {
-                      terrainCol = (animTick + x + y) % 6;
-                      terrainRow = 2;
-                    } else if (isRoad) {
-                      terrainCol = (x + y) % 2 === 0 ? 2 : 3;
-                      terrainRow = 1;
-                    } else if (isPath) {
-                      terrainCol = (x + y) % 2;
-                      terrainRow = 1;
-                    } else if (isPark) {
-                      terrainCol = 4;
-                      terrainRow = 0;
-                    } else if ((x * 7 + y * 11) % 9 === 0) {
-                      terrainCol = 2;
-                      terrainRow = 0;
-                    } else if ((x * 5 + y * 13) % 11 === 0) {
-                      terrainCol = 3;
-                      terrainRow = 0;
-                    }
 
                     const playerHere = player.x === x && player.y === y;
                     const companionHere =
                       equipped.companion === 'drone-pet' &&
                       dronePos.x === x &&
                       dronePos.y === y;
-                    const waterFrame = (animTick + x + y) % 2;
-
-                    // Estágio do canteiro
                     const plotStage = plot ? getPlotStage(garden[plot.id]) : -1;
 
                     return (
                       <div
                         key={`${x}-${y}`}
-                        className={`neo-world-tile zone-${cityZone} ${isRoad ? 'city-road' : ''} ${isWater ? 'city-water' : ''} ${isPark ? 'city-park' : ''}`}
+                        className={`neo-world-tile ${isRoad ? 'city-road' : ''} ${isWater ? 'city-water' : ''}`}
                         style={{
                           gridColumn: x + 1,
                           gridRow: y + 1,
-                          ...tileSpriteStyle(
-                            sprites?.terrain,
-                            128,
-                            112,
-                            terrainCol * 16,
-                            terrainRow * 16,
-                            16,
-                            16,
-                            3,
-                          ),
                         }}
                       >
-                        {districtSign && !building && !isWater ? (
-                          <span
-                            className={`neo-district-waypoint waypoint-${cityZone}`}
-                          >
-                            {
-                              {
-                                central: 'NÚCLEO',
-                                academy: 'CAMPUS',
-                                green: 'BIO PARQUE',
-                                innovation: 'INOVAÇÃO',
-                                commerce: 'MERCADO',
-                                arcade: 'ARCADE',
-                              }[cityZone]
-                            }
-                          </span>
-                        ) : null}
-
-                        {/* Construção 96x64 px (ou andaime se ainda estiver em construção!) */}
-                        {isBuildingAnchor && sprites?.buildings ? (
-                          <div
-                            className={`neo-building-sprite-sheet ${isBuildingBuilt ? '' : 'under-construction'}`}
-                            title={building.name}
+                        {isBuildingAnchor && bOpenStatus ? (
+                          <button
+                            type='button'
+                            className={`neo-building-hours-badge ${bOpenStatus.isOpen ? 'open' : 'closed'}`}
                             onClick={() => enterBuilding(building)}
-                            style={tileSpriteStyle(
-                              sprites.buildings,
-                              288,
-                              192,
-                              building.spriteCol * 96,
-                              building.spriteRow * 64,
-                              96,
-                              64,
-                              1.5,
-                            )}
                           >
-                            <span className='neo-building-tag'>
-                              {isBuildingBuilt
-                                ? building.name
-                                : `🚧 ${building.name}`}
-                            </span>
-                          </div>
+                            {building.icon} {building.name} ·{' '}
+                            {bOpenStatus.isOpen ? 'ABERTO' : 'FECHADO'}
+                          </button>
                         ) : null}
 
-                        {/* Sobreposição visual de andaime nos tiles de prédio bloqueado */}
-                        {building && !isBuildingBuilt && sprites?.terrain ? (
-                          <span
-                            className='neo-scaffold-overlay'
-                            style={tileSpriteStyle(
-                              sprites.terrain,
-                              128,
-                              112,
-                              96,
-                              32,
-                              16,
-                              16,
-                              3,
-                            )}
-                          />
-                        ) : null}
-
-                        {/* Canteiros de jardim com 4 estágios de crescimento */}
                         {plot && sprites?.terrain ? (
                           <button
                             type='button'
@@ -3143,7 +4015,7 @@ export default function NeoLifeCity({ data = {}, save, onNavigate }) {
                                 ? 'Clique para plantar'
                                 : plotStage === 3
                                   ? 'Pronto para colher!'
-                                  : `Estágio ${plotStage + 1}/4 (clique para regar)`
+                                  : `Estágio ${plotStage + 1}/4`
                             }`}
                             onClick={() => handlePlotAction(plot)}
                             style={tileSpriteStyle(
@@ -3161,135 +4033,6 @@ export default function NeoLifeCity({ data = {}, save, onNavigate }) {
                               <span className='neo-harvest-badge'>✨</span>
                             )}
                           </button>
-                        ) : null}
-
-                        {/* Natureza e objetos */}
-                        {prop?.type === 'tree' && sprites?.terrain ? (
-                          <span
-                            className='neo-prop-sprite tall-tree'
-                            style={tileSpriteStyle(
-                              sprites.terrain,
-                              128,
-                              112,
-                              0,
-                              64,
-                              32,
-                              48,
-                              1.6,
-                            )}
-                          />
-                        ) : null}
-
-                        {prop?.type === 'tree-lantern' && sprites?.terrain ? (
-                          <span
-                            className='neo-prop-sprite tall-tree'
-                            style={tileSpriteStyle(
-                              sprites.terrain,
-                              128,
-                              112,
-                              32,
-                              64,
-                              32,
-                              48,
-                              1.6,
-                            )}
-                          />
-                        ) : null}
-
-                        {prop?.type === 'bush' && sprites?.terrain ? (
-                          <span
-                            className='neo-prop-sprite'
-                            style={tileSpriteStyle(
-                              sprites.terrain,
-                              128,
-                              112,
-                              80,
-                              0,
-                              16,
-                              16,
-                              2.5,
-                            )}
-                          />
-                        ) : null}
-
-                        {prop?.type === 'crystal' && sprites?.terrain ? (
-                          <span
-                            className='neo-prop-sprite glow-node'
-                            style={tileSpriteStyle(
-                              sprites.terrain,
-                              128,
-                              112,
-                              (6 + waterFrame) * 16,
-                              0,
-                              16,
-                              16,
-                              2.6,
-                            )}
-                          />
-                        ) : null}
-
-                        {prop?.type === 'bench' && sprites?.props ? (
-                          <span
-                            className='neo-prop-sprite bench'
-                            style={tileSpriteStyle(
-                              sprites.props,
-                              128,
-                              96,
-                              0,
-                              0,
-                              32,
-                              16,
-                              2.8,
-                            )}
-                          />
-                        ) : null}
-
-                        {prop?.type === 'lamp' && sprites?.props ? (
-                          <span
-                            className='neo-prop-sprite tall-prop lamp-glow'
-                            style={tileSpriteStyle(
-                              sprites.props,
-                              128,
-                              96,
-                              32 + waterFrame * 16,
-                              0,
-                              16,
-                              32,
-                              2.2,
-                            )}
-                          />
-                        ) : null}
-
-                        {prop?.type === 'holo' && sprites?.props ? (
-                          <span
-                            className='neo-prop-sprite tall-prop'
-                            style={tileSpriteStyle(
-                              sprites.props,
-                              128,
-                              96,
-                              64 + waterFrame * 16,
-                              0,
-                              16,
-                              32,
-                              2.2,
-                            )}
-                          />
-                        ) : null}
-
-                        {prop?.type === 'terminal' && sprites?.props ? (
-                          <span
-                            className='neo-prop-sprite'
-                            style={tileSpriteStyle(
-                              sprites.props,
-                              128,
-                              96,
-                              112,
-                              0,
-                              16,
-                              16,
-                              2.5,
-                            )}
-                          />
                         ) : null}
 
                         {prop?.type === 'fishing-spot' ? (
@@ -3318,7 +4061,6 @@ export default function NeoLifeCity({ data = {}, save, onNavigate }) {
                           </button>
                         ) : null}
 
-                        {/* Porta interativa */}
                         {door ? (
                           <button
                             className='neo-door'
@@ -3329,27 +4071,56 @@ export default function NeoLifeCity({ data = {}, save, onNavigate }) {
                           </button>
                         ) : null}
 
-                        {/* Moradores seguindo rotinas diárias */}
                         {residentHere ? (
                           <button
                             type='button'
                             className={`neo-map-resident resident-${residentHere.id}`}
-                            title={`Conversar com ${residentHere.name}`}
+                            title={`Conversar com ${residentHere.name} (${ACTIVITY_META[npcState[residentHere.id]?.activity || 'strolling'].label})`}
                             aria-label={`Conversar com ${residentHere.name}`}
-                            onClick={() => openResidentDialogue(residentHere, true)}
+                            onClick={() =>
+                              openResidentDialogue(residentHere, true)
+                            }
                           >
+                            <span className='neo-npc-activity-chip'>
+                              {
+                                ACTIVITY_META[
+                                  npcState[residentHere.id]?.activity ||
+                                    'strolling'
+                                ].icon
+                              }
+                            </span>
                             <span
                               className='neo-resident-sprite neo-authentic-sprite'
                               style={{
                                 backgroundImage: `url('/assets/characters/runtime/${residentHere.id}.png')`,
-                                backgroundPosition: `${((Math.floor(animTick / 7) + 1) % 4) * 33.333}% 0`,
+                                backgroundPosition: `${((Math.floor(animTick / 4) + 1) % 4) * 33.333}% 0`,
                               }}
                             />
                             <b>{residentHere.name}</b>
                           </button>
                         ) : null}
 
-                        {/* Drone Companheiro equipado */}
+                        {!residentHere && citizenHere ? (
+                          <button
+                            type='button'
+                            className='neo-ambient-citizen'
+                            title={`${citizenHere.name} — ${ACTIVITY_META[citizenHere.activity]?.label}`}
+                            onClick={() => setCitizenBubble(citizenHere)}
+                          >
+                            <span className='neo-cit-status'>
+                              {ACTIVITY_META[citizenHere.activity]?.icon}
+                            </span>
+                            <span
+                              className='neo-cit-body'
+                              style={{
+                                '--cit-coat': citizenHere.color,
+                                '--cit-hat': citizenHere.hat,
+                              }}
+                            />
+                            <small>{citizenHere.name}</small>
+                          </button>
+                        ) : null}
+
                         {companionHere && sprites?.props ? (
                           <span
                             className='neo-npc-drone'
@@ -3366,7 +4137,6 @@ export default function NeoLifeCity({ data = {}, save, onNavigate }) {
                           />
                         ) : null}
 
-                        {/* Jogador 32x32 px */}
                         {playerHere && sprites?.player ? (
                           <span
                             className='neo-player-sprite'
@@ -3391,7 +4161,36 @@ export default function NeoLifeCity({ data = {}, save, onNavigate }) {
                 </div>
               </div>
 
-              {/* Diálogo ramificado rápido no mapa */}
+              {citizenBubble && (
+                <div className='neo-world-bubble' role='dialog'>
+                  <div className='neo-bubble-portrait'>
+                    <span style={{ fontSize: '28px' }}>
+                      {ACTIVITY_META[citizenBubble.activity]?.icon || '🚶'}
+                    </span>
+                  </div>
+                  <div className='neo-bubble-body'>
+                    <div className='neo-bubble-header'>
+                      <span>
+                        {citizenBubble.name.toUpperCase()} ·{' '}
+                        {citizenBubble.role}
+                      </span>
+                      <b>
+                        {ACTIVITY_META[citizenBubble.activity]?.label} na
+                        calçada
+                      </b>
+                    </div>
+                    <p>“{citizenBubble.quote}”</p>
+                  </div>
+                  <button
+                    className='neo-close-x'
+                    onClick={() => setCitizenBubble(null)}
+                    aria-label='Fechar'
+                  >
+                    ×
+                  </button>
+                </div>
+              )}
+
               {worldBubble && (
                 <div
                   className='neo-world-bubble'
@@ -3418,17 +4217,43 @@ export default function NeoLifeCity({ data = {}, save, onNavigate }) {
                     <div className='neo-bubble-header'>
                       <span>
                         {worldBubble.name.toUpperCase()} ·{' '}
-                        {worldBubble.schedule[currentPeriod]?.label}
+                        {
+                          ACTIVITY_META[
+                            npcState[worldBubble.id]?.activity || 'strolling'
+                          ].icon
+                        }{' '}
+                        {
+                          ACTIVITY_META[
+                            npcState[worldBubble.id]?.activity || 'strolling'
+                          ].label
+                        }
+                        {npcState[worldBubble.id]?.chatPartner
+                          ? ` com ${npcState[worldBubble.id].chatPartner}`
+                          : ''}
                       </span>
                       <b>
-                        ❤️ Afinidade: {Number(affinity[worldBubble.id]) || 0}
-                        /100
+                        ❤️ {Number(affinity[worldBubble.id]) || 0}/100 ·{' '}
+                        {getRelationshipTier(
+                          Number(affinity[worldBubble.id]) || 0,
+                        )}
                       </b>
                     </div>
+
+                    {safeArray(npcMemories[worldBubble.id])[0] && (
+                      <div className='neo-memory-callout'>
+                        🧠 Memória recente:{' '}
+                        <em>
+                          “{safeArray(npcMemories[worldBubble.id])[0].text}”
+                        </em>
+                      </div>
+                    )}
+
                     <p>
                       {dialogueStep === 'farewell'
-                        ? `“Obrigado pela visita! Estarei sempre por perto se quiser trocar ideias.”`
-                        : `“Olá! Que bom ver você por aqui. Como posso apoiar sua jornada hoje?”`}
+                        ? `“Guardei nosso encontro na memória! Nos vemos pelas ruas do Vale Neo.”`
+                        : weatherId === 'rain' || weatherId === 'storm'
+                          ? `“Essa ${activeWeather.label.toLowerCase()} está deixando os jardins radiantes! Como posso ajudar você hoje?”`
+                          : `“Oi! Estava ${ACTIVITY_META[npcState[worldBubble.id]?.activity || 'strolling'].label.toLowerCase()} por aqui. O que vamos fazer?”`}
                     </p>
                     <div className='neo-branch-choices'>
                       <button
@@ -3508,7 +4333,6 @@ export default function NeoLifeCity({ data = {}, save, onNavigate }) {
                 </div>
               )}
 
-              {/* Controles Mobile e Acessibilidade */}
               <div className='neo-world-controls'>
                 <div
                   className='neo-dpad'
@@ -3550,15 +4374,15 @@ export default function NeoLifeCity({ data = {}, save, onNavigate }) {
                   ✦ Interagir (E)
                 </button>
                 <p>
-                  Clique nos canteiros para plantar/colher, nos moradores para
-                  conversar ou nas portas para entrar nos edifícios e na sua
-                  casa.
+                  Clique nos moradores e cidadãos nas calçadas, embarque nas
+                  estações 🚏 do VLT ou entre nas lojas durante o horário de
+                  funcionamento.
                 </p>
               </div>
             </>
           ) : (
             /* ================================================================
-               INTERIORES EXPLORÁVEIS (MINHA CASA COM GRADE DE DECORAÇÃO + PRÉDIOS)
+               INTERIORES EXPLORÁVEIS (MINHA CASA + PRÉDIOS)
                ================================================================ */
             <div className='neo-interior'>
               <div className='neo-interior-header'>
@@ -3628,7 +4452,6 @@ export default function NeoLifeCity({ data = {}, save, onNavigate }) {
                           ),
                         }}
                       >
-                        {/* Móvel posicionado na grade da casa */}
                         {furnMeta?.spriteTile && sprites?.terrain ? (
                           <span
                             className='neo-placed-furniture'
@@ -3651,7 +4474,6 @@ export default function NeoLifeCity({ data = {}, save, onNavigate }) {
                           />
                         ) : null}
 
-                        {/* Estações interativas dos prédios públicos */}
                         {station ? (
                           <button
                             type='button'
@@ -3700,7 +4522,6 @@ export default function NeoLifeCity({ data = {}, save, onNavigate }) {
                   })}
                 </div>
 
-                {/* Barra de decoração da casa OU painel de integração real do prédio */}
                 {insideBuilding.isHome ? (
                   <div className='neo-deco-dock'>
                     <div className='neo-deco-dock-head'>
@@ -3782,22 +4603,22 @@ export default function NeoLifeCity({ data = {}, save, onNavigate }) {
       )}
 
       {/* ======================================================================
-          ABA 2: MORADORES, ROTINAS, AFINIDADE E DIÁLOGOS RAMIFICADOS
+          ABA 2: MORADORES, MEMÓRIAS, RELACIONAMENTOS E ROTINAS
           ====================================================================== */}
       {activeTab === 'residents' && (
         <>
           <section className='neo-section-heading'>
             <div>
-              <span>COMUNIDADE & ROTINAS DIÁRIAS</span>
+              <span>COMUNIDADE, MEMÓRIA & RELACIONAMENTOS</span>
               <h2>Moradores do Vale Neo</h2>
               <p>
-                Cada morador segue uma rotina própria ao longo do dia e
-                desbloqueia capítulos pessoais conforme sua afinidade cresce.
+                Os moradores lembram das suas conversas, presentes e tarefas
+                concluídas juntos, além de manterem laços entre si.
               </p>
             </div>
             <div className='neo-level-chip'>
               {PERIOD_LABELS[currentPeriod].icon} Agora:{' '}
-              {PERIOD_LABELS[currentPeriod].name}
+              {formatClock(simMinutes)} ({PERIOD_LABELS[currentPeriod].name})
             </div>
           </section>
 
@@ -3805,7 +4626,9 @@ export default function NeoLifeCity({ data = {}, save, onNavigate }) {
             {RESIDENTS.map((resident) => {
               const aff = Number(affinity[resident.id]) || 0;
               const hearts = Math.min(5, Math.floor(aff / 20));
-              const routineSpot = resident.schedule[currentPeriod];
+              const curNpc = npcState[resident.id];
+              const actMeta = ACTIVITY_META[curNpc?.activity || 'strolling'];
+              const memories = safeArray(npcMemories[resident.id]);
 
               return (
                 <article className='neo-resident-card' key={resident.id}>
@@ -3829,14 +4652,26 @@ export default function NeoLifeCity({ data = {}, save, onNavigate }) {
                   </div>
                   <div>
                     <span>
-                      📍 {routineSpot?.label} · {'❤️'.repeat(hearts) || '🤍'} (
-                      {aff}/100)
+                      {actMeta.icon} {actMeta.label} ·{' '}
+                      {'❤️'.repeat(hearts) || '🤍'} ({aff}/100 ·{' '}
+                      {getRelationshipTier(aff)})
                     </span>
                     <h3>{resident.name}</h3>
                     <p>{resident.role}</p>
                     <small>
-                      {Number(talks[resident.id]) || 0} conversas registradas
+                      🤝 Vínculos:{' '}
+                      {resident.relations
+                        .map(
+                          (rel) =>
+                            `${rel.targetId.toUpperCase()} (${rel.label})`,
+                        )
+                        .join(' · ')}
                     </small>
+                    {memories[0] && (
+                      <small className='neo-card-memory'>
+                        🧠 Última memória: “{memories[0].text}”
+                      </small>
+                    )}
                   </div>
                   <button onClick={() => openResidentDialogue(resident, false)}>
                     Conversar ↗
@@ -3878,7 +4713,11 @@ export default function NeoLifeCity({ data = {}, save, onNavigate }) {
                 <div>
                   <span>
                     AFINIDADE: {Number(affinity[selectedResident.id]) || 0}/100
-                    · {selectedResident.role}
+                    (
+                    {getRelationshipTier(
+                      Number(affinity[selectedResident.id]) || 0,
+                    )}
+                    ) · {selectedResident.role}
                   </span>
                   <h3>{selectedResident.name}</h3>
                 </div>
@@ -3886,8 +4725,8 @@ export default function NeoLifeCity({ data = {}, save, onNavigate }) {
 
               <p>
                 {dialogueStep === 'farewell'
-                  ? `“Fico feliz em caminhar lado a lado com você no Vale Neo. Quando quiser, passe na praça ou no meu setor!”`
-                  : `“Seu progresso real está transformando nossa vizinhança. O que gostaria de fazer agora?”`}
+                  ? `“Registrei esse momento no meu diário! Quando quiser, me encontre caminhando pelas ruas do Vale Neo.”`
+                  : `“Seu progresso real está transformando nossa vizinhança (${cityEvolution.name}). O que gostaria de fazer agora?”`}
               </p>
 
               <div className='neo-branch-choices'>
@@ -3958,9 +4797,34 @@ export default function NeoLifeCity({ data = {}, save, onNavigate }) {
                 )}
               </div>
 
-              {/* Histórias desbloqueadas por afinidade */}
               <div className='neo-story-unlocks'>
-                <h4>Histórias de {selectedResident.name}</h4>
+                <h4>🧠 Memórias com {selectedResident.name}</h4>
+                {safeArray(npcMemories[selectedResident.id]).length ? (
+                  safeArray(npcMemories[selectedResident.id]).map((mem, i) => (
+                    <div key={i} className='neo-story-chap'>
+                      <b>
+                        🕒 {mem.time} · {mem.weather}
+                      </b>
+                      <p>{mem.text}</p>
+                    </div>
+                  ))
+                ) : (
+                  <p>Nenhuma memória registrada ainda — converse acima!</p>
+                )}
+
+                <h4>🤝 Relacionamentos na Cidade</h4>
+                <div className='neo-col-chips'>
+                  {selectedResident.relations.map((rel) => {
+                    const other = RESIDENTS.find((r) => r.id === rel.targetId);
+                    return (
+                      <span key={rel.targetId} className='found'>
+                        {other?.avatar} {other?.name}: {rel.label} ({rel.bond}%)
+                      </span>
+                    );
+                  })}
+                </div>
+
+                <h4>📖 Histórias de {selectedResident.name}</h4>
                 {selectedResident.storyChapters.map((chap) => {
                   const unlocked =
                     (Number(affinity[selectedResident.id]) || 0) >=
@@ -3989,21 +4853,19 @@ export default function NeoLifeCity({ data = {}, save, onNavigate }) {
       )}
 
       {/* ======================================================================
-          ABA 3: MISSÕES VERIFICÁVEIS, EVOLUÇÃO DOS DISTRITOS E CAMPANHA
+          ABA 3: MISSÕES E EVOLUÇÃO REAL DA CIDADE
           ====================================================================== */}
       {activeTab === 'quests' && (
         <>
           <section className='neo-section-heading'>
             <div>
-              <span>CAMPANHA NARRATIVA & OBJETIVOS VERIFICÁVEIS</span>
-              <h2>Missões e Evolução dos Bairros</h2>
-              <p>
-                Missões conectadas aos seus hábitos, tarefas, estudos e
-                exploração da cidade.
-              </p>
+              <span>EVOLUÇÃO REAL DA CIDADE // NÍVEL {cityEvolution.tier}</span>
+              <h2>{cityEvolution.name}</h2>
+              <p>{cityEvolution.perks}</p>
             </div>
             <div className='neo-level-chip'>
-              🏆 {claimedQuests.length}/{questsList.length} concluídas
+              🏙️ Índice Urbano: {cityEvolution.score}/
+              {cityEvolution.nextThreshold} pts
             </div>
           </section>
 
@@ -4105,20 +4967,41 @@ export default function NeoLifeCity({ data = {}, save, onNavigate }) {
       )}
 
       {/* ======================================================================
-          ABA 4: MERCADO NEON
+          ABA 4: MERCADO NEON (COM HORÁRIO DE FUNCIONAMENTO)
           ====================================================================== */}
       {activeTab === 'market' && (
         <>
           <section className='neo-section-heading'>
             <div>
-              <span>MERCADO NEON</span>
+              <span>
+                MERCADO NEON · {marketOpenStatus.badge} · RELÓGIO:{' '}
+                {formatClock(simMinutes)}
+              </span>
               <h2>Móveis, Roupas e Equipamentos</h2>
               <p>
-                Adquira itens com suas moedas conquistadas para decorar sua casa
-                ou equipar seu personagem.
+                {marketOpenStatus.isOpen
+                  ? 'A loja está aberta! Adquira itens com suas moedas conquistadas.'
+                  : `O Mercado Neon funciona das ${marketOpenStatus.hoursText}. Avance o relógio para comprar.`}
               </p>
             </div>
-            <div className='neo-level-chip'>🪙 {coins} moedas</div>
+            <div className='neo-toolbar-btns'>
+              {!marketOpenStatus.isOpen && (
+                <button
+                  type='button'
+                  className='neo-interact-btn'
+                  onClick={() => {
+                    setTimeMode('manual');
+                    setSimMinutes(600);
+                    setNotice(
+                      'Relógio ajustado para 10:00 — Mercado Neon aberto!',
+                    );
+                  }}
+                >
+                  ⏩ Abrir Loja (10:00)
+                </button>
+              )}
+              <div className='neo-level-chip'>🪙 {coins} moedas</div>
+            </div>
           </section>
           <section className='neo-shop-grid'>
             {STORE_ITEMS.map((item) => {
@@ -4138,14 +5021,20 @@ export default function NeoLifeCity({ data = {}, save, onNavigate }) {
                       {ownedQty > 0 ? `(Possui: ${ownedQty})` : ''}
                     </b>
                     <button
-                      disabled={isUniqueEquip || coins < item.price}
+                      disabled={
+                        !marketOpenStatus.isOpen ||
+                        isUniqueEquip ||
+                        coins < item.price
+                      }
                       onClick={() => buyItem(item)}
                     >
-                      {isUniqueEquip
-                        ? '✓ Adquirido'
-                        : coins < item.price
-                          ? 'Moedas insuficientes'
-                          : 'Comprar'}
+                      {!marketOpenStatus.isOpen
+                        ? '🔒 Fechado'
+                        : isUniqueEquip
+                          ? '✓ Adquirido'
+                          : coins < item.price
+                            ? 'Moedas insuficientes'
+                            : 'Comprar'}
                     </button>
                   </div>
                 </article>
@@ -4257,7 +5146,7 @@ export default function NeoLifeCity({ data = {}, save, onNavigate }) {
       )}
 
       {/* ======================================================================
-          ABA 6: MINIJOGOS (PESCA TECNOLÓGICA, HOVERBOARD, MEMÓRIA E CIRCUITO)
+          ABA 6: MINIJOGOS
           ====================================================================== */}
       {activeTab === 'arcade' && (
         <>
@@ -4500,17 +5389,17 @@ export default function NeoLifeCity({ data = {}, save, onNavigate }) {
       )}
 
       {/* ======================================================================
-          ABA 7: FESTIVAIS SAZONAIS E COLEÇÕES
+          ABA 7: FESTIVAIS SAZONAIS, EVENTOS E COLEÇÕES
           ====================================================================== */}
       {activeTab === 'collections' && (
         <>
           <section className='neo-section-heading'>
             <div>
-              <span>CALENDÁRIO SAZONAL</span>
-              <h2>Festivais do Vale Neo</h2>
+              <span>CALENDÁRIO SAZONAL & EVENTOS URBANOS</span>
+              <h2>Festivais e Celebrações do Vale Neo</h2>
               <p>
-                Celebrações ao longo das estações trazem bônus e lembranças
-                especiais para sua casa.
+                Celebrações sazonais e eventos urbanos trazem bônus, horário
+                noturno estendido e lembranças para sua casa.
               </p>
             </div>
           </section>
@@ -4528,7 +5417,7 @@ export default function NeoLifeCity({ data = {}, save, onNavigate }) {
                     <span>
                       {fest.icon} {fest.season}
                     </span>
-                    <b>{isCurrent ? 'ATIVO AGORA' : 'CALENDÁRIO'}</b>
+                    <b>{isCurrent ? 'FESTIVAL ATIVO' : 'CALENDÁRIO'}</b>
                   </div>
                   <h3>{fest.name}</h3>
                   <p>{fest.desc}</p>
@@ -4553,6 +5442,41 @@ export default function NeoLifeCity({ data = {}, save, onNavigate }) {
                         : '🎁 Resgatar Lembrança do Festival'}
                     </button>
                   )}
+                </article>
+              );
+            })}
+          </section>
+
+          <section className='neo-section-heading'>
+            <div>
+              <span>EVENTOS DINÂMICOS DA CIDADE</span>
+              <h2>Programação Urbana</h2>
+            </div>
+          </section>
+
+          <section className='neo-festivals-grid'>
+            {CITY_EVENTS.map((ev, idx) => {
+              const isCurrent = idx === cityEventIndex;
+              return (
+                <article
+                  key={ev.id}
+                  className={`neo-festival-card ${isCurrent ? 'current' : ''}`}
+                >
+                  <div className='neo-fest-top'>
+                    <span>{ev.icon} Evento Urbano</span>
+                    <b>{isCurrent ? 'EM ANDAMENTO' : 'DISPONÍVEL'}</b>
+                  </div>
+                  <h3>{ev.name}</h3>
+                  <p>{ev.effect}</p>
+                  <button
+                    type='button'
+                    onClick={() => {
+                      setCityEventIndex(idx);
+                      setNotice(`Evento ativado na cidade: ${ev.name}!`);
+                    }}
+                  >
+                    {isCurrent ? '✓ Ativo na Cidade' : 'Ativar Evento'}
+                  </button>
                 </article>
               );
             })}
@@ -4822,7 +5746,10 @@ export default function NeoLifeCity({ data = {}, save, onNavigate }) {
       )}
 
       <footer className='neo-footer'>
-        <span>NEO-LIFE / VALE 16-BIT COMPLETO</span>
+        <span>
+          NEO-LIFE / {cityEvolution.name.toUpperCase()} ·{' '}
+          {formatClock(simMinutes)}
+        </span>
         <p>
           Seu progresso real constrói a cidade. Seu descanso também faz parte da
           jornada.
@@ -4836,7 +5763,7 @@ export default function NeoLifeCity({ data = {}, save, onNavigate }) {
 }
 
 /* ============================================================================
-   ESTILOS — PALETA ACOLHEDORA, ILUMINAÇÃO DINÂMICA POR HORÁRIO E ACESSIBILIDADE
+   ESTILOS — PALETA ACOLHEDORA, VIDA URBANA, CLIMA, DIA/NOITE E SPRITES
    ============================================================================ */
 const styles = `
 .neo-city-page{
@@ -4847,7 +5774,7 @@ const styles = `
   --neo-muted:#bdc8ae;
   display:flex;
   flex-direction:column;
-  gap:20px;
+  gap:18px;
   padding:4px 0 30px;
   min-width:0;
   color:var(--neo-text);
@@ -4866,7 +5793,7 @@ const styles = `
   background:
     radial-gradient(ellipse at 78% 24%,rgba(245,196,81,.26),transparent 28%),
     linear-gradient(155deg,#1b4652 0%,#295c5a 52%,#3d6e4d 100%);
-  padding:26px 28px;
+  padding:24px 26px;
   display:grid;grid-template-columns:1.1fr .9fr;align-items:center;gap:20px;
   box-shadow:0 6px 0 #1b302d;
 }
@@ -4876,34 +5803,37 @@ const styles = `
   background-size:24px 24px;
 }
 .neo-kicker,.neo-section-heading>div>span{font-size:10px;font-weight:900;letter-spacing:2px;color:#f5c451}
-.neo-hero h1{font-size:clamp(28px,3.8vw,44px);line-height:1.08;margin:10px 0;color:#fff8e3;text-shadow:3px 3px 0 #1c383a}
+.neo-hero h1{font-size:clamp(26px,3.6vw,42px);line-height:1.08;margin:8px 0;color:#fff8e3;text-shadow:3px 3px 0 #1c383a}
 .neo-hero h1 em{font-style:normal;color:#b2de8e}
 .neo-hero-copy>p{color:#eef0d8;max-width:540px;line-height:1.6;font-size:13px;margin:0}
-.neo-hero-actions{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-top:18px}
+.neo-hero-actions{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-top:16px}
 .neo-hero-actions button,.neo-empty-inventory button,.neo-minigame-actions button{
   border:2px solid #fff0a6;border-radius:6px;
   background:linear-gradient(180deg,#f5c451,#cf9132);
-  color:#253028;padding:10px 15px;font-weight:900;cursor:pointer;
+  color:#253028;padding:9px 14px;font-weight:900;cursor:pointer;
   box-shadow:0 3px 0 #7d5136;font-size:12px;
 }
 .neo-hero-actions span{font-size:11px;color:#e5ebd0}
 
-.neo-hero-right{display:flex;flex-direction:column;gap:10px;align-items:flex-end}
-.neo-life-sync-card{max-width:360px;padding:11px 13px;border:1px solid rgba(126,194,114,.65);border-radius:9px;background:rgba(16,39,36,.88);display:flex;flex-direction:column;gap:5px;color:#e8efda;font-size:10px;line-height:1.45}
+.neo-hero-right{display:flex;flex-direction:column;gap:9px;align-items:flex-end}
+.neo-life-sync-card{max-width:360px;padding:10px 13px;border:1px solid rgba(126,194,114,.65);border-radius:9px;background:rgba(16,39,36,.88);display:flex;flex-direction:column;gap:4px;color:#e8efda;font-size:10px;line-height:1.45}
 .neo-life-sync-card strong{color:#9ee59a;font-size:10px;letter-spacing:.06em}
-.neo-life-sync-card small{color:#a9c3b0;font-size:9px}
 .neo-life-sync-card .neo-life-sync-reaction{color:#fff0a6}
 
 .neo-wallet{
   background:#233b38;border:2px solid #a8734d;border-radius:8px;
-  padding:12px 16px;display:flex;flex-direction:column;gap:3px;width:100%;max-width:320px;
+  padding:11px 15px;display:flex;flex-direction:column;gap:3px;width:100%;max-width:360px;
   box-shadow:0 4px 0 #152624;
 }
 .neo-wallet span{font-size:8px;letter-spacing:1.4px;color:#c7b3eb;font-weight:800}
 .neo-wallet strong{font-size:16px;color:#f5c451}
 .neo-wallet small{font-size:10px;color:#cbd6be}
 
-.neo-time-switcher{display:flex;gap:4px;flex-wrap:wrap;justify-content:flex-end}
+.neo-time-switcher{display:flex;gap:4px;flex-wrap:wrap;justify-content:flex-end;align-items:center}
+.neo-clock-pill{
+  padding:5px 9px;border-radius:5px;background:#132423;border:1px solid #f5c451;
+  color:#fff0a6;font-size:11px;font-weight:900;font-variant-numeric:tabular-nums;
+}
 .neo-time-switcher button{
   border:1px solid #6b856b;border-radius:5px;padding:5px 8px;
   background:#1c302e;color:#dce5cf;font-size:10px;font-weight:800;cursor:pointer;
@@ -4921,7 +5851,7 @@ const styles = `
 .neo-tabs button.active{background:#388e99;border-color:#fff0a6;color:#fff8e3;box-shadow:0 3px 0 #163d4a}
 
 .neo-notice{
-  padding:12px 16px;border:2px solid #f5c451;border-radius:6px;
+  padding:11px 15px;border:2px solid #f5c451;border-radius:6px;
   background:#2b473e;color:#fff6d6;font-size:13px;
   display:flex;justify-content:space-between;align-items:center;gap:10px;
 }
@@ -4946,439 +5876,640 @@ const styles = `
 }
 .neo-deco-toggle.active{background:#cf9132!important;color:#232e26!important}
 
-/* MAPA 16-BIT E ILUMINAÇÃO DINÂMICA POR HORÁRIO */
+/* BARRA DE CLIMA, EVENTOS E TELEMETRIA DE LOJAS / MORADORES */
 .neo-world-toolbar{
   display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;
   padding:10px 14px;border:2px solid #7d5136;border-radius:6px;
   background:#27403b;color:#f5e9c6;font-size:11px;font-weight:800;
 }
-.neo-toolbar-btns{display:flex;gap:8px;flex-wrap:wrap}
-.neo-world-toolbar button,.neo-interior-header button{
+.neo-weather-controls,.neo-toolbar-btns{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.neo-weather-controls button{
+  border:1px solid #6b856b;border-radius:4px;padding:5px 8px;
+  background:#1c302e;color:#dce5cf;font-size:10px;font-weight:800;cursor:pointer;
+}
+.neo-weather-controls button.active{background:#388e99;border-color:#fff0a6;color:#fff}
+.neo-world-toolbar .neo-toolbar-btns button,.neo-interior-header button{
   border:2px solid #fff0a6;border-radius:5px;padding:6px 11px;
   background:#cf9132;color:#232e26;font-weight:900;cursor:pointer;font-size:10px;
 }
+
+.neo-city-telemetry{
+  display:flex;flex-direction:column;gap:8px;padding:10px 12px;
+  border:2px solid #48635a;border-radius:7px;background:#1b2f2d;font-size:11px;
+}
+.neo-telemetry-group{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.neo-telemetry-group b{color:#f5c451;font-size:10px;margin-right:4px}
+.neo-store-pill,.neo-npc-pill{
+  border:1px solid #5c755d;border-radius:4px;padding:3px 7px;
+  background:#233d3a;color:#eef4e2;font-size:10px;font-weight:700;cursor:pointer;
+}
+.neo-store-pill.open{border-color:#7ec272;color:#b2de8e}
+.neo-store-pill.closed{border-color:#cf9132;color:#f5c451;opacity:.85}
+.neo-npc-pill:hover,.neo-store-pill:hover{border-color:#fff0a6}
+
+/* MAPA 16-BIT, ILUMINAÇÃO DINÂMICA E CENÁRIO WEBP */
 .neo-world-scroll{
-  overflow:auto;padding:12px;border:3px solid #7d5136;border-radius:8px;
+  overflow:auto;padding:12px;border:3px solid #53618f;border-radius:8px;
   background:radial-gradient(ellipse at 50% 40%,#20264d,#101629 72%);
-  border-color:#53618f;box-shadow:inset 0 0 24px rgba(61,104,255,.18);
+  box-shadow:inset 0 0 24px rgba(61,104,255,.18);
 }
 .neo-world-map{
   position:relative;display:grid;
   grid-template-columns:repeat(20,50.4px);
   grid-template-rows:repeat(12,47.25px);
-  gap:0;width:1008px;height:567px;margin:auto;
+  gap:0;width:1008px;height:567px;aspect-ratio:1672 / 941;margin:auto;
   border:4px solid #52618f;border-radius:4px;
-  background:#10152d;box-shadow:0 0 0 3px #171d3c,0 0 28px rgba(70,105,255,.28);
+  background-color:#10152d;
+  background-image:url('/maps/cyberpunk-metropolis.webp');
+  background-size:100% 100%;
+  background-position:center;
+  background-repeat:no-repeat;
+  box-shadow:0 0 0 3px #171d3c,0 0 28px rgba(70,105,255,.28);
   image-rendering:pixelated;
-  transition:filter .4s ease;
-  background-image: url('/maps/cyberpunk-metropolis.webp');
-  background-size: 100% 100%;
-  background-repeat: no-repeat;
+  transition:filter .5s ease,box-shadow .5s ease;
+  overflow:hidden;
 }
-.neo-world-map.period-morning{filter:brightness(1.03) saturate(1.05)}
+.neo-world-map.period-morning{filter:brightness(1.04) saturate(1.06)}
 .neo-world-map.period-afternoon{filter:brightness(1) saturate(1)}
-.neo-world-map.period-sunset{filter:sepia(.18) saturate(1.15) brightness(.95)}
-.neo-world-map.period-night{filter:brightness(.76) contrast(1.08) hue-rotate(-8deg)}
-.neo-world-map.period-night .lamp-glow,
-.neo-world-map.period-night .glow-node,
-.neo-world-map.period-night .neo-player-sprite{
-  filter:brightness(1.45) drop-shadow(0 0 10px rgba(245,196,81,.9));
+.neo-world-map.period-sunset{filter:sepia(.2) saturate(1.18) brightness(.94)}
+.neo-world-map.period-night{
+  filter:brightness(.76) contrast(1.08) hue-rotate(-8deg);
+  box-shadow:0 0 0 3px #171d3c,0 0 36px rgba(105,155,255,.38);
+}
+.neo-world-map.weather-rain{filter:brightness(.88) saturate(.92) contrast(1.05)}
+.neo-world-map.weather-mist{filter:brightness(.94) saturate(.82) contrast(.94)}
+.neo-world-map.weather-storm{filter:brightness(.74) contrast(1.14) saturate(.88)}
+.neo-world-map.lightning-flash{filter:brightness(1.48) contrast(1.18)!important}
+
+/* CAMADA DE TRÂNSITO, VLT, DRONES E BRILHOS DE EVOLUÇÃO */
+.neo-city-life{position:absolute;inset:0;pointer-events:none;z-index:4}
+.neo-transit-stop-marker{
+  position:absolute;transform:translate(-50%,-100%);
+  padding:2px 6px;border-radius:4px;
+  background:rgba(16,28,44,.88);border:1px solid #6ec2c9;
+  color:#b6ebed;font-size:9px;font-weight:900;white-space:nowrap;
+  box-shadow:0 2px 4px rgba(0,0,0,.45);
+}
+.neo-public-transit{
+  position:absolute;display:flex;align-items:center;gap:2px;
+  transition:left .26s linear;z-index:5;
+}
+.neo-vlt-car{
+  width:28px;height:14px;border-radius:3px;
+  background:linear-gradient(180deg,#6ec2c9,#236373);
+  border:1.5px solid #fff0a6;
+  display:flex;align-items:center;justify-content:center;
+  font-size:9px;box-shadow:0 2px 5px rgba(0,0,0,.5);
+}
+.neo-vlt-car.trailer{background:linear-gradient(180deg,#957bc7,#463669)}
+.neo-public-transit.stopped .neo-vlt-car{border-color:#7ec272}
+.neo-public-transit b{
+  margin-left:4px;padding:1px 4px;border-radius:3px;
+  background:#234736;border:1px solid #7ec272;
+  color:#b2de8e;font-size:8px;letter-spacing:.5px;
 }
 
-.neo-world-tile{position:relative;width:50.4px;height:47.25px;overflow:visible;isolation:isolate;background:transparent!important}
-/* O WEBP é a arte definitiva do cenário. A grade serve apenas como camada de colisão/interação. */
-.neo-world-tile{background-image:none!important}
-.neo-world-tile::before{display:none!important}
-.neo-world-tile.city-road::before{
-  opacity:.8;background:
-    linear-gradient(90deg,transparent 0 45%,rgba(78,220,255,.5) 47% 49%,transparent 52%),
-    linear-gradient(0deg,transparent 0 45%,rgba(255,91,205,.42) 47% 49%,transparent 52%);
-  box-shadow:inset 0 0 0 1px rgba(75,204,255,.18),inset 0 0 12px rgba(30,122,190,.22);
+.neo-vehicle-car{
+  position:absolute;width:24px;height:11px;border-radius:3px;
+  background:var(--veh-color,#6ec2c9);
+  border:1.5px solid #16232b;
+  box-shadow:0 2px 4px rgba(0,0,0,.5);
+  transition:left .26s linear;
 }
-.neo-world-tile.city-water::before{
-  opacity:.55;background:repeating-linear-gradient(135deg,transparent 0 8px,rgba(83,225,255,.38) 9px 11px);
+.neo-vehicle-car::before{
+  content:"";position:absolute;top:2px;left:5px;right:5px;height:4px;
+  background:#1c313d;border-radius:1px;
 }
-.neo-world-tile.city-park::before{
-  opacity:.28;background:radial-gradient(ellipse,rgba(83,255,177,.5),transparent 70%);
+.neo-vehicle-car.east::after{
+  content:"";position:absolute;right:-3px;top:3px;width:4px;height:5px;
+  background:#fff0a6;border-radius:50%;box-shadow:4px 0 8px #f5c451;
 }
-.neo-district-waypoint{
-  position:absolute;left:50%;top:3px;transform:translateX(-50%);z-index:4;
-  white-space:nowrap;padding:2px 5px;border:1px solid currentColor;border-radius:3px;
-  background:rgba(9,17,42,.88);font:900 7px/1.2 monospace;letter-spacing:.5px;
-  color:#74eaff;text-shadow:0 0 6px currentColor;pointer-events:none;
+.neo-vehicle-car.west::after{
+  content:"";position:absolute;left:-3px;top:3px;width:4px;height:5px;
+  background:#fff0a6;border-radius:50%;box-shadow:-4px 0 8px #f5c451;
 }
-.waypoint-academy{color:#c8a0ff}.waypoint-green{color:#8affbd}
-.waypoint-innovation{color:#7dbdff}.waypoint-commerce{color:#ff8bdc}
-.waypoint-arcade{color:#ffc078}
-.neo-building-sprite-sheet{
-  position:absolute;left:0;top:0;z-index:5;cursor:pointer;
-  filter:drop-shadow(0 4px 0 rgba(22,36,34,.45));
+
+.neo-vehicle-bike{
+  position:absolute;font-size:13px;line-height:1;
+  transition:left .26s linear;
+  filter:drop-shadow(0 2px 2px rgba(0,0,0,.55));
 }
-.neo-building-sprite-sheet.under-construction{filter:grayscale(.45) brightness(.85)}
-.neo-scaffold-overlay{position:absolute;inset:0;z-index:6;pointer-events:none;opacity:.85}
-.neo-building-tag{
-  position:absolute;left:50%;top:-13px;transform:translateX(-50%);
-  white-space:nowrap;padding:2px 7px;border-radius:4px;
-  background:#233c3b;border:2px solid #f5c451;color:#fff5d6;font-size:9px;font-weight:900;
+.neo-vehicle-bike.bike-east{transform:scaleX(-1)}
+
+.neo-city-drone-unit{
+  position:absolute;font-size:14px;line-height:1;
+  transition:left .26s linear,top .26s linear;
+  filter:drop-shadow(0 4px 6px rgba(110,194,201,.65));
 }
+
+.neo-city-glow{
+  position:absolute;border-radius:50%;pointer-events:none;
+  background:radial-gradient(circle,rgba(245,196,81,.22),transparent 68%);
+}
+.city-glow-one{width:220px;height:220px;left:380px;top:170px}
+.city-glow-two{width:240px;height:240px;left:640px;top:110px;background:radial-gradient(circle,rgba(126,194,114,.2),transparent 68%)}
+.city-glow-three{width:280px;height:280px;left:150px;top:310px;background:radial-gradient(circle,rgba(199,179,235,.22),transparent 68%)}
+
+/* CAMADA DE CLIMA E PARTÍCULAS AMBIENTAIS */
+.neo-weather-overlay{position:absolute;inset:0;pointer-events:none;z-index:8;overflow:hidden}
+.neo-rain-drop{
+  position:absolute;top:-16px;width:1.5px;height:14px;
+  background:linear-gradient(180deg,transparent,#b6ebed);
+  opacity:.72;animation:neoRainFall .85s linear infinite;
+}
+@keyframes neoRainFall{
+  0%{transform:translate(0,0) rotate(12deg)}
+  100%{transform:translate(-18px,590px) rotate(12deg)}
+}
+.neo-ambient-mote{
+  position:absolute;font-size:11px;color:#fff0a6;
+  text-shadow:0 0 6px #f5c451;
+  animation:neoMoteFloat 4.2s ease-in-out infinite alternate;
+}
+.neo-ambient-mote.lantern{font-size:14px}
+@keyframes neoMoteFloat{
+  0%{transform:translate(0,0) scale(.9);opacity:.55}
+  100%{transform:translate(12px,-16px) scale(1.12);opacity:1}
+}
+
+/* TILES DO MUNDO, PORTAS, CANTEIROS E ENTIDADES */
+.neo-world-tile{
+  position:relative;width:100%;height:100%;
+  display:flex;align-items:center;justify-content:center;
+}
+.neo-world-tile.city-road{background:rgba(20,30,48,.12)}
+.neo-world-tile.city-water{background:rgba(22,61,74,.14)}
+
+.neo-building-hours-badge{
+  position:absolute;top:4px;left:4px;z-index:7;
+  padding:3px 7px;border-radius:4px;
+  border:1.5px solid #fff0a6;
+  background:rgba(18,32,42,.92);color:#fff8e3;
+  font-size:9px;font-weight:900;white-space:nowrap;cursor:pointer;
+  box-shadow:0 2px 6px rgba(0,0,0,.55);
+}
+.neo-building-hours-badge.open{border-color:#7ec272;color:#b2de8e}
+.neo-building-hours-badge.closed{border-color:#cf9132;color:#f5c451}
+
 .neo-plot-btn{
-  position:relative;border:0;padding:0;cursor:pointer;display:block;
+  position:relative;border:0;padding:0;background-color:transparent;
+  cursor:pointer;z-index:3;border-radius:4px;
+  box-shadow:0 2px 4px rgba(0,0,0,.45);
 }
-.neo-plot-btn.ready{box-shadow:inset 0 0 0 2px #f5c451}
+.neo-plot-btn.ready{outline:2px solid #fff0a6;animation:neoDoorPulse 1.3s ease-in-out infinite}
 .neo-harvest-badge{
-  position:absolute;top:-8px;right:-4px;font-size:12px;
-  animation:neo-float .7s steps(2) infinite alternate;
+  position:absolute;top:-8px;right:-6px;font-size:12px;
+  filter:drop-shadow(0 1px 2px #000);
 }
-.neo-prop-sprite{position:absolute;left:50%;bottom:2px;transform:translateX(-50%);z-index:4;pointer-events:none}
-.neo-prop-sprite.tall-tree,.neo-prop-sprite.tall-prop{z-index:6}
-.neo-prop-sprite.bench{left:0;transform:none}
+
 .neo-spot-tag{
-  position:absolute;left:50%;top:6px;transform:translateX(-50%);z-index:7;
-  border:2px solid #fff0a6;border-radius:4px;background:#236373;color:#fff;
-  font-size:9px;font-weight:900;padding:2px 6px;white-space:nowrap;cursor:pointer;
+  z-index:5;padding:3px 6px;border-radius:4px;
+  border:1.5px solid #6ec2c9;background:rgba(16,38,48,.92);
+  color:#b6ebed;font-size:9px;font-weight:900;white-space:nowrap;cursor:pointer;
 }
-.neo-door{position:absolute;inset:0;z-index:7;border:0;background:transparent;cursor:pointer;display:grid;place-items:center}
-.neo-door-marker{
-  padding:1px 5px;border-radius:4px;background:rgba(35,60,59,.9);
-  border:1px solid #f5c451;color:#fff0a6;font-size:9px;
+
+.neo-door{
+  width:28px;height:24px;border-radius:4px;
+  border:1.5px solid #fff0a6;background:rgba(245,196,81,.28);
+  color:#fff0a6;display:flex;align-items:center;justify-content:center;
+  cursor:pointer;z-index:5;animation:neoDoorPulse 1.6s ease-in-out infinite;
 }
+.neo-door-marker{font-size:10px;line-height:1;text-shadow:0 1px 3px #000}
+@keyframes neoDoorPulse{
+  0%,100%{transform:translateY(0);box-shadow:0 0 6px rgba(245,196,81,.45)}
+  50%{transform:translateY(-2px);box-shadow:0 0 12px rgba(255,240,166,.85)}
+}
+
 .neo-map-resident{
-  position:absolute;left:50%;bottom:2px;transform:translateX(-50%);z-index:8;
-  border:0;padding:0;background:transparent;cursor:pointer;display:flex;flex-direction:column;align-items:center;
-  transition:left .4s linear,top .4s linear;
+  position:relative;z-index:6;border:0;padding:0;background:transparent;
+  display:flex;flex-direction:column;align-items:center;cursor:pointer;
+  transition:transform .25s ease;
+}
+.neo-map-resident:hover{transform:translateY(-2px) scale(1.05)}
+.neo-npc-activity-chip{
+  position:absolute;top:-12px;right:-6px;font-size:11px;
+  background:rgba(16,28,34,.9);border:1px solid rgba(255,240,166,.55);
+  border-radius:999px;padding:1px 3px;line-height:1;
+}
+.neo-resident-sprite.neo-authentic-sprite{
+  width:34px;height:46px;display:block;
+  background-size:400% 100%;background-repeat:no-repeat;
+  image-rendering:pixelated;
+  filter:drop-shadow(0 3px 3px rgba(0,0,0,.6));
 }
 .neo-map-resident b{
-  position:absolute;top:-14px;padding:1px 5px;border-radius:3px;
-  background:#463669;border:1px solid #c7b3eb;color:#fff8e8;font-size:8px;white-space:nowrap;
+  margin-top:-4px;padding:1px 5px;border-radius:3px;
+  background:rgba(16,26,34,.9);border:1px solid rgba(199,179,235,.55);
+  color:#fff8e3;font-size:8px;font-weight:900;letter-spacing:.3px;
 }
-.neo-npc-drone{position:absolute;left:50%;bottom:14px;transform:translateX(-50%);z-index:11;pointer-events:none}
-.neo-player-sprite{position:absolute;left:50%;bottom:2px;transform:translateX(-50%);z-index:10;pointer-events:none}
 
-/* NeoLifeCity — segunda etapa: cenário fiel ao WEBP de public/maps.
-   Elementos procedurais antigos deixam de ser desenhados sobre a arte; seus
-   alvos invisíveis continuam ativos para preservar portas, prédios e canteiros. */
-.neo-world-map{
-  width:1008px;height:567px;aspect-ratio:1672 / 941;
-  background-image:url('/maps/cyberpunk-metropolis.webp')!important;
-  background-size:100% 100%!important;background-position:center;background-repeat:no-repeat;
+.neo-ambient-citizen{
+  position:relative;z-index:5;border:0;padding:0;background:transparent;
+  display:flex;flex-direction:column;align-items:center;cursor:pointer;
 }
-.neo-world-tile.city-road::before,.neo-world-tile.city-water::before,.neo-world-tile.city-park::before{display:none!important}
-.neo-district-waypoint,.neo-building-tag,.neo-door-marker{display:none!important}
-.neo-building-sprite-sheet,.neo-scaffold-overlay,.neo-prop-sprite,.neo-plot-btn,.neo-spot-tag{
-  opacity:0!important;
+.neo-cit-status{font-size:9px;margin-bottom:1px;filter:drop-shadow(0 1px 2px #000)}
+.neo-cit-body{
+  position:relative;width:14px;height:20px;border-radius:3px;
+  background:var(--cit-coat,#6ec2c9);border:1.5px solid #162228;
+  box-shadow:0 2px 3px rgba(0,0,0,.55);
 }
-.neo-building-sprite-sheet{background-image:none!important}
-.neo-plot-btn{box-shadow:none!important}
-.neo-map-resident{z-index:18}
-.neo-map-resident b{z-index:19}
-.neo-player-sprite{z-index:20}
-@media(max-width:760px){.neo-world-map{margin:0}}
+.neo-cit-body::before{
+  content:"";position:absolute;top:-5px;left:1px;width:9px;height:5px;
+  border-radius:2px;background:var(--cit-hat,#f5c451);border:1px solid #162228;
+}
+.neo-ambient-citizen small{
+  margin-top:1px;padding:0 4px;border-radius:2px;
+  background:rgba(15,24,30,.82);color:#dce5cf;font-size:7.5px;font-weight:800;
+}
 
-/* DIÁLOGO RAMIFICADO NO MAPA */
+.neo-npc-drone{
+  z-index:6;pointer-events:none;
+  filter:drop-shadow(0 3px 5px rgba(110,194,201,.7));
+}
+.neo-player-sprite{
+  z-index:7;pointer-events:none;display:block;
+  filter:drop-shadow(0 3px 4px rgba(0,0,0,.65));
+}
+.neo-player-sprite.interior{position:relative;z-index:6}
+
+/* BALÃO DE DIÁLOGO NO MAPA */
 .neo-world-bubble{
-  display:grid;grid-template-columns:56px 1fr auto;gap:14px;align-items:start;
-  padding:14px 16px;border:3px solid #f5c451;border-radius:8px;background:#233d3b;
+  display:flex;align-items:flex-start;gap:14px;
+  padding:14px 16px;border:2px solid #f5c451;border-radius:8px;
+  background:#1c312f;box-shadow:0 6px 0 #122120;
 }
 .neo-bubble-portrait{
-  width:52px;height:68px;display:grid;place-items:center;border-radius:6px;
-  background:#463669;border:2px solid #c7b3eb;overflow:hidden;
+  width:54px;height:68px;flex:0 0 auto;border-radius:6px;
+  background:#152524;border:1.5px solid #6ec2c9;
+  display:flex;align-items:center;justify-content:center;overflow:hidden;
 }
-.neo-bubble-header{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;font-size:10px;color:#f5c451}
-.neo-bubble-body p{margin:6px 0 10px;font-size:13px;color:#f8f3de}
+.neo-bubble-body{flex:1;min-width:0;display:flex;flex-direction:column;gap:8px}
+.neo-bubble-header{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.neo-bubble-header span{font-size:10px;font-weight:900;letter-spacing:1px;color:#6ec2c9}
+.neo-bubble-header b{font-size:11px;color:#f5c451}
+.neo-memory-callout{
+  padding:6px 10px;border-radius:5px;
+  background:rgba(70,54,105,.36);border:1px solid rgba(199,179,235,.4);
+  color:#e6dcfa;font-size:11px;
+}
+.neo-bubble-body p{margin:0;color:#f6f1dc;font-size:13px;line-height:1.5}
 .neo-branch-choices{display:flex;gap:8px;flex-wrap:wrap}
 .neo-branch-choices button{
-  border:2px solid #7ec272;border-radius:5px;padding:7px 10px;
-  background:#1b3230;color:#f4f8ea;font-size:11px;font-weight:800;cursor:pointer;
+  border:1.5px solid #7ec272;border-radius:5px;padding:7px 11px;
+  background:#23443b;color:#eef7df;font-size:11px;font-weight:800;cursor:pointer;
 }
-.neo-branch-choices button:hover{background:#2c4f49;border-color:#fff0a6}
-.neo-close-x{border:0;background:none;color:#fff;font-size:22px;cursor:pointer}
+.neo-branch-choices button:hover{background:#2f594d;border-color:#fff0a6}
+.neo-close-x{
+  border:0;background:transparent;color:#cbd5bd;font-size:22px;line-height:1;cursor:pointer;
+}
 
+/* CONTROLES D-PAD E INTERAÇÃO */
 .neo-world-controls{
   display:flex;align-items:center;gap:16px;flex-wrap:wrap;
-  padding:12px 15px;border:2px solid #526e58;border-radius:8px;background:#213734;
+  padding:12px 14px;border:2px solid #48635a;border-radius:8px;background:#1b2f2d;
 }
-.neo-world-controls p{margin:0;color:#c7d3ba;font-size:11px;flex:1;min-width:200px}
 .neo-dpad{display:flex;flex-direction:column;align-items:center;gap:4px}
-.neo-dpad>div{display:flex;gap:4px}
+.neo-dpad div{display:flex;gap:4px}
 .neo-dpad button{
-  width:40px;height:34px;border:2px solid #fff0a6;border-radius:5px;
-  background:#388e99;color:#fff8e3;font-size:14px;cursor:pointer;
+  width:36px;height:34px;border:2px solid #6b856b;border-radius:5px;
+  background:#243e3b;color:#fff8e3;font-size:13px;font-weight:900;cursor:pointer;
 }
+.neo-dpad button:active{background:#388e99;border-color:#fff0a6}
 .neo-interact-btn{
-  border:2px solid #fff0a6;border-radius:6px;background:#6b5399;color:#fff8e3;
-  padding:10px 14px;font-size:11px;font-weight:900;cursor:pointer;
+  border:2px solid #fff0a6;border-radius:6px;padding:10px 15px;
+  background:linear-gradient(180deg,#388e99,#236373);
+  color:#fff8e3;font-size:12px;font-weight:900;cursor:pointer;
+  box-shadow:0 3px 0 #163d4a;
+}
+.neo-world-controls p{margin:0;flex:1;min-width:220px;color:#c5d1b8;font-size:12px;line-height:1.5}
+
+/* INTERIORES DE PRÉDIOS E MINHA CASA */
+.neo-interior{
+  display:flex;flex-direction:column;gap:14px;
+  padding:16px;border:2px solid #7d5136;border-radius:8px;background:#1b2f2d;
+}
+.neo-interior-header{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.neo-interior-header span{font-size:11px;font-weight:900;letter-spacing:1.5px;color:#f5c451}
+.neo-interior-room{display:flex;flex-direction:column;gap:14px}
+.neo-interior-map{
+  display:grid;
+  grid-template-columns:repeat(10,52.8px);
+  grid-template-rows:repeat(6,52.8px);
+  width:fit-content;max-width:100%;margin:0 auto;overflow:auto;
+  border:4px solid #523422;border-radius:6px;
+  box-shadow:0 6px 0 #142220;
+}
+.neo-interior-tile{
+  position:relative;display:flex;align-items:center;justify-content:center;
+}
+.neo-interior-tile.wall{filter:brightness(.78)}
+.neo-interior-tile.grid-editable{outline:1px dashed rgba(255,240,166,.38);cursor:pointer}
+.neo-interior-tile.grid-editable:hover{outline:2px solid #fff0a6}
+.neo-placed-furniture{display:block;pointer-events:none;z-index:3}
+.neo-station-btn{
+  z-index:4;padding:3px 5px;border-radius:4px;
+  border:1.5px solid #6ec2c9;background:rgba(16,36,46,.92);
+  color:#fff8e3;display:flex;flex-direction:column;align-items:center;
+  font-size:8px;cursor:pointer;text-align:center;line-height:1.15;
+}
+.neo-station-btn small{color:#7ec272;font-size:7px}
+.neo-interior-door{
+  z-index:5;border:1.5px solid #fff0a6;border-radius:4px;
+  background:#523422;padding:3px 6px;font-size:14px;cursor:pointer;
 }
 
-/* INTERIORES & MODO DECORAÇÃO EM GRADE */
-.neo-interior{padding:16px;border:3px solid #7d5136;border-radius:8px;background:#213836}
-.neo-interior-header{display:flex;justify-content:space-between;align-items:center;color:#f5c451;font-size:11px;font-weight:900}
-.neo-interior-room{margin-top:14px;padding:18px;border:5px solid #7d5136;border-radius:6px;background:#1a2e2c}
-.neo-interior-map{
-  display:grid;grid-template-columns:repeat(10,52px);grid-template-rows:repeat(6,52px);
-  width:max-content;margin:auto;border:4px solid #523422;overflow:auto;
+.neo-deco-dock{
+  display:flex;flex-direction:column;gap:10px;
+  padding:12px 14px;border:2px solid #a8734d;border-radius:6px;background:#243a36;
 }
-.neo-interior-tile{position:relative;width:52px;height:52px;display:grid;place-items:center}
-.neo-interior-tile.grid-editable{box-shadow:inset 0 0 0 1px rgba(255,240,166,.3);cursor:pointer}
-.neo-interior-tile.grid-editable:hover{background-color:rgba(245,196,81,.25)}
-.neo-placed-furniture{display:block;pointer-events:none}
-.neo-station-btn{
-  border:1px solid #f5c451;border-radius:4px;background:rgba(22,61,74,.9);
-  color:#fff;font-size:7px;padding:3px;cursor:pointer;max-width:48px;text-align:center;
+.neo-deco-dock-head{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;font-size:12px}
+.neo-deco-dock-head button{
+  border:1.5px solid #fff0a6;border-radius:4px;padding:5px 10px;
+  background:#388e99;color:#fff;font-size:11px;font-weight:800;cursor:pointer;
 }
-.neo-interior-door{border:0;background:none;font-size:20px;cursor:pointer}
-.neo-deco-dock,.neo-building-sync-form{
-  margin-top:14px;padding:12px;border-radius:6px;border:2px solid #6b856b;background:#243e3a;
+.neo-deco-items{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.neo-deco-items button{
+  border:1.5px solid #6b856b;border-radius:5px;padding:6px 10px;
+  background:#1c302e;color:#eef4e2;font-size:11px;font-weight:800;cursor:pointer;
 }
-.neo-deco-dock-head{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;font-size:11px;margin-bottom:8px}
-.neo-deco-dock-head button,.neo-deco-items button{
-  border:2px solid #6b856b;border-radius:5px;padding:6px 10px;background:#1b302e;color:#f4f8ea;font-size:11px;cursor:pointer;
+.neo-deco-items button.active{background:#cf9132;border-color:#fff0a6;color:#232e26}
+.neo-deco-items small{color:#c5d1b8;font-size:12px}
+
+.neo-building-sync-form{
+  display:flex;flex-direction:column;gap:8px;
+  padding:12px 14px;border:2px solid #388e99;border-radius:6px;background:#172b2e;
 }
-.neo-deco-items{display:flex;gap:8px;flex-wrap:wrap}
-.neo-deco-items button.active{border-color:#f5c451;background:#388e99}
-.neo-building-sync-form{display:flex;flex-direction:column;gap:8px;font-size:12px}
-.neo-building-sync-form>div{display:flex;gap:8px;flex-wrap:wrap}
+.neo-building-sync-form label{font-size:12px;font-weight:800;color:#b6ebed}
+.neo-building-sync-form div{display:flex;gap:8px;flex-wrap:wrap}
 .neo-building-sync-form input{
-  flex:1;min-width:200px;padding:8px 11px;border-radius:5px;border:2px solid #6b856b;
-  background:#162927;color:#fff;
+  flex:1;min-width:200px;padding:8px 11px;border-radius:5px;
+  border:1.5px solid #6ec2c9;background:#102022;color:#fff8e3;font-size:13px;
 }
 .neo-building-sync-form button{
   border:2px solid #fff0a6;border-radius:5px;padding:8px 14px;
-  background:#f5c451;color:#232e26;font-weight:900;cursor:pointer;
+  background:#7ec272;color:#17281e;font-weight:900;font-size:12px;cursor:pointer;
 }
 
-/* MORADORES & HISTÓRIAS */
-.neo-resident-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+/* MORADORES & MODAL DE HISTÓRIA */
+.neo-resident-grid{
+  display:grid;grid-template-columns:repeat(auto-fill,minmax(310px,1fr));gap:12px;
+}
 .neo-resident-card{
-  display:grid;grid-template-columns:64px 1fr auto;gap:12px;align-items:center;
-  padding:14px;border:2px solid #5c755d;border-radius:8px;background:#233e3a;
+  display:grid;grid-template-columns:56px 1fr auto;align-items:center;gap:12px;
+  padding:14px;border:2px solid #4c6654;border-radius:8px;background:#1f3431;
 }
 .neo-resident-avatar{
-  width:56px;height:66px;display:grid;place-items:center;border-radius:6px;
-  background:#3a594d;border:2px solid #a8734d;overflow:hidden;
+  width:52px;height:62px;border-radius:6px;background:#152524;
+  border:1.5px solid #6b856b;display:flex;align-items:center;justify-content:center;
+  font-size:26px;overflow:hidden;
 }
-.neo-resident-card span{font-size:10px;color:#f5c451;font-weight:800}
-.neo-resident-card h3{margin:3px 0;font-size:16px}
-.neo-resident-card p{margin:0 0 3px;font-size:11px;color:#c5d1b8}
-.neo-resident-card small{font-size:10px;color:#9fb098}
-.neo-resident-card>button{
-  border:2px solid #fff0a6;border-radius:6px;background:#388e99;color:#fff;
-  padding:8px 12px;font-size:11px;font-weight:800;cursor:pointer;
+.neo-resident-card span{font-size:10px;font-weight:800;color:#f5c451}
+.neo-resident-card h3{margin:2px 0;font-size:16px;color:#fff8e3}
+.neo-resident-card p{margin:0 0 4px;font-size:12px;color:#cbd5bd}
+.neo-resident-card small{display:block;font-size:10px;color:#9eb39c;line-height:1.4}
+.neo-card-memory{margin-top:4px;color:#c7b3eb!important}
+.neo-resident-card button{
+  border:2px solid #fff0a6;border-radius:5px;padding:8px 11px;
+  background:#388e99;color:#fff;font-size:11px;font-weight:900;cursor:pointer;
 }
+
 .neo-dialogue{
-  position:relative;border:3px solid #f5c451;border-radius:8px;padding:20px;background:#223c3a;
+  position:relative;padding:18px;border:2px solid #f5c451;border-radius:8px;
+  background:#1b2f2d;display:flex;flex-direction:column;gap:12px;
 }
-.neo-dialogue-top{display:flex;align-items:center;gap:14px;margin-bottom:10px}
-.neo-dialogue-top span{font-size:10px;color:#f5c451;font-weight:900}
-.neo-dialogue-top h3{margin:2px 0;font-size:20px}
-.neo-dialogue-close{position:absolute;right:14px;top:10px;border:0;background:none;color:#fff;font-size:22px;cursor:pointer}
-.neo-story-unlocks{margin-top:16px;padding-top:12px;border-top:1px solid var(--neo-line);display:grid;gap:8px}
-.neo-story-unlocks h4{margin:0;font-size:13px;color:#c7b3eb}
-.neo-story-chap{padding:10px;border-radius:6px;background:#1b302e;border:1px solid #6b5399}
-.neo-story-chap.locked{opacity:.65}
-.neo-story-chap b{font-size:12px;color:#fff0a6}
-.neo-story-chap p{margin:4px 0 0;font-size:11px;color:#d6decb}
+.neo-dialogue-close{
+  position:absolute;top:12px;right:14px;border:0;background:none;
+  color:#cbd5bd;font-size:22px;cursor:pointer;
+}
+.neo-dialogue-top{display:flex;align-items:center;gap:14px}
+.neo-dialogue-top span{font-size:10px;font-weight:900;letter-spacing:1px;color:#6ec2c9}
+.neo-dialogue-top h3{margin:3px 0 0;font-size:20px;color:#fff8e3}
+.neo-dialogue>p{margin:0;font-size:13px;line-height:1.55;color:#eef4e2}
 
-/* MISSÕES & DISTRITOS */
-.neo-quests-grid,.neo-district-grid,.neo-shop-grid,.neo-inventory-grid{
-  display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;
+.neo-story-unlocks{display:flex;flex-direction:column;gap:8px;margin-top:4px}
+.neo-story-unlocks h4{margin:6px 0 2px;font-size:12px;letter-spacing:.8px;color:#f5c451;text-transform:uppercase}
+.neo-story-chap{
+  padding:10px 12px;border-radius:6px;
+  border:1.5px solid #5c755d;background:#233b38;
 }
-.neo-quest-card,.neo-district,.neo-shop-item,.neo-inv-card{
-  padding:16px;border:2px solid #5c755d;border-radius:8px;background:#223b37;
-  display:flex;flex-direction:column;gap:8px;
+.neo-story-chap.locked{opacity:.65;border-style:dashed}
+.neo-story-chap b{display:block;font-size:12px;color:#fff0a6;margin-bottom:3px}
+.neo-story-chap p{margin:0;font-size:12px;color:#dce5cf;line-height:1.45}
+
+/* MISSÕES E DISTRITOS */
+.neo-quests-grid,.neo-district-grid,.neo-shop-grid,.neo-festivals-grid,.neo-collections-grid{
+  display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:12px;
 }
-.neo-quest-card.claimed{opacity:.72}
-.neo-quest-card>span{font-size:9px;font-weight:900;color:#f5c451;letter-spacing:1px}
-.neo-quest-card h3,.neo-district h3,.neo-shop-item h3{margin:0;font-size:15px}
-.neo-quest-card p,.neo-district p,.neo-shop-item p{margin:0;font-size:11px;color:#c5d1b8;line-height:1.5}
-.neo-district-progress>div{display:flex;justify-content:space-between;font-size:10px;margin-bottom:4px}
-.neo-district-progress i{height:8px;display:block;background:#142624;border-radius:4px;overflow:hidden}
-.neo-district-progress u{height:100%;display:block;background:#7ec272}
-.neo-quest-footer,.neo-shop-item>div:last-child{
-  margin-top:auto;display:flex;justify-content:space-between;align-items:center;gap:8px;
+.neo-quest-card,.neo-district,.neo-shop-item,.neo-festival-card,.neo-col-box{
+  padding:15px;border:2px solid #4c6654;border-radius:8px;background:#1f3431;
+  display:flex;flex-direction:column;gap:9px;
 }
-.neo-quest-footer button,.neo-shop-item button,.neo-equip-btn{
-  border:2px solid #fff0a6;border-radius:5px;padding:6px 10px;
-  background:#f5c451;color:#232e26;font-size:10px;font-weight:900;cursor:pointer;
+.neo-quest-card.claimed{opacity:.72;border-color:#7ec272}
+.neo-quest-card>span{font-size:10px;font-weight:900;letter-spacing:1px;color:#6ec2c9}
+.neo-quest-card h3,.neo-district h3,.neo-shop-item h3,.neo-festival-card h3{margin:0;font-size:16px;color:#fff8e3}
+.neo-quest-card p,.neo-district p,.neo-shop-item p,.neo-festival-card p{margin:0;font-size:12px;color:#cbd5bd;line-height:1.45}
+
+.neo-district-progress{display:flex;flex-direction:column;gap:4px}
+.neo-district-progress div{display:flex;justify-content:space-between;font-size:11px;color:#dce5cf}
+.neo-district-progress i{display:block;height:7px;border-radius:999px;background:#132220;overflow:hidden}
+.neo-district-progress u{display:block;height:100%;background:linear-gradient(90deg,#388e99,#7ec272,#f5c451)}
+
+.neo-quest-footer{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:auto}
+.neo-quest-footer small{font-size:11px;font-weight:800;color:#f5c451}
+.neo-quest-footer button,.neo-shop-item button,.neo-festival-card button{
+  border:2px solid #fff0a6;border-radius:5px;padding:7px 11px;
+  background:#388e99;color:#fff;font-size:11px;font-weight:900;cursor:pointer;
 }
-.neo-quest-footer button:disabled,.neo-shop-item button:disabled{
-  background:#3e524a;color:#9fb09e;border-color:#566b60;cursor:not-allowed;
+.neo-quest-footer button:disabled,.neo-shop-item button:disabled,.neo-festival-card button:disabled{
+  opacity:.5;cursor:not-allowed;border-color:#6b856b;background:#243835;
 }
-.neo-district-top{display:flex;justify-content:space-between;align-items:center}
-.neo-status{font-size:9px;font-weight:900;color:#7ec272}
+
+.neo-district-top{display:flex;align-items:center;justify-content:space-between}
+.neo-district-icon{font-size:24px}
+.neo-status{
+  padding:3px 7px;border-radius:4px;font-size:9px;font-weight:900;
+  background:#234736;border:1px solid #7ec272;color:#b2de8e;
+}
+.neo-district.locked{opacity:.78}
+.neo-district.locked .neo-status{background:#3b311c;border-color:#cf9132;color:#f5c451}
+
+/* LOJA / MERCADO NEON */
 .neo-item-art{
-  height:96px;border-radius:6px;background:linear-gradient(135deg,#236373,#463669);
-  display:grid;place-items:center;position:relative;font-size:38px;
+  display:flex;align-items:center;justify-content:space-between;
+  padding:10px 12px;border-radius:6px;background:#162725;font-size:26px;
 }
-.neo-item-art span{position:absolute;top:6px;right:6px;font-size:9px;background:#523422;padding:3px 7px;border-radius:4px}
-.neo-inv-card{flex-direction:row;align-items:center}
-.neo-inv-card>span{font-size:28px}
-.neo-inv-card>div{flex:1;display:flex;flex-direction:column;gap:2px}
-.neo-equip-btn.equipped{background:#7ec272}
+.neo-item-art span{font-size:10px;font-weight:900;letter-spacing:.8px;color:#c7b3eb;text-transform:uppercase}
+.neo-shop-item>div:last-child{
+  display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:auto;
+}
+.neo-shop-item b{font-size:13px;color:#f5c451}
 
-/* MINIJOGOS */
-.neo-minigame-panel{
-  padding:20px;border:3px solid #6b5399;border-radius:8px;background:#1d3133;
-  display:flex;flex-direction:column;gap:14px;align-items:center;text-align:center;
+/* INVENTÁRIO */
+.neo-inventory-grid{
+  display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:10px;
 }
-.neo-minigame-panel h3{margin:0;font-size:19px;color:#fff0a6}
-.neo-minigame-panel p{margin:0;font-size:12px;color:#d2dcc6;max-width:520px}
+.neo-inv-card{
+  display:grid;grid-template-columns:40px 1fr auto;align-items:center;gap:12px;
+  padding:12px 14px;border:2px solid #4c6654;border-radius:8px;background:#1f3431;
+}
+.neo-inv-card>span{font-size:24px;text-align:center}
+.neo-inv-card b{display:block;font-size:13px;color:#fff8e3}
+.neo-inv-card small{display:block;font-size:11px;color:#cbd5bd;line-height:1.35}
+.neo-inv-card i{font-style:normal;color:#7ec272;font-weight:900}
+.neo-equip-btn{
+  border:1.5px solid #fff0a6;border-radius:5px;padding:6px 10px;
+  background:#388e99;color:#fff;font-size:11px;font-weight:900;cursor:pointer;
+}
+.neo-equip-btn.equipped{background:#7ec272;color:#17281e}
+
+.neo-empty-inventory{
+  padding:30px 20px;border:2px dashed #5c755d;border-radius:8px;
+  background:#1b2f2d;text-align:center;display:flex;flex-direction:column;align-items:center;gap:8px;
+}
+.neo-empty-inventory span{font-size:32px}
+.neo-empty-inventory h3{margin:0;color:#fff8e3}
+.neo-empty-inventory p{margin:0 0 6px;color:#cbd5bd;font-size:13px}
+
+/* MINIJOGOS & ARCADE 88 */
+.neo-minigame-panel{
+  padding:18px;border:2px solid #53618f;border-radius:8px;
+  background:#192836;display:flex;flex-direction:column;gap:12px;
+}
+.neo-minigame-panel h3{margin:0;font-size:18px;color:#fff8e3}
+.neo-minigame-panel p{margin:0;font-size:13px;color:#cbd5bd}
+.neo-minigame-actions{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+
 .neo-fishing-meter{
-  position:relative;width:100%;max-width:420px;height:28px;
-  border:3px solid #7d5136;border-radius:6px;background:#142423;overflow:hidden;
+  position:relative;height:28px;max-width:440px;border-radius:999px;
+  background:#0f1d26;border:2px solid #388e99;overflow:hidden;
 }
 .neo-fishing-zone{
-  position:absolute;left:50%;top:0;bottom:0;transform:translateX(-50%);
-  background:#388e99;border-left:2px solid #b6ebed;border-right:2px solid #b6ebed;
+  position:absolute;top:0;bottom:0;left:50%;transform:translateX(-50%);
+  background:rgba(110,194,201,.36);border-left:2px solid #7ec272;border-right:2px solid #7ec272;
 }
 .neo-fishing-needle{
-  position:absolute;top:0;bottom:0;width:6px;transform:translateX(-50%);
-  background:#f5c451;box-shadow:0 0 8px #fff0a6;
+  position:absolute;top:2px;bottom:2px;width:8px;margin-left:-4px;
+  border-radius:4px;background:#f5c451;box-shadow:0 0 8px #fff0a6;
 }
-.neo-bite-btn{background:#7ec272!important}
+.neo-bite-btn{background:linear-gradient(180deg,#7ec272,#376e4d)!important;color:#fff!important}
+
 .neo-catch-card{
-  display:flex;align-items:center;gap:12px;padding:12px 16px;
-  border-radius:6px;background:#25423d;border:2px solid #f5c451;text-align:left;
+  display:flex;align-items:center;gap:12px;padding:12px;
+  border-radius:6px;background:#163d4a;border:1.5px solid #6ec2c9;
 }
-.neo-catch-card span{font-size:32px}
-.neo-minigame-actions{display:flex;gap:12px;align-items:center;flex-wrap:wrap;justify-content:center}
+.neo-catch-card span{font-size:28px}
+.neo-catch-card b{color:#fff0a6;font-size:14px}
+.neo-catch-card p{margin:2px 0 0;font-size:12px;color:#e6f4f5}
 
 .neo-race-track{
-  display:grid;grid-template-columns:repeat(3,84px);height:240px;
-  border:3px solid #7d5136;border-radius:6px;background:#23323d;overflow:hidden;
+  display:grid;grid-template-columns:repeat(3,1fr);
+  height:230px;max-width:340px;border:3px solid #6ec2c9;border-radius:8px;
+  background:linear-gradient(180deg,#12202c,#1c3442);overflow:hidden;
 }
-.neo-race-lane{position:relative;border-right:1px dashed rgba(255,240,166,.2)}
+.neo-race-lane{position:relative;border-right:1px dashed rgba(110,194,201,.3)}
 .neo-race-lane:last-child{border-right:0}
-.neo-race-entity{position:absolute;left:50%;transform:translateX(-50%);font-size:22px}
-.neo-race-player{position:absolute;bottom:14px;left:50%;transform:translateX(-50%);font-size:26px}
+.neo-race-entity{position:absolute;left:50%;transform:translateX(-50%);font-size:20px}
+.neo-race-player{position:absolute;bottom:12px;left:50%;transform:translateX(-50%);font-size:24px}
 
-.neo-circuit-grid{display:grid;grid-template-columns:repeat(3,84px);gap:10px}
+.neo-circuit-grid{
+  display:grid;grid-template-columns:repeat(3,88px);gap:10px;
+}
 .neo-circuit-node{
-  height:78px;border:2px solid #fff0a6;border-radius:8px;cursor:pointer;
-  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;
-  font-size:24px;color:#fff;
+  height:78px;border-radius:8px;border:2px solid #5c755d;
+  background:#13242b;color:#dce5cf;font-size:22px;font-weight:900;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;cursor:pointer;
 }
-.neo-circuit-node small{font-size:9px}
-.neo-circuit-node.state-0{background:#236373}
-.neo-circuit-node.state-1{background:#6b5399}
-.neo-circuit-node.state-2{background:#cf9132;color:#1c262b}
+.neo-circuit-node small{font-size:10px}
+.neo-circuit-node.state-1{border-color:#6ec2c9;color:#6ec2c9}
+.neo-circuit-node.state-2{border-color:#f5c451;background:#3a3119;color:#fff0a6}
 
-.neo-arcade-card{display:grid;grid-template-columns:1.2fr .8fr;gap:14px}
-.neo-arcade-screen{padding:20px;border:3px solid #6b5399;border-radius:8px;background:#1b2e33;text-align:center}
-.neo-arcade-top{display:flex;justify-content:space-between;font-size:10px;color:#78cbd1;font-weight:800}
-.neo-sequence-preview{display:flex;justify-content:center;gap:12px;min-height:26px;margin:12px 0}
-.neo-sequence-preview span{font-size:22px;color:#fff0a6}
-.neo-pad-grid{display:grid;grid-template-columns:repeat(2,88px);justify-content:center;gap:10px;margin:16px auto}
-.neo-pad{height:76px;border:3px solid #1c262b;border-radius:8px;font-size:28px;cursor:pointer}
-.pad-0{background:#6ec2c9}.pad-1{background:#957bc7}.pad-2{background:#7ec272}.pad-3{background:#f5c451}
-.neo-game-start{
-  border:2px solid #fff0a6;border-radius:6px;padding:10px 15px;
-  background:#f5c451;color:#232e26;font-weight:900;cursor:pointer;
+.neo-arcade-card{
+  display:grid;grid-template-columns:1.1fr .9fr;gap:16px;
+  padding:18px;border:2px solid #6b5399;border-radius:8px;background:#1a2234;
 }
-.neo-arcade-info{padding:18px;border:2px solid #5c755d;border-radius:8px;background:#223b37}
-.neo-arcade-info ol{padding-left:18px;font-size:12px;line-height:1.9;color:#cbd5be}
+.neo-arcade-screen{
+  padding:16px;border-radius:8px;background:#101624;border:2px solid #957bc7;
+  display:flex;flex-direction:column;gap:12px;
+}
+.neo-arcade-top{display:flex;justify-content:space-between;font-size:11px;font-weight:900;color:#c7b3eb}
+.neo-sequence-preview{min-height:34px;display:flex;gap:10px;justify-content:center;align-items:center;font-size:22px;color:#fff0a6}
+.neo-pad-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+.neo-pad{
+  height:68px;border-radius:8px;border:2px solid rgba(255,255,255,.25);
+  font-size:24px;color:#fff;cursor:pointer;background:#222c44;
+}
+.neo-pad.pad-0{border-color:#6ec2c9}
+.neo-pad.pad-1{border-color:#f5c451}
+.neo-pad.pad-2{border-color:#7ec272}
+.neo-pad.pad-3{border-color:#c7b3eb}
+.neo-pad.selected{background:#388e99;border-color:#fff0a6}
+.neo-game-start{
+  border:2px solid #fff0a6;border-radius:6px;padding:10px;
+  background:linear-gradient(180deg,#f5c451,#cf9132);
+  color:#232e26;font-weight:900;cursor:pointer;
+}
+.neo-game-start:disabled{opacity:.5;cursor:not-allowed}
+.neo-arcade-info{display:flex;flex-direction:column;gap:8px;justify-content:center}
+.neo-arcade-info span{font-size:10px;font-weight:900;letter-spacing:1.5px;color:#f5c451}
+.neo-arcade-info h3{margin:0;font-size:20px;color:#fff8e3}
+.neo-arcade-info ol{margin:0;padding-left:18px;color:#cbd5bd;font-size:13px;line-height:1.6}
 
 /* FESTIVAIS E COLEÇÕES */
-.neo-festivals-grid,.neo-collections-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
-.neo-festival-card,.neo-col-box{
-  padding:16px;border:2px solid #5c755d;border-radius:8px;background:#223b37;
-  display:flex;flex-direction:column;gap:8px;
+.neo-festival-card.current{border-color:#f5c451;background:#243a33}
+.neo-fest-top{display:flex;justify-content:space-between;align-items:center;font-size:10px;font-weight:900;color:#f5c451}
+.neo-festival-card small{color:#b2de8e;font-size:11px;font-weight:700}
+
+.neo-col-box h3{margin:0 0 4px;font-size:15px;color:#fff8e3}
+.neo-col-chips{display:flex;flex-wrap:wrap;gap:6px}
+.neo-col-chips span{
+  padding:5px 9px;border-radius:5px;font-size:11px;font-weight:800;
+  border:1px solid #5c755d;background:#162725;color:#cbd5bd;
 }
-.neo-festival-card.current{border-color:#f5c451;background:#28463f}
-.neo-fest-top{display:flex;justify-content:space-between;font-size:10px;font-weight:900;color:#f5c451}
-.neo-festival-card button{
-  align-self:flex-start;border:2px solid #fff0a6;border-radius:5px;padding:7px 12px;
-  background:#f5c451;color:#232e26;font-size:11px;font-weight:900;cursor:pointer;
-}
-.neo-col-chips{display:flex;gap:8px;flex-wrap:wrap}
-.neo-col-chips span{padding:6px 10px;border-radius:5px;font-size:11px;font-weight:700}
-.neo-col-chips span.found{background:#2d544b;border:1px solid #7ec272;color:#f6f1dc}
-.neo-col-chips span.missing{background:#182927;border:1px dashed #556b60;color:#8fa196}
+.neo-col-chips span.found{border-color:#7ec272;background:#23443b;color:#eef7df}
+.neo-col-chips span.missing{opacity:.65}
 
 /* EDITOR DE PERSONAGEM */
-.neo-avatar-editor{display:grid;grid-template-columns:320px 1fr;gap:16px}
+.neo-avatar-editor{
+  display:grid;grid-template-columns:300px 1fr;gap:16px;
+  padding:18px;border:2px solid #4c6654;border-radius:8px;background:#1f3431;
+}
 .neo-avatar-preview-card{
-  padding:18px;border:2px solid #6b856b;border-radius:8px;background:#203633;
-  display:flex;flex-direction:column;align-items:center;gap:14px;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;
+  padding:16px;border-radius:8px;background:#152524;border:1.5px solid #6b856b;
 }
-.neo-avatar-turntable{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;width:100%}
+.neo-avatar-turntable{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
 .neo-turn-box{
-  padding:10px;border-radius:6px;background:#172826;border:1px solid #526e58;
   display:flex;flex-direction:column;align-items:center;gap:4px;
+  padding:8px 12px;border-radius:6px;background:#1f3431;border:1px solid #4c6654;
 }
-.neo-turn-box small{font-size:9px;color:#b2de8e;font-weight:800}
+.neo-turn-box small{font-size:9px;font-weight:900;color:#f5c451}
 .neo-download-btn{
-  text-decoration:none;border:2px solid #fff0a6;border-radius:5px;
-  background:#f5c451;color:#232e26;padding:8px 12px;font-size:11px;font-weight:900;
+  display:inline-block;text-decoration:none;
+  border:2px solid #fff0a6;border-radius:6px;padding:8px 12px;
+  background:#388e99;color:#fff8e3;font-size:11px;font-weight:900;
 }
-.neo-avatar-controls{
-  padding:18px;border:2px solid #6b856b;border-radius:8px;background:#203633;
-  display:flex;flex-direction:column;gap:14px;
-}
-.neo-avatar-controls label{display:block;font-size:11px;font-weight:900;color:#f5c451;margin-bottom:6px}
-.neo-option-row{display:flex;gap:8px;flex-wrap:wrap}
+
+.neo-avatar-controls{display:flex;flex-direction:column;gap:12px}
+.neo-avatar-controls label{display:block;font-size:11px;font-weight:900;color:#f5c451;margin-bottom:5px;text-transform:uppercase;letter-spacing:.8px}
+.neo-option-row{display:flex;gap:7px;flex-wrap:wrap}
 .neo-option-row button{
-  border:2px solid #5c755d;border-radius:5px;padding:7px 12px;
-  background:#172826;color:#e8efda;font-size:11px;font-weight:800;cursor:pointer;
+  border:1.5px solid #6b856b;border-radius:5px;padding:7px 11px;
+  background:#162725;color:#dce5cf;font-size:11px;font-weight:800;cursor:pointer;
 }
 .neo-option-row button.active{background:#388e99;border-color:#fff0a6;color:#fff}
 
-.neo-empty-inventory{text-align:center;padding:36px 16px;border:2px dashed #7d5136;border-radius:8px;background:#1e3431}
-.neo-footer{display:flex;justify-content:space-between;align-items:center;gap:10px;border-top:2px solid #445e4c;padding-top:14px;color:#a5b59b;font-size:10px;flex-wrap:wrap}
-
-@keyframes neo-float{from{transform:translateY(0)}to{transform:translateY(-2px)}}
-
-@media(max-width:900px){
-  .neo-hero,.neo-arcade-card,.neo-avatar-editor{grid-template-columns:1fr}
-  .neo-hero-right{align-items:flex-start}
-  .neo-quests-grid,.neo-district-grid,.neo-shop-grid,.neo-inventory-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+/* RODAPÉ */
+.neo-footer{
+  display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;
+  padding:14px 16px;border-top:2px solid #4c6654;
+  color:#bdc8ae;font-size:11px;
 }
-@media(max-width:650px){
-  .neo-quests-grid,.neo-district-grid,.neo-shop-grid,.neo-inventory-grid,.neo-resident-grid,.neo-festivals-grid,.neo-collections-grid{grid-template-columns:1fr}
-  .neo-world-bubble{grid-template-columns:1fr}
+.neo-footer span{font-weight:900;color:#f5c451;letter-spacing:.8px}
+.neo-footer p{margin:0}
+
+@media (max-width:860px){
+  .neo-hero{grid-template-columns:1fr}
+  .neo-hero-right{align-items:flex-start}
+  .neo-arcade-card,.neo-avatar-editor{grid-template-columns:1fr}
 }
 `;
-
-/* NeoLifeCity — vida urbana e sprites originais dos assets do projeto */
-.neo-map-resident{
-  width:50px;height:58px;left:50%;bottom:0;transform:translateX(-50%);
-  display:flex;align-items:center;justify-content:flex-end;flex-direction:column;
-  gap:0;padding:0!important;border:0!important;border-radius:0!important;
-  background:transparent!important;box-shadow:none!important;outline:none;
-  appearance:none;cursor:pointer;z-index:24;
-  animation:neo-resident-idle 2.2s steps(2,end) infinite;
-}
-.neo-map-resident:hover{transform:translateX(-50%) translateY(-2px);filter:drop-shadow(0 0 7px rgba(89,232,255,.5))}
-.neo-resident-sprite.neo-authentic-sprite{
-  display:block;width:46px;height:48px;flex:0 0 48px;
-  background-repeat:no-repeat;background-size:400% 100%;
-  image-rendering:pixelated;filter:drop-shadow(0 3px 1px rgba(4,8,20,.8));
-}
-.neo-map-resident b{
-  position:absolute;top:-12px;left:50%;transform:translateX(-50%);
-  padding:2px 6px;border:1px solid rgba(151,224,255,.8);border-radius:5px;
-  background:rgba(14,22,48,.94);color:#f2f8ff;font:700 8px/1.2 system-ui,sans-serif;
-  text-shadow:0 1px 2px #050816;box-shadow:0 2px 8px rgba(0,0,0,.35);
-}
-.neo-world-tile{overflow:visible}
-.neo-city-life{position:absolute;inset:0;z-index:12;pointer-events:none;overflow:hidden}
-.neo-hovercar{position:absolute;width:13px;height:5px;border-radius:3px;background:linear-gradient(90deg,#7cf8ff,#f2a7ff);box-shadow:0 0 5px 2px rgba(84,225,255,.8),0 0 15px rgba(194,104,255,.55);opacity:0}
-.neo-hovercar::after{content:'';position:absolute;right:-9px;top:2px;width:10px;height:1px;background:#83f5ff;box-shadow:0 0 6px #83f5ff}
-.neo-hovercar-one{top:25%;left:-5%;animation:neo-traffic-east 18s linear infinite}
-.neo-hovercar-two{top:74%;left:105%;animation:neo-traffic-west 23s linear infinite 4s}
-.neo-hovercar-three{top:48%;left:-5%;transform:scale(.7);animation:neo-traffic-east 27s linear infinite 8s}
-.neo-city-drone{position:absolute;width:7px;height:4px;border-radius:3px;background:#f2c5ff;box-shadow:0 0 7px 2px #c56cff,0 0 14px #5eeeff}
-.neo-city-drone-one{left:35%;top:18%;animation:neo-drone-route-one 13s ease-in-out infinite alternate}
-.neo-city-drone-two{left:73%;top:58%;animation:neo-drone-route-two 17s ease-in-out infinite alternate}
-.neo-city-glow{position:absolute;width:48px;height:48px;border-radius:50%;background:radial-gradient(circle,rgba(84,238,255,.18),transparent 68%);animation:neo-city-pulse 3.5s ease-in-out infinite alternate}
-.city-glow-one{left:48%;top:37%}.city-glow-two{left:82%;top:58%;animation-delay:1.5s}
-@keyframes neo-traffic-east{0%{transform:translateX(0)}100%{transform:translateX(1150px)}}
-@keyframes neo-traffic-west{0%{transform:translateX(0) scaleX(-1)}100%{transform:translateX(-1150px) scaleX(-1)}}
-@keyframes neo-drone-route-one{0%{transform:translate(0,0)}50%{transform:translate(110px,24px)}100%{transform:translate(190px,-8px)}}
-@keyframes neo-drone-route-two{0%{transform:translate(0,0)}50%{transform:translate(-65px,-28px)}100%{transform:translate(65px,-45px)}}
-@keyframes neo-city-pulse{from{opacity:.15;transform:scale(.7)}to{opacity:.75;transform:scale(1.25)}}
-@keyframes neo-resident-idle{0%,100%{margin-bottom:0}50%{margin-bottom:1px}}
-@media(prefers-reduced-motion:reduce){.neo-hovercar,.neo-city-drone,.neo-city-glow,.neo-map-resident{animation:none!important}}
-.neo-door{background:transparent!important;border:0!important;box-shadow:none!important;opacity:0!important}
-.neo-building-sprite-sheet,.neo-scaffold-overlay,.neo-prop-sprite,.neo-plot-btn,.neo-spot-tag{display:none!important}
-.neo-map-resident::before,.neo-map-resident::after{display:none!important;content:none!important}
-.neo-map-resident{background-color:transparent!important;background-image:none!important}
