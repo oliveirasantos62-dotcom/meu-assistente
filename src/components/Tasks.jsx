@@ -15,6 +15,7 @@ const EMPTY_FORM = {
   tags: [],
   subtasks: [],
   subtaskColumns: [],
+  colorId: '',
 };
 
 const EMPTY_AREA = {
@@ -167,6 +168,8 @@ export default function Tasks({ data, save, completeTask }) {
   const [search, setSearch] = useState('');
 
   const [showForm, setShowForm] = useState(false);
+  const [showColorIndex, setShowColorIndex] = useState(false);
+  const [colorDraft, setColorDraft] = useState({ name: '', color: '#38bdf8' });
   const [showAreaForm, setShowAreaForm] = useState(false);
   const [showResetModal, setShowResetModal] = useState(false);
   const resetModalRef = useRef(null);
@@ -203,6 +206,10 @@ export default function Tasks({ data, save, completeTask }) {
   const projectsList = Array.isArray(data?.projects) ? data.projects : [];
   const areasList = Array.isArray(data?.areas) ? data.areas : [];
   const tagsList = Array.isArray(data?.tags) ? data.tags : [];
+  const colorIndex = Array.isArray(data?.colorIndex) ? data.colorIndex : [];
+  const saveColorIndex = (next) => save({ ...data, colorIndex: next });
+  const colorFor = (id) => colorIndex.find((c) => String(c.id) === String(id))?.color || '';
+  const colorPicker = (value, onChange, aria='Associar cor') => <select className='color-index-select' value={value || ''} onChange={(e) => onChange(e.target.value)} aria-label={aria}><option value=''>Sem cor</option>{colorIndex.map((c) => <option value={c.id} key={c.id}>{c.name}</option>)}</select>;
 
   // Localiza a área de uma tarefa.
   // Também reconhece tarefas antigas que guardavam o nome em "area".
@@ -340,13 +347,15 @@ export default function Tasks({ data, save, completeTask }) {
   const addSubtaskColumn = () => updateForm('subtaskColumns', [...(form.subtaskColumns || []), { id: createId(), title: '', items: [] }]);
   const updateSubtaskColumn = (columnId, changes) => setForm((prev) => ({ ...prev, subtaskColumns: (prev.subtaskColumns || []).map((col) => col.id === columnId ? { ...col, ...changes } : col) }));
   const deleteSubtaskColumn = (columnId) => setForm((prev) => ({ ...prev, subtaskColumns: (prev.subtaskColumns || []).filter((col) => col.id !== columnId) }));
-  const addSubtaskColumnItem = (columnId) => updateSubtaskColumn(columnId, { items: [...((form.subtaskColumns || []).find(c => c.id === columnId)?.items || []), { id: createId(), text: '', done: false }] });
+  const addSubtaskColumnItem = (columnId) => updateSubtaskColumn(columnId, { items: [...((form.subtaskColumns || []).find(c => c.id === columnId)?.items || []), { id: createId(), text: '', done: false, colorId: '' }] });
   const updateSubtaskColumnItem = (columnId, itemId, text) => updateSubtaskColumn(columnId, { items: ((form.subtaskColumns || []).find(c => c.id === columnId)?.items || []).map(item => item.id === itemId ? { ...item, text } : item) });
   const toggleFormColumnItem = (columnId, itemId) => updateSubtaskColumn(columnId, { items: ((form.subtaskColumns || []).find(c => c.id === columnId)?.items || []).map(item => item.id === itemId ? { ...item, done: !item.done } : item) });
   const toggleTaskColumnItem = (task, columnId, itemId) => {
     const subtaskColumns = (task.subtaskColumns || []).map(column => column.id !== columnId ? column : { ...column, items: (column.items || []).map(item => item.id === itemId ? { ...item, done: !item.done } : item) });
     save({ ...data, tasks: tasksList.map(item => item.id === task.id ? { ...item, subtaskColumns, updatedAt: new Date().toISOString() } : item) });
   };
+  const setFormColumnItemColor = (columnId, itemId, colorId) => updateSubtaskColumn(columnId, { items: ((form.subtaskColumns || []).find(c => c.id === columnId)?.items || []).map(item => item.id === itemId ? { ...item, colorId } : item) });
+  const setFormSubtaskColor = (id, colorId) => updateFormSubtask(id, { colorId });
   const deleteSubtaskColumnItem = (columnId, itemId) => updateSubtaskColumn(columnId, { items: ((form.subtaskColumns || []).find(c => c.id === columnId)?.items || []).filter(item => item.id !== itemId) });
 
   const renderIndependentSubtaskColumns = () => (form.subtaskColumns || []).map((column) => (
@@ -358,7 +367,7 @@ export default function Tasks({ data, save, completeTask }) {
       {(column.items || []).map((item) => (
         <div className='subtask-independent-item' key={item.id}>
           <input type='checkbox' checked={!!item.done} aria-label='Marcar item' onChange={() => toggleFormColumnItem(column.id, item.id)} />
-          <input value={item.text || ''} placeholder='Item...' onChange={(e) => updateSubtaskColumnItem(column.id, item.id, e.target.value)} />
+          <input value={item.text || ''} placeholder='Item...' onChange={(e) => updateSubtaskColumnItem(column.id, item.id, e.target.value)} />{colorPicker(item.colorId, (colorId) => setFormColumnItemColor(column.id, item.id, colorId), 'Cor do item')}
           <button type='button' className='ghost' title='Excluir item' onClick={() => deleteSubtaskColumnItem(column.id, item.id)}>×</button>
         </div>
       ))}
@@ -384,6 +393,7 @@ export default function Tasks({ data, save, completeTask }) {
             onChange={() => toggleFormSubtask(subtask.id)}
             aria-label={`Concluir ${subtask.title}`}
           />
+          {colorPicker(subtask.colorId, (colorId) => setFormSubtaskColor(subtask.id, colorId), 'Cor da subtarefa')}
           <input
             className='subtask-edit-name'
             type='text'
@@ -1512,7 +1522,7 @@ export default function Tasks({ data, save, completeTask }) {
                   checked={Boolean(subtask.done)}
                   onChange={() => toggleTaskSubtask(task, subtask.id)}
                 />
-                <span>{subtask.title}</span>
+                <span style={{ color: colorFor(subtask.colorId) || undefined }}>{subtask.title}</span>
               </label>
               {(hasNote || hasChildren) && (
                 <button
@@ -1576,6 +1586,14 @@ export default function Tasks({ data, save, completeTask }) {
           ＋ Nova tarefa
         </button>
       </div>
+
+      <section className='color-index-panel'>
+        <button type='button' className='secondary' onClick={() => setShowColorIndex(v => !v)}>{showColorIndex ? '▾ Ocultar índice de cores' : '▸ Índice de cores'}</button>
+        {showColorIndex && <div className='color-index-content'><p className='subtitle'>Crie cores e associe um significado. Depois use o seletor de cor nas tarefas, subtarefas e itens de coluna.</p>
+          {(colorIndex || []).map(c => <div className='color-index-row' key={c.id}><span className='color-index-swatch' style={{background:c.color}}/><strong>{c.name}</strong><input type='color' value={c.color} aria-label={`Editar cor ${c.name}`} onChange={e=>saveColorIndex(colorIndex.map(x=>x.id===c.id?{...x,color:e.target.value}:x))}/><button type='button' className='ghost' onClick={()=>saveColorIndex(colorIndex.filter(x=>x.id!==c.id))}>Excluir</button></div>)}
+          <div className='color-index-add'><input value={colorDraft.name} placeholder='Significado (ex.: urgente)' onChange={e=>setColorDraft(v=>({...v,name:e.target.value}))}/><input type='color' value={colorDraft.color} onChange={e=>setColorDraft(v=>({...v,color:e.target.value}))}/><button type='button' className='secondary' disabled={!colorDraft.name.trim()} onClick={()=>{saveColorIndex([...colorIndex,{id:createId(),name:colorDraft.name.trim(),color:colorDraft.color}]);setColorDraft({name:'',color:'#38bdf8'});}}>＋ Adicionar</button></div>
+        </div>}
+      </section>
 
       {/* INDICADORES */}
       <div className='metrics personal-metrics'>
@@ -2147,7 +2165,7 @@ export default function Tasks({ data, save, completeTask }) {
 
                     <div className='task-content'>
                       <div className='task-title-row'>
-                        <strong className='task-name'>
+                        <strong className='task-name' style={{ color: colorFor(task.colorId) || undefined, borderLeft: colorFor(task.colorId) ? `3px solid ${colorFor(task.colorId)}` : undefined, paddingLeft: colorFor(task.colorId) ? 6 : undefined }}>
                           {task.name}
                           {cancelled && (
                             <span className='status-chip status-cancelled'>
@@ -2157,7 +2175,8 @@ export default function Tasks({ data, save, completeTask }) {
                             </span>
                           )}
                         </strong>
-                        {((Array.isArray(task.subtasks) && task.subtasks.length > 0) || (Array.isArray(task.subtaskColumns) && task.subtaskColumns.length > 0)) && (
+                        {Array.isArray(task.subtasks) &&
+                          task.subtasks.length > 0 && (
                             <button
                               type='button'
                               className={`task-subtasks-toggle ${collapsedSubtasks[task.id] ? 'is-collapsed' : ''}`}
@@ -2185,12 +2204,12 @@ export default function Tasks({ data, save, completeTask }) {
                       {task.description && (
                         <p className='subtitle'>{task.description}</p>
                       )}
-                      {Array.isArray(task.subtaskColumns) && task.subtaskColumns.length > 0 && !collapsedSubtasks[task.id] && (
+                      {Array.isArray(task.subtaskColumns) && task.subtaskColumns.length > 0 && (
                         <div className='task-independent-columns-display'>
                           {task.subtaskColumns.map((column) => (
                             <section className='task-independent-column-display' key={column.id}>
                               <strong>{column.title || 'Coluna'}</strong>
-                              {(column.items || []).map((item) => <label className={`task-independent-column-item${item.done ? ' is-done' : ''}`} key={item.id}><input type='checkbox' checked={!!item.done} onChange={() => toggleTaskColumnItem(task, column.id, item.id)} /><span>{item.text || '—'}</span></label>)}
+                              {(column.items || []).map((item) => <label className={`task-independent-column-item${item.done ? ' is-done' : ''}`} key={item.id}><input type='checkbox' checked={!!item.done} onChange={() => toggleTaskColumnItem(task, column.id, item.id)} /><span style={{ color: colorFor(item.colorId) || undefined }}>{item.text || '—'}</span></label>)}
                             </section>
                           ))}
                         </div>
@@ -2661,6 +2680,10 @@ export default function Tasks({ data, save, completeTask }) {
               />
             </label>
 
+            <label>
+              Cor da tarefa
+              {colorPicker(form.colorId, (colorId) => updateForm('colorId', colorId), 'Cor da tarefa')}
+            </label>
             <label>
               Descrição
               <textarea
@@ -3894,6 +3917,13 @@ export default function Tasks({ data, save, completeTask }) {
         .tasks-page .subtask-editor, .tasks-page .area-preview, .tasks-page .observation-panel { border-color: rgba(103,123,190,.25); background: rgba(10,16,34,.58); }
         .tasks-page .area-card { border-color: rgba(103,123,190,.25); background: linear-gradient(145deg,rgba(25,32,63,.86),rgba(12,17,36,.92)); }
         .tasks-page .daily-row { border-color: rgba(103,123,190,.20); }
+        .tasks-page .color-index-panel { margin: 12px 0; padding: 12px; border: 1px solid rgba(34,211,238,.18); border-radius: 12px; }
+        .tasks-page .color-index-content { display:flex; flex-direction:column; gap:10px; margin-top:10px; }
+        .tasks-page .color-index-row,.tasks-page .color-index-add { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+        .tasks-page .color-index-row input[type=color],.tasks-page .color-index-add input[type=color] { width:40px; height:32px; padding:2px; }
+        .tasks-page .color-index-swatch { width:18px; height:18px; border-radius:50%; border:1px solid rgba(255,255,255,.3); flex:0 0 18px; }
+        .tasks-page .color-index-select { max-width:150px; width:auto; min-width:110px; }
+        .tasks-page .color-index-add input:not([type=color]) { flex:1; min-width:160px; }
         .tasks-page button:focus-visible, .tasks-page input:focus-visible, .tasks-page select:focus-visible { outline-color: #22d3ee; }
         @media (max-width: 1000px) { .tasks-page .metrics { grid-template-columns: repeat(3,minmax(0,1fr)); } .tasks-page .tasks-toolbar { grid-template-columns: repeat(2,minmax(0,1fr)); } .cyber-analytics-grid { grid-template-columns: repeat(2,minmax(0,1fr)); } }
         @media (max-width: 620px) { .tasks-page { padding: 12px; border-radius: 12px; } .tasks-page .metrics { grid-template-columns: repeat(2,minmax(0,1fr)); } .cyber-overview-strip { grid-template-columns: 1fr; gap: 10px; } .tasks-page .tasks-toolbar { grid-template-columns: 1fr; } .cyber-agenda-day { grid-template-columns: 1fr; gap: 7px; } .cyber-automation-panel { align-items: stretch; flex-direction: column; } .cyber-primary-button { width: 100%; } .cyber-priority-list > div { grid-template-columns: 25px minmax(0,1fr); } .cyber-priority-list small { grid-column: 2; } .cyber-analytics-grid { grid-template-columns: 1fr 1fr; } }
