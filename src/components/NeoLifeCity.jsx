@@ -1731,6 +1731,9 @@ export default function NeoLifeCity({ data = {}, save, onNavigate }) {
 
   // Posição e navegação no mundo & casa
   const [player, setPlayer] = useState(() => cityWorldStart(data));
+  const worldViewportRef = useRef(null);
+  const [worldZoom, setWorldZoom] = useState(1.15);
+  const [cameraOffset, setCameraOffset] = useState({ x: 0, y: 0 });
   const [insideBuilding, setInsideBuilding] = useState(null);
   const [homeRoomIndex, setHomeRoomIndex] = useState(0);
   const [decorateMode, setDecorateMode] = useState(false);
@@ -2920,6 +2923,22 @@ export default function NeoLifeCity({ data = {}, save, onNavigate }) {
 
       const key = event.key.toLowerCase();
 
+      if (key === '+' || key === '=') {
+        event.preventDefault();
+        setWorldZoom((z) => Math.min(1.75, +(z + 0.12).toFixed(2)));
+        return;
+      }
+      if (key === '-' || key === '_') {
+        event.preventDefault();
+        setWorldZoom((z) => Math.max(0.78, +(z - 0.12).toFixed(2)));
+        return;
+      }
+      if (key === '0') {
+        event.preventDefault();
+        setWorldZoom(1.15);
+        return;
+      }
+
       if (
         activeTab === 'arcade' &&
         minigameMode === 'hoverboard' &&
@@ -2990,6 +3009,43 @@ export default function NeoLifeCity({ data = {}, save, onNavigate }) {
       persistCity({ ...city, world: { ...(city.world || {}), player } });
     }
   }, [player.x, player.y]);
+
+  useEffect(() => {
+    if (insideBuilding || activeTab !== 'explore') return;
+    const viewport = worldViewportRef.current;
+    if (!viewport) return;
+
+    const updateCamera = () => {
+      const worldWidth = 1008 * worldZoom;
+      const worldHeight = 567 * worldZoom;
+      const playerX = (player.x + 0.5) * 50.4 * worldZoom;
+      const playerY = (player.y + 0.5) * 47.25 * worldZoom;
+      const targetX = viewport.clientWidth / 2 - playerX;
+      const targetY = viewport.clientHeight / 2 - playerY;
+      const left = Math.min(0, Math.max(viewport.clientWidth - worldWidth, targetX));
+      const top = Math.min(0, Math.max(viewport.clientHeight - worldHeight, targetY));
+      setCameraOffset({ x: left, y: top });
+    };
+
+    updateCamera();
+    window.addEventListener('resize', updateCamera);
+    return () => window.removeEventListener('resize', updateCamera);
+  }, [player.x, player.y, worldZoom, insideBuilding, activeTab]);
+
+  useEffect(() => {
+    const savedZoom = Number(city.world?.zoom);
+    if (Number.isFinite(savedZoom) && savedZoom >= 0.78 && savedZoom <= 1.75) {
+      setWorldZoom(savedZoom);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (worldZoom === 1 && !city.world?.zoom) return;
+    persistCity({
+      ...city,
+      world: { ...(city.world || {}), player, zoom: worldZoom },
+    });
+  }, [worldZoom]);
 
   const enterBuilding = (building) => {
     const district = DISTRICTS.find((item) => item.id === building.district);
@@ -3728,6 +3784,21 @@ export default function NeoLifeCity({ data = {}, save, onNavigate }) {
                 <div className='neo-toolbar-btns'>
                   <button
                     type='button'
+                    onClick={() => setWorldZoom((z) => Math.max(0.78, +(z - 0.12).toFixed(2)))}
+                    title='Afastar câmera'
+                  >
+                    −
+                  </button>
+                  <button
+                    type='button'
+                    onClick={() => setWorldZoom((z) => Math.min(1.75, +(z + 0.12).toFixed(2)))}
+                    title='Aproximar câmera'
+                  >
+                    +
+                  </button>
+                  <span aria-live='polite'>{Math.round(worldZoom * 100)}%</span>
+                  <button
+                    type='button'
                     onClick={() =>
                       setCityEventIndex((i) => (i + 1) % CITY_EVENTS.length)
                     }
@@ -3793,12 +3864,33 @@ export default function NeoLifeCity({ data = {}, save, onNavigate }) {
                 </div>
               </div>
 
-              <div className='neo-world-scroll'>
+              <div
+                className='neo-world-scroll'
+                ref={worldViewportRef}
+                onWheel={(event) => {
+                  event.preventDefault();
+                  setWorldZoom((z) =>
+                    Math.max(0.78, Math.min(1.75, +(z + (event.deltaY < 0 ? 0.08 : -0.08)).toFixed(2))),
+                  );
+                }}
+              >
                 <div
-                  className={`neo-world-map period-${currentPeriod} weather-${weatherId} evo-tier-${cityEvolution.tier} ${lightningFlash ? 'lightning-flash' : ''}`}
-                  role='application'
-                  aria-label='Mapa 16-bit do Vale Neo'
+                  className='neo-world-camera-plane'
+                  style={{
+                    width: `${1008 * worldZoom}px`,
+                    height: `${567 * worldZoom}px`,
+                    transform: `translate3d(${cameraOffset.x}px, ${cameraOffset.y}px, 0)`,
+                  }}
                 >
+                  <div
+                    className={`neo-world-map period-${currentPeriod} weather-${weatherId} evo-tier-${cityEvolution.tier} ${lightningFlash ? 'lightning-flash' : ''}`}
+                    role='application'
+                    aria-label='Mapa 16-bit do Vale Neo'
+                    style={{
+                      transform: `scale(${worldZoom})`,
+                      transformOrigin: '0 0',
+                    }}
+                  >
                   {/* CAMADA DE TRÂNSITO URBANO: CARROS, BICICLETAS, DRONES E VLT */}
                   <div className='neo-city-life' aria-hidden='true'>
                     {TRANSIT_STOPS.map((stop) => (
@@ -4159,6 +4251,7 @@ export default function NeoLifeCity({ data = {}, save, onNavigate }) {
                     );
                   })}
                 </div>
+              </div>
               </div>
 
               {citizenBubble && (
@@ -5909,9 +6002,15 @@ const styles = `
 
 /* MAPA 16-BIT, ILUMINAÇÃO DINÂMICA E CENÁRIO WEBP */
 .neo-world-scroll{
-  overflow:auto;padding:12px;border:3px solid #53618f;border-radius:8px;
+  overflow:hidden;position:relative;height:min(62vh,520px);min-height:390px;
+  padding:0;border:3px solid #53618f;border-radius:8px;
   background:radial-gradient(ellipse at 50% 40%,#20264d,#101629 72%);
   box-shadow:inset 0 0 24px rgba(61,104,255,.18);
+}
+.neo-world-camera-plane{
+  position:absolute;left:0;top:0;
+  transition:transform .18s ease-out;
+  will-change:transform;
 }
 .neo-world-map{
   position:relative;display:grid;
