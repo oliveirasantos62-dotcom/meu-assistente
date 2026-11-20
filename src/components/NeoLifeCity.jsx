@@ -632,7 +632,7 @@ export default function NeoLifeCity({ data = {}, save, onNavigate }) {
               <p>
                 {insideBuilding
                   ? insideBuilding.description
-                  : 'Caminhe livremente, descubra os distritos e entre nos prédios. Use WASD ou as setas do teclado; no celular, use os controles direcionais.'}
+                  : 'Explore trilhas, jardins bio-luminescentes e pequenos bairros tecnológicos. Use WASD ou as setas; no celular, use os controles direcionais.'}
               </p>
             </div>
             <div className='neo-level-chip'>
@@ -645,7 +645,7 @@ export default function NeoLifeCity({ data = {}, save, onNavigate }) {
           {!insideBuilding ? (
             <>
               <div className='neo-world-toolbar'>
-                <span>🌙 NEO-CITY • CICLO NOTURNO</span>
+                <span>✦ VALE NEO • FIM DE TARDE</span>
                 <span>WASD / SETAS • E PARA ENTRAR</span>
                 <button onClick={() => setPlayer({ x: 8, y: 6 })}>
                   Voltar à praça central
@@ -664,6 +664,8 @@ export default function NeoLifeCity({ data = {}, save, onNavigate }) {
                       (b) =>
                         x >= b.x && x < b.x + b.w && y >= b.y && y < b.y + b.h,
                     );
+                    const isBuildingAnchor =
+                      building && x === building.x && y === building.y;
                     const door = WORLD_BUILDINGS.find(
                       (b) => b.door.x === x && b.door.y === y,
                     );
@@ -671,22 +673,62 @@ export default function NeoLifeCity({ data = {}, save, onNavigate }) {
                     const isPark =
                       (x >= 5 && x <= 6 && y >= 1 && y <= 3) ||
                       (x >= 12 && x <= 13 && y >= 8 && y <= 10);
+                    const isWater =
+                      (x >= 0 && x <= 2 && y >= 0 && y <= 2) ||
+                      (x >= 15 && x <= 17 && y >= 9 && y <= 11);
+                    const isPath =
+                      !isRoad &&
+                      !building &&
+                      !isWater &&
+                      ((y === 4 && x > 2 && x < 16) ||
+                        (y === 7 && x > 2 && x < 16) ||
+                        (x === 4 && y > 2 && y < 10));
                     const playerHere = player.x === x && player.y === y;
+                    const prop =
+                      !building &&
+                      !isWater &&
+                      !isRoad &&
+                      !isPath &&
+                      (x * 7 + y * 11) % 9 === 0;
                     return (
                       <div
                         key={`${x}-${y}`}
-                        className={`neo-world-tile ${isRoad ? 'road' : isPark ? 'park' : 'ground'} ${building ? 'building-tile' : ''} ${door ? 'door-tile' : ''} ${playerHere ? 'player-tile' : ''}`}
+                        className={`neo-world-tile ${isWater ? 'water' : isRoad ? 'road' : isPath ? 'path' : isPark ? 'park' : 'ground'} ${building ? 'building-tile' : ''} ${door ? 'door-tile' : ''} ${playerHere ? 'player-tile' : ''}`}
                         style={{ gridColumn: x + 1, gridRow: y + 1 }}
                       >
-                        {building &&
-                        x === building.x + 1 &&
-                        y === building.y ? (
-                          <span className='neo-building-label'>
-                            {building.icon} {building.name}
+                        {isBuildingAnchor ? (
+                          <div
+                            className={`neo-building-sprite building-${building.id}`}
+                          >
+                            <div className='neo-building-roof'>
+                              <span className='roof-tech' />
+                            </div>
+                            <div className='neo-building-body'>
+                              <i />
+                              <i />
+                              <i />
+                              <b>{building.name}</b>
+                            </div>
+                            <div className='neo-building-base'>
+                              <span />
+                            </div>
+                          </div>
+                        ) : null}
+                        {!building && isWater && (x + y) % 3 === 0 ? (
+                          <span className='neo-water-shimmer' />
+                        ) : null}
+                        {!building &&
+                        !isWater &&
+                        isPark &&
+                        (x + y) % 2 === 0 ? (
+                          <span className='neo-tree'>
+                            <i />
+                            <b />
+                            <em />
                           </span>
                         ) : null}
-                        {isPark && !building && (x + y) % 2 === 0 ? (
-                          <span className='neo-tree'>🌳</span>
+                        {!building && !isWater && prop ? (
+                          <span className='neo-flower'>✦</span>
                         ) : null}
                         {door ? (
                           <button
@@ -694,7 +736,8 @@ export default function NeoLifeCity({ data = {}, save, onNavigate }) {
                             title={`Entrar em ${door.name}`}
                             onClick={() => enterBuilding(door)}
                           >
-                            🚪
+                            <span className='neo-door-light' />
+                            <span className='neo-door-frame' />
                           </button>
                         ) : null}
                         {playerHere ? (
@@ -702,7 +745,10 @@ export default function NeoLifeCity({ data = {}, save, onNavigate }) {
                             className={`neo-player ${lastDirection}`}
                             aria-label='Você'
                           >
-                            🧑‍🚀
+                            <i className='player-hair' />
+                            <i className='player-face' />
+                            <i className='player-coat' />
+                            <i className='player-shadow' />
                           </span>
                         ) : null}
                       </div>
@@ -1679,5 +1725,220 @@ const styles = `
   .neo-world-map{grid-template-columns:repeat(18,minmax(34px,1fr));grid-template-rows:repeat(12,44px);min-width:680px}
   .neo-building-list>div{grid-template-columns:1fr 1fr}
 }
+
+
+/* NEO VALLEY — reconstrução do cenário como RPG top-down de pixel art */
+.neo-world-toolbar{background:#263f36!important;border:3px solid #71845a!important;border-radius:4px!important;color:#f4e8bc!important;box-shadow:0 4px 0 #172a25}
+.neo-world-toolbar button{background:#d8c17c!important;border:2px solid #f2e4ac!important;border-radius:3px!important;color:#344438!important;box-shadow:0 3px 0 #82734a}
+.neo-world-scroll{padding:16px!important;border:4px solid #71865a!important;border-radius:5px!important;background:#263d35!important;box-shadow:inset 0 0 0 4px #172a27,0 7px 0 #14231f!important}
+.neo-world-map{position:relative;grid-template-columns:repeat(18,minmax(42px,1fr))!important;grid-template-rows:repeat(12,62px)!important;gap:0!important;min-width:850px!important;max-width:1180px!important;padding:8px!important;border:4px solid #526b49!important;border-radius:3px!important;background:#527e4b!important;box-shadow:0 0 0 3px #263d35,inset 0 0 0 3px rgba(242,224,153,.18)!important;image-rendering:pixelated}
+.neo-world-tile{position:relative!important;overflow:visible!important;border-radius:0!important;border:0!important;box-shadow:none!important;isolation:isolate}
+.neo-world-tile.ground{background-color:#659653!important;background-image:radial-gradient(#82b36a 1.5px,transparent 2px),radial-gradient(#4e8247 1px,transparent 2px),linear-gradient(135deg,rgba(255,255,190,.08),transparent 55%)!important;background-size:19px 17px,23px 21px,100% 100%!important}
+.neo-world-tile.park{background-color:#548d50!important;background-image:radial-gradient(#8ab86b 2px,transparent 2.5px),radial-gradient(#3d7445 2px,transparent 2.5px)!important;background-size:21px 19px,27px 25px!important}
+.neo-world-tile.road{background-color:#b9a071!important;background-image:repeating-linear-gradient(45deg,rgba(91,75,51,.15) 0 2px,transparent 2px 9px),linear-gradient(#c9b183,#aa9062)!important;border-top:2px solid #dfc995!important;border-bottom:2px solid #8c744e!important}
+.neo-world-tile.path{background-color:#c6ad79!important;background-image:radial-gradient(#9b8158 1px,transparent 2px),linear-gradient(135deg,#d8c18c,#b69a68)!important;background-size:13px 13px,100% 100%!important}
+.neo-world-tile.water{background-color:#397f91!important;background-image:repeating-linear-gradient(0deg,transparent 0 11px,rgba(156,225,218,.38) 12px 14px,transparent 15px 25px),linear-gradient(135deg,#397b8b,#285b78)!important;box-shadow:inset 0 0 0 2px rgba(166,226,204,.18)!important}
+.neo-water-shimmer{width:45%;height:3px;background:#b3e4c4;opacity:.65;box-shadow:0 0 7px #c2f4dc;transform:rotate(-12deg)}
+.neo-world-tile.building-tile{background:transparent!important;border:0!important;z-index:3}
+.neo-building-sprite{position:absolute;z-index:5;left:2px;top:2px;width:calc(300% - 4px);height:calc(200% - 3px);display:flex;flex-direction:column;filter:drop-shadow(0 5px 0 rgba(39,55,35,.55));pointer-events:none}
+.neo-building-roof{height:34%;position:relative;margin:0 2px;background:linear-gradient(180deg,#d7c18a 0 12%,#6d91a0 13% 70%,#456c72 71%);border:4px solid #354e48;border-bottom:3px solid #e4d39a;box-shadow:inset 0 4px rgba(255,255,255,.22),inset 0 -5px rgba(24,50,49,.24)}
+.neo-building-roof:before,.neo-building-roof:after{content:"";position:absolute;bottom:-9px;width:22%;height:12px;background:#d6c18b;border:3px solid #425a49}
+.neo-building-roof:before{left:7%}.neo-building-roof:after{right:7%}
+.roof-tech{position:absolute;right:12%;top:20%;width:28px;height:10px;background:#a6e5d4;border:3px solid #426a65;box-shadow:0 0 10px #9cebd4}
+.neo-building-body{flex:1;position:relative;display:flex;align-items:center;justify-content:space-evenly;background:linear-gradient(90deg,#d0b77f 0 8%,#9c9c75 9% 91%,#d8c28d 92%);border:4px solid #405748;border-top:0;box-shadow:inset 0 0 0 3px rgba(255,242,190,.25)}
+.neo-building-body i{display:block;width:17%;height:42%;background:#8dd6c8;border:4px solid #52685a;box-shadow:inset 0 0 0 3px #d4e6ad,0 0 8px rgba(116,233,207,.38)}
+.neo-building-body b{position:absolute;left:50%;bottom:4px;transform:translateX(-50%);white-space:nowrap;max-width:95%;overflow:hidden;text-overflow:ellipsis;padding:3px 7px;background:#344f42;border:2px solid #e2d29c;color:#fff0c4;font-size:9px;text-shadow:1px 1px #344438;letter-spacing:.2px}
+.neo-building-base{height:17%;background:repeating-linear-gradient(90deg,#9b815d 0 13px,#b69a6c 14px 26px);border:4px solid #405748;border-top:2px solid #e2ce91;position:relative}
+.neo-building-base span{position:absolute;left:44%;top:-22px;width:15%;height:24px;background:#594d3e;border:4px solid #ddc38b;border-bottom:0}
+.neo-world-tile.door-tile{z-index:7;background:transparent!important;border:0!important}
+.neo-door{position:relative;width:29px;height:35px;padding:0!important;background:transparent!important;border:0!important;filter:none!important;z-index:8;cursor:pointer}
+.neo-door-frame{position:absolute;left:3px;bottom:0;width:23px;height:30px;background:linear-gradient(90deg,#684f3a,#9b7850 45%,#614a36);border:4px solid #e2c88d;border-bottom:0;box-shadow:inset 0 0 0 2px #3d4c3a}
+.neo-door-light{position:absolute;left:9px;top:12px;width:10px;height:8px;background:#a8e8d2;z-index:2;box-shadow:0 0 9px #b5ffe1}
+.neo-tree{position:relative;width:47px;height:58px;display:block;font-size:0;filter:drop-shadow(3px 5px 0 rgba(38,57,35,.35));z-index:4}
+.neo-tree:before{content:"";position:absolute;left:18px;bottom:0;width:13px;height:24px;background:#806044;border:3px solid #4d563d;z-index:-1}
+.neo-tree i{position:absolute;left:4px;top:4px;width:39px;height:35px;background:#39734b;border:4px solid #31563e;box-shadow:inset 5px 5px #6fa65b,inset -5px -5px #2d6548}
+.neo-tree b{position:absolute;left:12px;top:-2px;width:27px;height:25px;background:#78a95b;border:4px solid #416b42;box-shadow:inset -4px -4px #54894c}
+.neo-tree em{position:absolute;left:0;top:19px;width:19px;height:18px;background:#5e984f;border:3px solid #386443}
+.neo-flower{font-size:15px;color:#ffe7a1;text-shadow:1px 2px #8e694d,0 0 5px #fff0a8;z-index:2}
+.neo-player{position:relative!important;display:block!important;width:28px;height:42px!important;font-size:0!important;z-index:12!important;filter:drop-shadow(2px 3px 0 rgba(31,48,36,.45))!important;animation:neo-player-bob .35s steps(2) infinite alternate!important}
+.neo-player .player-shadow{position:absolute;bottom:0;left:3px;width:23px;height:7px;background:rgba(34,48,34,.45);border-radius:50%;z-index:-1}
+.neo-player .player-hair{position:absolute;top:1px;left:7px;width:16px;height:12px;background:#394c53;border:2px solid #263c3d;border-radius:5px 5px 1px 1px}
+.neo-player .player-face{position:absolute;top:8px;left:8px;width:14px;height:12px;background:#e9bd91;border:2px solid #9a775f;box-shadow:inset 0 -3px #d69c79}
+.neo-player .player-coat{position:absolute;top:19px;left:4px;width:22px;height:18px;background:#75b9a8;border:3px solid #355e55;box-shadow:inset 0 -5px #4c8b7c}
+.neo-player.left{transform:scaleX(-1)}
+.neo-world-controls{background:#294438!important;border:3px solid #71865a!important;border-radius:4px!important;box-shadow:0 4px 0 #172b25}
+.neo-world-controls p{color:#e5e5bc!important}
+.neo-dpad button{border:2px solid #e2d29a!important;border-radius:3px!important;background:#66875a!important;color:#fff1c3!important;box-shadow:0 3px 0 #344e3c}
+.neo-building-list{background:#2c4639!important;border:3px solid #71865a!important;border-radius:4px!important;box-shadow:0 5px 0 #172b25}
+.neo-building-list button{background:#3b5946!important;border:2px solid #829768!important;border-radius:3px!important;color:#fff0c6!important;box-shadow:0 3px 0 #1b3329}
+.neo-building-list button small{color:#d4d9ad!important}
+.neo-interior{background:#2b4037!important;border:3px solid #75865a!important;border-radius:4px!important}
+.neo-interior-room{border:8px solid #765e43!important;border-radius:3px!important;background:repeating-linear-gradient(90deg,#b18c5f 0 34px,#a17b51 35px 38px)!important;box-shadow:inset 0 0 0 5px #e0c58c!important}
+.neo-interior-map{border:5px solid #6f563d!important;border-radius:2px!important;background:#9b7951!important}
+.neo-interior-tile{border-radius:0!important;background:#c5a477!important}
+.neo-interior-tile.wall{background:#68816a!important}
+@media(max-width:650px){.neo-world-map{grid-template-rows:repeat(12,52px)!important;min-width:790px!important}.neo-building-body b{font-size:8px}}
+
+
+/* NEOLIFECITY — direção visual baseada na referência: distrito cyberpunk em pixel art */
+.neo-world-toolbar{
+  background:linear-gradient(90deg,#17162e,#292044 55%,#161d38)!important;
+  border:2px solid #55528c!important;border-radius:3px!important;color:#a9f7ff!important;
+  box-shadow:0 0 16px #4c58a866,inset 0 0 18px #a54dff22!important;
+  text-shadow:0 0 8px #46eaff;
+}
+.neo-world-toolbar button,.neo-interior-header button{
+  background:linear-gradient(180deg,#3d2d65,#211d43)!important;
+  border:2px solid #a35de9!important;border-radius:2px!important;color:#e8d7ff!important;
+  box-shadow:0 0 10px #a34cff66,inset 0 0 8px #45eaff22!important;
+}
+.neo-world-scroll{
+  padding:12px!important;border:3px solid #4c477c!important;border-radius:3px!important;
+  background:radial-gradient(ellipse at 50% 40%,#414078 0,#1b1b37 58%,#090d1d 100%)!important;
+  box-shadow:inset 0 0 35px #050713,0 0 22px #6d54b955!important;
+}
+.neo-world-map{
+  grid-template-rows:repeat(12,64px)!important;grid-template-columns:repeat(18,minmax(46px,1fr))!important;
+  gap:0!important;min-width:900px!important;max-width:1220px!important;padding:7px!important;
+  border:3px solid #656092!important;border-radius:2px!important;
+  background:#25243e!important;image-rendering:pixelated;
+  box-shadow:inset 0 0 35px #080a19,0 0 24px #4d8bff33!important;
+}
+.neo-world-tile{
+  overflow:visible!important;border-radius:0!important;position:relative!important;
+  border:1px solid rgba(13,15,36,.22)!important;isolation:isolate;
+}
+.neo-world-tile.ground{
+  background-color:#45405d!important;
+  background-image:
+    linear-gradient(90deg,transparent 48%,rgba(161,143,190,.12) 49% 51%,transparent 52%),
+    linear-gradient(0deg,transparent 48%,rgba(161,143,190,.12) 49% 51%,transparent 52%),
+    radial-gradient(#81749a 1px,transparent 1.5px),
+    linear-gradient(135deg,#4c496b,#35334f)!important;
+  background-size:32px 32px,32px 32px,17px 17px,100% 100%!important;
+}
+.neo-world-tile.park{
+  background-color:#263d49!important;
+  background-image:radial-gradient(#4b927d 2px,transparent 3px),radial-gradient(#245c62 2px,transparent 3px),
+    linear-gradient(135deg,#345c62,#243c50)!important;
+  background-size:21px 19px,27px 25px,100% 100%!important;
+  box-shadow:inset 0 0 12px #49f5d322!important;
+}
+.neo-world-tile.road{
+  background-color:#292a43!important;
+  background-image:
+    linear-gradient(90deg,transparent 0 47%,#7e6c9b 48% 49%,transparent 50%),
+    repeating-linear-gradient(0deg,transparent 0 17px,rgba(255,110,202,.16) 18px 19px,transparent 20px 32px),
+    linear-gradient(135deg,#383650,#24263d)!important;
+  border:1px solid #5c557d!important;
+  box-shadow:inset 0 0 10px #090d20,0 0 5px #55dfff22!important;
+}
+.neo-world-tile.path{
+  background-color:#62516c!important;
+  background-image:repeating-linear-gradient(90deg,rgba(255,255,255,.04) 0 2px,transparent 2px 14px),
+    linear-gradient(135deg,#75617b,#514866)!important;
+}
+.neo-world-tile.water{
+  background-color:#174e6c!important;
+  background-image:repeating-linear-gradient(0deg,transparent 0 10px,rgba(73,226,255,.38) 11px 13px,transparent 14px 25px),
+    linear-gradient(135deg,#226b91,#192d5d)!important;
+  box-shadow:inset 0 0 14px #42d9ff55!important;
+}
+.neo-water-shimmer{height:3px;background:#8df4ff;box-shadow:0 0 7px #31dfff,0 0 15px #31dfff;opacity:.8}
+.neo-world-tile.building-tile{background:transparent!important;border:0!important;z-index:3}
+.neo-building-sprite{
+  filter:drop-shadow(0 5px 0 #090b1b) drop-shadow(0 0 8px #4a72ff66)!important;
+}
+.neo-building-roof{
+  background:linear-gradient(180deg,#f17bc5 0 9%,#514c83 10% 18%,#252b53 19% 75%,#394a75 76%)!important;
+  border:4px solid #24213f!important;border-bottom:3px solid #70dfff!important;
+  box-shadow:inset 0 4px #ffffff35,inset 0 -7px #11172f!important;
+}
+.neo-building-roof:before,.neo-building-roof:after{
+  background:#3d416b!important;border:3px solid #24213f!important;
+}
+.roof-tech{
+  background:#79f4ff!important;border:3px solid #3c4b7a!important;
+  box-shadow:0 0 8px #52eaff,0 0 18px #52eaff!important;
+}
+.neo-building-body{
+  background:linear-gradient(90deg,#292b50 0 8%,#536087 9% 16%,#292e54 17% 83%,#6a5b86 84% 91%,#292b50 92%)!important;
+  border:4px solid #22213d!important;border-top:0!important;
+  box-shadow:inset 0 0 0 3px #9a9ad433,inset 0 -8px #11182f!important;
+}
+.neo-building-body i{
+  width:19%!important;height:48%!important;background:#3de0f4!important;
+  border:4px solid #30345d!important;box-shadow:inset 0 0 0 3px #b7faff,0 0 9px #31dfff99!important;
+}
+.neo-building-body b{
+  background:#241d48!important;border:2px solid #ff77d8!important;color:#aefaff!important;
+  text-shadow:0 0 5px #39eaff,1px 1px #111!important;
+  box-shadow:0 0 9px #ff50d866!important;letter-spacing:.6px!important;
+}
+.neo-building-base{
+  background:repeating-linear-gradient(90deg,#252b4b 0 13px,#4c4c75 14px 26px)!important;
+  border:4px solid #22213d!important;border-top:2px solid #71dfff!important;
+}
+.neo-building-base span{
+  background:#20203d!important;border:4px solid #ff8cdb!important;
+  box-shadow:0 0 10px #ff55d9!important;
+}
+.neo-world-tile.door-tile{z-index:7;background:transparent!important;border:0!important}
+.neo-door-frame{
+  background:linear-gradient(90deg,#272344,#61518a 45%,#272344)!important;
+  border:4px solid #70eaff!important;box-shadow:inset 0 0 0 2px #27213f,0 0 10px #38dcff99!important;
+}
+.neo-door-light{background:#ff8cde!important;box-shadow:0 0 8px #ff54d4,0 0 16px #ff54d4!important}
+.neo-tree{
+  filter:drop-shadow(3px 5px 0 #10152b) drop-shadow(0 0 7px #43e7d455)!important;
+}
+.neo-tree:before{background:#77516e!important;border:3px solid #342d4d!important}
+.neo-tree i{background:#236b68!important;border:4px solid #233e57!important;box-shadow:inset 5px 5px #55b79a,inset -5px -5px #194b5d!important}
+.neo-tree b{background:#438d82!important;border:4px solid #31536a!important;box-shadow:inset -4px -4px #286a70!important}
+.neo-tree em{background:#367f79!important;border:3px solid #274c62!important}
+.neo-flower{color:#ff91dc!important;text-shadow:1px 2px #3b2b5c,0 0 8px #ff66d9!important}
+.neo-player{
+  filter:drop-shadow(2px 3px 0 #11152b) drop-shadow(0 0 8px #4cecff)!important;
+}
+.neo-player .player-shadow{background:#11162caa!important}
+.neo-player .player-hair{background:#26213e!important;border-color:#11182d!important;border-radius:2px!important}
+.neo-player .player-face{background:#e8b4c4!important;border-color:#795b83!important;box-shadow:inset 0 -3px #c986a7!important}
+.neo-player .player-coat{
+  background:#38b9d1!important;border-color:#26365e!important;
+  box-shadow:inset 0 -5px #7950a4,0 0 8px #38dcff66!important;
+}
+.neo-world-controls,.neo-building-list,.neo-interior{
+  background:linear-gradient(135deg,#211e3d,#171b35)!important;
+  border:2px solid #62558c!important;border-radius:3px!important;
+  box-shadow:0 0 14px #6853a833,inset 0 0 15px #080b1b!important;
+}
+.neo-world-controls p,.neo-building-list button small{color:#aab5d8!important}
+.neo-dpad button,.neo-building-list button{
+  background:linear-gradient(180deg,#3c3565,#252444)!important;
+  border:2px solid #8a68bb!important;border-radius:2px!important;
+  color:#b5f7ff!important;box-shadow:0 3px 0 #15172d,0 0 8px #4dcdff33!important;
+}
+.neo-interior-room{
+  border:8px solid #39335d!important;border-radius:2px!important;
+  background:linear-gradient(180deg,#2c3154 0%,#222642 60%,#171d36 60%)!important;
+  box-shadow:inset 0 0 35px #080b1b!important;
+}
+.neo-interior-map{border:5px solid #51426e!important;border-radius:2px!important;background:#51466e!important}
+.neo-interior-tile{border-radius:0!important;background:#625675!important}
+.neo-interior-tile.wall{background:#343d60!important}
+.neo-interior-window{
+  border:5px solid #514d7b!important;border-radius:2px!important;
+  background:linear-gradient(135deg,#1b315c,#573b83)!important;
+  box-shadow:0 0 22px #4bcbff55!important;
+}
+.neo-interior-sign h3{color:#a8f7ff!important;text-shadow:0 0 10px #37dfff}
+.neo-interior-sign p{color:#b5b2d9!important}
+@keyframes neo-neon-flicker{0%,94%,100%{opacity:1}95%{opacity:.75}97%{opacity:.92}}
+.neo-building-body b{animation:neo-neon-flicker 5s steps(1) infinite}
+@media(max-width:650px){
+  .neo-world-map{grid-template-rows:repeat(12,56px)!important;min-width:850px!important}
+  .neo-building-body b{font-size:8px}
+}
+
 
 `;
