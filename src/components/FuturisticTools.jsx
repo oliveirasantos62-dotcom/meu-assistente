@@ -11,7 +11,7 @@ export default function FuturisticTools({ data, save, activeSection }) {
  const notes=settingsOf(data).clips || [];
  const persistStyle=(key,value)=>updateSettings(data,save,s=>({...s,pages:{...(s.pages||{}),[activeSection]:{...pageStyle,[key]:value}}}));
  const addClipAt=(x,y)=>{ const clip={id:`clip-${Date.now()}-${Math.random().toString(16).slice(2,6)}`,x:Math.max(8,Math.min(window.innerWidth-300,x)),y:Math.max(8,Math.min(window.innerHeight-180,y)),title:'Nota rápida',text:'',collapsed:false}; updateSettings(data,save,s=>({...s,clips:[...(s.clips||[]),clip]})); setEditing(clip.id); setPlacing(false); };
- useEffect(()=>{if(!placing)return;const click=e=>{if(e.target.closest('.cyber-tools,.cyber-custom-panel,.cyber-clip'))return;addClipAt(e.clientX,e.clientY);};const esc=e=>{if(e.key==='Escape')setPlacing(false)};document.addEventListener('click',click);document.addEventListener('keydown',esc);return()=>{document.removeEventListener('click',click);document.removeEventListener('keydown',esc)};},[placing]);
+ useEffect(()=>{if(!placing)return;const click=e=>{if(e.target.closest('.cyber-tools,.cyber-custom-panel,.cyber-clip'))return; e.preventDefault(); e.stopPropagation(); addClipAt(e.clientX,e.clientY);};const esc=e=>{if(e.key==='Escape')setPlacing(false)};document.addEventListener('click',click,true);document.addEventListener('keydown',esc);return()=>{document.removeEventListener('click',click,true);document.removeEventListener('keydown',esc)};},[placing]);
  const patchClip=(id,patch)=>updateSettings(data,save,s=>({...s,clips:(s.clips||[]).map(c=>c.id===id?{...c,...patch}:c)}));
  const deleteClip=id=>updateSettings(data,save,s=>({...s,clips:(s.clips||[]).filter(c=>c.id!==id)}));
  const resetPage=()=>updateSettings(data,save,s=>({...s,pages:{...(s.pages||{}),[activeSection]:{...DEFAULT_STYLE}}}));
@@ -25,7 +25,7 @@ export default function FuturisticTools({ data, save, activeSection }) {
    <label className="cyber-check"><input type="checkbox" checked={!!pageStyle.grid} onChange={e=>persistStyle('grid',e.target.checked)}/> Grade de fundo nesta página</label>
    <button className="cyber-reset" onClick={resetPage}>Restaurar página</button>
   </aside>}
-  {notes.map(clip=><Clip key={clip.id} clip={clip} patch={patchClip} remove={deleteClip}/>)}
+  {notes.map(clip=><Clip key={clip.id} clip={clip} patch={patchClip} remove={deleteClip} placing={placing}/>)}
   <style>{`
    main.main-content{--page-accent:${pageStyle.accent};--page-glow:${pageStyle.glow};--page-glass:${pageStyle.glass};transition:background .25s,filter .25s;${pageStyle.grid?'background-image:linear-gradient(rgba(0,240,255,.035) 1px,transparent 1px),linear-gradient(90deg,rgba(0,240,255,.035) 1px,transparent 1px);background-size:28px 28px;':''}}
    main.main-content button:not(.clip-pin){border-color:color-mix(in srgb,${pageStyle.accent} calc(20% + ${pageStyle.glow*55}% ),transparent)}
@@ -33,10 +33,10 @@ export default function FuturisticTools({ data, save, activeSection }) {
   `}</style>
  </>;
 }
-function Clip({clip,patch,remove}){
+function Clip({clip,patch,remove,placing}){
  const [drag,setDrag]=useState(null); const [draft,setDraft]=useState({title:clip.title,text:clip.text});
  useEffect(()=>setDraft({title:clip.title,text:clip.text}),[clip.title,clip.text]);
- const start=e=>{if(e.target.closest('button,input,textarea'))return; setDrag({dx:e.clientX-clip.x,dy:e.clientY-clip.y});};
+ const start=e=>{if(e.target.closest('input,textarea') || (e.target.closest('button') && !e.target.closest('.clip-pin')))return; if(clip.collapsed || e.target.closest('.clip-pin') || e.target.closest('.clip-body header')){e.preventDefault();setDrag({dx:e.clientX-clip.x,dy:e.clientY-clip.y});}};
  useEffect(()=>{if(!drag)return;const move=e=>patch(clip.id,{x:Math.max(0,Math.min(window.innerWidth-50,e.clientX-drag.dx)),y:Math.max(0,Math.min(window.innerHeight-40,e.clientY-drag.dy))});const end=()=>setDrag(null);window.addEventListener('pointermove',move);window.addEventListener('pointerup',end);return()=>{window.removeEventListener('pointermove',move);window.removeEventListener('pointerup',end)};},[drag,clip.id]);
  return <div className={`cyber-clip ${clip.collapsed?'collapsed':''}`} style={{left:clip.x,top:clip.y}} onPointerDown={start}>
   {clip.collapsed?<button className="clip-pin" onClick={()=>patch(clip.id,{collapsed:false})} title={clip.title||'Abrir nota'}>📎<span>{clip.title||'Nota'}</span></button>:<div className="clip-body"><header><span>📎 MEMO / {clip.title||'NOTA'}</span><div><button onClick={()=>patch(clip.id,{collapsed:true})} title="Minimizar">—</button><button onClick={()=>remove(clip.id)} title="Excluir">×</button></div></header><input className="clip-title" value={draft.title} onChange={e=>{setDraft(d=>({...d,title:e.target.value}));patch(clip.id,{title:e.target.value})}} placeholder="Título"/><textarea value={draft.text} onChange={e=>{setDraft(d=>({...d,text:e.target.value}));patch(clip.id,{text:e.target.value})}} placeholder="Escreva sua nota..."/><footer>Arraste pelo cabeçalho · salvamento automático</footer></div>}
