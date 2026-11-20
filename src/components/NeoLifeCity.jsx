@@ -2938,6 +2938,15 @@ export default function NeoLifeCity({ data = {}, save, onNavigate }) {
                   role='application'
                   aria-label='Mapa 16-bit do Vale Neo'
                 >
+                  <div className='neo-city-life' aria-hidden='true'>
+                    <span className='neo-hovercar neo-hovercar-one' />
+                    <span className='neo-hovercar neo-hovercar-two' />
+                    <span className='neo-hovercar neo-hovercar-three' />
+                    <span className='neo-city-drone neo-city-drone-one' />
+                    <span className='neo-city-drone neo-city-drone-two' />
+                    <span className='neo-city-glow city-glow-one' />
+                    <span className='neo-city-glow city-glow-two' />
+                  </div>
                   {Array.from({ length: 20 * 12 }, (_, index) => {
                     const x = index % 20;
                     const y = Math.floor(index / 20);
@@ -3321,31 +3330,20 @@ export default function NeoLifeCity({ data = {}, save, onNavigate }) {
                         ) : null}
 
                         {/* Moradores seguindo rotinas diárias */}
-                        {residentHere && sprites?.residents ? (
+                        {residentHere ? (
                           <button
                             type='button'
-                            className='neo-map-resident'
+                            className={`neo-map-resident resident-${residentHere.id}`}
                             title={`Conversar com ${residentHere.name}`}
-                            onClick={() =>
-                              openResidentDialogue(residentHere, true)
-                            }
+                            aria-label={`Conversar com ${residentHere.name}`}
+                            onClick={() => openResidentDialogue(residentHere, true)}
                           >
                             <span
-                              className='neo-resident-sprite'
-                              style={tileSpriteStyle(
-                                sprites.residents,
-                                SPRITE_SHEET_LAYOUT.residents.width,
-                                SPRITE_SHEET_LAYOUT.residents.height,
-                                ((Math.floor(animTick / 6) +
-                                  residentHere.spriteRow) %
-                                  SPRITE_SHEET_LAYOUT.residents.columns) *
-                                  SPRITE_SHEET_LAYOUT.residents.frameWidth,
-                                residentHere.spriteRow *
-                                  SPRITE_SHEET_LAYOUT.residents.frameHeight,
-                                SPRITE_SHEET_LAYOUT.residents.frameWidth,
-                                SPRITE_SHEET_LAYOUT.residents.frameHeight,
-                                1.35,
-                              )}
+                              className='neo-resident-sprite neo-authentic-sprite'
+                              style={{
+                                backgroundImage: `url('/assets/characters/runtime/${residentHere.id}.png')`,
+                                backgroundPosition: `${((Math.floor(animTick / 7) + 1) % 4) * 33.333}% 0`,
+                              }}
                             />
                             <b>{residentHere.name}</b>
                           </button>
@@ -5339,3 +5337,48 @@ const styles = `
   .neo-world-bubble{grid-template-columns:1fr}
 }
 `;
+
+/* NeoLifeCity — vida urbana e sprites originais dos assets do projeto */
+.neo-map-resident{
+  width:50px;height:58px;left:50%;bottom:0;transform:translateX(-50%);
+  display:flex;align-items:center;justify-content:flex-end;flex-direction:column;
+  gap:0;padding:0!important;border:0!important;border-radius:0!important;
+  background:transparent!important;box-shadow:none!important;outline:none;
+  appearance:none;cursor:pointer;z-index:24;
+  animation:neo-resident-idle 2.2s steps(2,end) infinite;
+}
+.neo-map-resident:hover{transform:translateX(-50%) translateY(-2px);filter:drop-shadow(0 0 7px rgba(89,232,255,.5))}
+.neo-resident-sprite.neo-authentic-sprite{
+  display:block;width:46px;height:48px;flex:0 0 48px;
+  background-repeat:no-repeat;background-size:400% 100%;
+  image-rendering:pixelated;filter:drop-shadow(0 3px 1px rgba(4,8,20,.8));
+}
+.neo-map-resident b{
+  position:absolute;top:-12px;left:50%;transform:translateX(-50%);
+  padding:2px 6px;border:1px solid rgba(151,224,255,.8);border-radius:5px;
+  background:rgba(14,22,48,.94);color:#f2f8ff;font:700 8px/1.2 system-ui,sans-serif;
+  text-shadow:0 1px 2px #050816;box-shadow:0 2px 8px rgba(0,0,0,.35);
+}
+.neo-world-tile{overflow:visible}
+.neo-city-life{position:absolute;inset:0;z-index:12;pointer-events:none;overflow:hidden}
+.neo-hovercar{position:absolute;width:13px;height:5px;border-radius:3px;background:linear-gradient(90deg,#7cf8ff,#f2a7ff);box-shadow:0 0 5px 2px rgba(84,225,255,.8),0 0 15px rgba(194,104,255,.55);opacity:0}
+.neo-hovercar::after{content:'';position:absolute;right:-9px;top:2px;width:10px;height:1px;background:#83f5ff;box-shadow:0 0 6px #83f5ff}
+.neo-hovercar-one{top:25%;left:-5%;animation:neo-traffic-east 18s linear infinite}
+.neo-hovercar-two{top:74%;left:105%;animation:neo-traffic-west 23s linear infinite 4s}
+.neo-hovercar-three{top:48%;left:-5%;transform:scale(.7);animation:neo-traffic-east 27s linear infinite 8s}
+.neo-city-drone{position:absolute;width:7px;height:4px;border-radius:3px;background:#f2c5ff;box-shadow:0 0 7px 2px #c56cff,0 0 14px #5eeeff}
+.neo-city-drone-one{left:35%;top:18%;animation:neo-drone-route-one 13s ease-in-out infinite alternate}
+.neo-city-drone-two{left:73%;top:58%;animation:neo-drone-route-two 17s ease-in-out infinite alternate}
+.neo-city-glow{position:absolute;width:48px;height:48px;border-radius:50%;background:radial-gradient(circle,rgba(84,238,255,.18),transparent 68%);animation:neo-city-pulse 3.5s ease-in-out infinite alternate}
+.city-glow-one{left:48%;top:37%}.city-glow-two{left:82%;top:58%;animation-delay:1.5s}
+@keyframes neo-traffic-east{0%{transform:translateX(0)}100%{transform:translateX(1150px)}}
+@keyframes neo-traffic-west{0%{transform:translateX(0) scaleX(-1)}100%{transform:translateX(-1150px) scaleX(-1)}}
+@keyframes neo-drone-route-one{0%{transform:translate(0,0)}50%{transform:translate(110px,24px)}100%{transform:translate(190px,-8px)}}
+@keyframes neo-drone-route-two{0%{transform:translate(0,0)}50%{transform:translate(-65px,-28px)}100%{transform:translate(65px,-45px)}}
+@keyframes neo-city-pulse{from{opacity:.15;transform:scale(.7)}to{opacity:.75;transform:scale(1.25)}}
+@keyframes neo-resident-idle{0%,100%{margin-bottom:0}50%{margin-bottom:1px}}
+@media(prefers-reduced-motion:reduce){.neo-hovercar,.neo-city-drone,.neo-city-glow,.neo-map-resident{animation:none!important}}
+.neo-door{background:transparent!important;border:0!important;box-shadow:none!important;opacity:0!important}
+.neo-building-sprite-sheet,.neo-scaffold-overlay,.neo-prop-sprite,.neo-plot-btn,.neo-spot-tag{display:none!important}
+.neo-map-resident::before,.neo-map-resident::after{display:none!important;content:none!important}
+.neo-map-resident{background-color:transparent!important;background-image:none!important}
