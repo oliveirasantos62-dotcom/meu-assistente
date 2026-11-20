@@ -1481,6 +1481,15 @@ export default function NeoLifeCity({ data = {}, save, onNavigate }) {
   const [dialogueStep, setDialogueStep] = useState('root');
   const [worldBubble, setWorldBubble] = useState(null);
   const [notice, setNotice] = useState('');
+  // Sincronização automática estritamente local: usa apenas registros já existentes no app.
+  const [lifeSync, setLifeSync] = useState(() => {
+    try {
+      const saved = window.localStorage.getItem('neolifecity_life_sync_v1');
+      return saved ? JSON.parse(saved) : { snapshot: null, affinity: {}, lastReaction: '' };
+    } catch {
+      return { snapshot: null, affinity: {}, lastReaction: '' };
+    }
+  });
 
   // Posição e navegação no mundo & casa
   const [player, setPlayer] = useState(() => cityWorldStart(data));
@@ -1548,8 +1557,10 @@ export default function NeoLifeCity({ data = {}, save, onNavigate }) {
     data.neoCity && typeof data.neoCity === 'object' ? data.neoCity : {};
   const inventory = safeArray(city.inventory);
   const talks = city.talks && typeof city.talks === 'object' ? city.talks : {};
-  const affinity =
+  const storedAffinity =
     city.affinity && typeof city.affinity === 'object' ? city.affinity : {};
+  // Afinidade originada da evolução real fica no armazenamento local do dispositivo.
+  const affinity = { ...storedAffinity, ...(lifeSync.affinity || {}) };
   const arcade =
     city.arcade && typeof city.arcade === 'object' ? city.arcade : {};
   const garden =
@@ -1647,6 +1658,7 @@ export default function NeoLifeCity({ data = {}, save, onNavigate }) {
         (goal) => goal.status === 'completed' || Number(goal.progress) >= 100,
       ).length,
       projects: projects.length,
+      projectProgress: projects.reduce((sum, project) => sum + (project.status === 'completed' ? 100 : Math.max(0, Number(project.progress) || 0)), 0),
       coins,
       xp,
     }),
@@ -1664,6 +1676,49 @@ export default function NeoLifeCity({ data = {}, save, onNavigate }) {
 
   const persistCity = (nextCity, extra = {}) =>
     save?.({ ...data, ...extra, neoCity: nextCity });
+
+  // Observa automaticamente mudanças nos dados reais já registrados no app.
+  // Nenhum dado é enviado a serviços externos por este mecanismo.
+  useEffect(() => {
+    const snapshot = {
+      tasks: stats.tasks,
+      studyMinutes: stats.studyMinutes,
+      habits: stats.habits,
+      readings: stats.readings,
+      goals: stats.goals,
+      projects: stats.projects,
+      projectProgress: stats.projectProgress,
+    };
+    if (!lifeSync.snapshot) {
+      const baseline = { ...lifeSync, snapshot, lastReaction: 'Sincronização local ativada. Seu progresso registrado começa a influenciar o Vale Neo.' };
+      setLifeSync(baseline);
+      try { window.localStorage.setItem('neolifecity_life_sync_v1', JSON.stringify(baseline)); } catch {}
+      return;
+    }
+    const previous = lifeSync.snapshot;
+    const delta = Object.keys(snapshot).reduce((sum, key) => sum + Math.max(0, snapshot[key] - (Number(previous[key]) || 0)), 0);
+    if (delta <= 0) return;
+
+    const nextAffinity = { ...(lifeSync.affinity || {}) };
+    const reactions = [];
+    const addAffinity = (id, amount, message) => {
+      nextAffinity[id] = Math.min(100, (Number(nextAffinity[id] ?? storedAffinity[id]) || 0) + amount);
+      reactions.push(message);
+    };
+    if (snapshot.studyMinutes > (previous.studyMinutes || 0) || snapshot.readings > (previous.readings || 0))
+      addAffinity('luna', 2, 'Luna percebeu sua dedicação ao conhecimento.');
+    if (snapshot.tasks > (previous.tasks || 0) || snapshot.projects > (previous.projects || 0) || snapshot.projectProgress > (previous.projectProgress || 0))
+      addAffinity('kai', 2, 'Kai viu você transformar planos em entregas.');
+    if (snapshot.habits > (previous.habits || 0))
+      addAffinity('nox', 2, 'Nox notou sua constância e celebrou seu ritmo.');
+    if (snapshot.goals > (previous.goals || 0))
+      addAffinity('maya', 2, 'Maya preparou uma novidade para celebrar sua meta concluída.');
+
+    const updated = { snapshot, affinity: nextAffinity, lastReaction: reactions[0] || 'A cidade registrou um novo passo da sua jornada.' };
+    setLifeSync(updated);
+    try { window.localStorage.setItem('neolifecity_life_sync_v1', JSON.stringify(updated)); } catch {}
+    setNotice(`Vida real sincronizada neste dispositivo. ${reactions.join(' ')}`);
+  }, [stats.tasks, stats.studyMinutes, stats.habits, stats.readings, stats.goals, stats.projects, stats.projectProgress]);
 
   // Tick global de animação 16-bit
   useEffect(() => {
@@ -2718,6 +2773,12 @@ export default function NeoLifeCity({ data = {}, save, onNavigate }) {
               {stats.tasks} tarefas · {stats.studyMinutes}m foco ·{' '}
               {stats.habits} hábitos
             </small>
+          </div>
+          <div className='neo-life-sync-card' aria-live='polite'>
+            <strong>↻ VIDA REAL · SINCRONIZAÇÃO LOCAL</strong>
+            <span>Automática com tarefas, hábitos, estudos, leituras, metas e projetos registrados no Meu Assistente.</span>
+            <small>🔒 Dados desta sincronização guardados neste dispositivo. Sem conexão com apps externos de saúde.</small>
+            {lifeSync.lastReaction && <small className='neo-life-sync-reaction'>{lifeSync.lastReaction}</small>}
           </div>
           <div
             className='neo-time-switcher'
@@ -4830,6 +4891,11 @@ const styles = `
 .neo-hero-actions span{font-size:11px;color:#e5ebd0}
 
 .neo-hero-right{display:flex;flex-direction:column;gap:10px;align-items:flex-end}
+.neo-life-sync-card{max-width:360px;padding:11px 13px;border:1px solid rgba(126,194,114,.65);border-radius:9px;background:rgba(16,39,36,.88);display:flex;flex-direction:column;gap:5px;color:#e8efda;font-size:10px;line-height:1.45}
+.neo-life-sync-card strong{color:#9ee59a;font-size:10px;letter-spacing:.06em}
+.neo-life-sync-card small{color:#a9c3b0;font-size:9px}
+.neo-life-sync-card .neo-life-sync-reaction{color:#fff0a6}
+
 .neo-wallet{
   background:#233b38;border:2px solid #a8734d;border-radius:8px;
   padding:12px 16px;display:flex;flex-direction:column;gap:3px;width:100%;max-width:320px;
@@ -4907,6 +4973,9 @@ const styles = `
   background:#10152d;box-shadow:0 0 0 3px #171d3c,0 0 28px rgba(70,105,255,.28);
   image-rendering:pixelated;
   transition:filter .4s ease;
+  background-image: url('/maps/cyberpunk-metropolis.webp');
+  background-size: 100% 100%;
+  background-repeat: no-repeat;
 }
 .neo-world-map.period-morning{filter:brightness(1.03) saturate(1.05)}
 .neo-world-map.period-afternoon{filter:brightness(1) saturate(1)}
