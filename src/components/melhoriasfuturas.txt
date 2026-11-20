@@ -1,0 +1,29 @@
+NPCs, diálogos e integração
+[ ] Rotinas diárias e deslocamento dos NPCs
+[ ] Diálogos ramificados e sistema de afinidade
+[ ] Integração bidirecional com todos os módulos reais
+
+Casa, decoração e inventário
+[ ] Casa com cômodos exploráveis
+[ ] Posicionamento livre de móveis em grade
+[ ] Inventário com categorias, equipamentos e roupas
+
+Jardim e evolução da cidade
+[ ] Ciclos completos de crescimento das plantas
+[ ] Crescimento baseado nas sessões reais de foco
+[ ] Construção visual de novos bairros
+
+Personagem, missões e minijogos
+[ ] Editor de personagem e roupas
+[ ] Missões principais e secundárias com objetivos verificáveis
+[ ] Pesca tecnológica, corrida de hoverboard e novos puzzles
+
+Eventos, coleções e histórias
+[ ] Calendário de festivais sazonais
+[ ] Coleções de itens, espécies e locais
+[ ] Histórias dos moradores e campanha narrativa
+
+Polimento técnico
+[ ] Spritesheets PNG profissionais e animações
+[ ] Colisões e iluminação dinâmica
+[ ] Controles mobile e acessibilidade
