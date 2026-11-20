@@ -24,7 +24,7 @@ export const emptyAppData = {
   xp: 0,
   coins: 0,
 
-  neoCity: { inventory: [], talks: {}, arcade: {} },
+  neoCity: { inventory: [], talks: {}, arcade: {}, home: { placed: [] }, garden: {}, character: {}, collections: [] },
 
   history: {},
 

@@ -1,31 +1,22 @@
-# Neo-Life — cidade cyberpunk conectada à rotina
+# Neo-Life — expansão do mundo pessoal
 
-O módulo `src/components/NeoLifeCity.jsx` adiciona uma camada de simulação ao Meu Assistente. Ele não substitui Tarefas, Estudos, Hábitos, Metas ou Projetos: lê os dados desses módulos e apresenta a evolução em uma cidade futurista.
+Esta versão amplia o módulo Neo-Life já integrado ao Meu Assistente.
 
-## Funcionalidades
+## Funcionalidades adicionadas
+- Estado visual da cidade calculado pelos minutos de estudo/foco registrados nos últimos sete dias: próspera, estável, enfraquecida ou adormecida.
+- A cidade pode perder vitalidade visual, mas não apaga edifícios, inventário ou conquistas durante pausas.
+- Casa pessoal com espaço visual e posicionamento de itens comprados no Mercado Neon.
+- Sala de conquistas com marcos derivados de tarefas, estudos, hábitos, metas e projetos já registrados.
+- Jardim de foco com estágios de crescimento baseados nos minutos acumulados em sessões de estudo.
+- Evolução do personagem baseada no XP existente e atributos derivados das atividades reais.
+- NPCs com histórias, rotinas e missões com progresso calculado a partir dos dados do usuário.
+- Eventos temáticos que encaminham para atividades já existentes.
+- Coleções raras desbloqueadas por marcos de estudo, leitura e projetos.
+- Minigame adicional de lógica matemática, gratuito e sem alterar moedas ou XP.
+- Inventário, casa e jardim preparados no estado padrão `neoCity`.
 
-- Seis distritos com progresso derivado dos registros reais: Núcleo Central, Distrito Acadêmico, Jardins BioTech, Distrito de Inovação, Mercado Neon e Arcade 88.
-- Cinco moradores com diálogos contextuais baseados em tarefas concluídas, minutos estudados, hábitos, leituras e moedas atuais.
-- Mercado com preços fixos em moedas do aplicativo e inventário persistente.
-- Minijogo de memória com uma tentativa diária: entrada de 5 moedas e prêmio fixo de 12 moedas em caso de vitória.
-- Histórico de conversas, itens e tentativa do Arcade armazenados em `data.neoCity`.
+## Dados e compatibilidade
+Os novos dados ficam dentro de `data.neoCity` (`home`, `garden`, `character`, `collections`) e mantêm compatibilidade com o inventário, conversas e arcade já existentes. O XP e as moedas continuam usando os campos existentes do Meu Assistente; esta expansão não cria uma segunda carteira nem concede XP duplicado.
 
-## Economia e integridade
-
-- O módulo usa `data.coins` e `data.xp` existentes; não cria uma segunda carteira.
-- Não concede XP novamente por tarefas, estudos, hábitos, metas ou projetos.
-- As compras descontam moedas e registram o item no inventário.
-- O Arcade informa o custo e a recompensa antes de jogar, não usa dinheiro real nem sorteios.
-- Não há perda de progresso por ausência ou descanso.
-
-## Estrutura persistida
-
-```js
-neoCity: {
-  inventory: [],
-  talks: {},
-  arcade: { lastAttemptDate: null, lastWinDate: null }
-}
-```
-
-O campo tem valor padrão em `emptyAppData`; contas existentes continuam compatíveis por causa da normalização e do merge já usados pelo aplicativo.
+## Observação
+Os eventos e as rotinas de NPC nesta versão são conteúdo local do jogo. Visitas multiplayer entre contas, sincronização em tempo real e calendário de eventos online exigem implementação adicional no backend.
