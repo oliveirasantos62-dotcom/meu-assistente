@@ -1,29 +1,73 @@
-NPCs, diálogos e integração
-[ ] Rotinas diárias e deslocamento dos NPCs
-[ ] Diálogos ramificados e sistema de afinidade
-[ ] Integração bidirecional com todos os módulos reais
+# PROMPT 01 — NEOLIFECITY: MEGACIDADE CYBERPUNK
 
-Casa, decoração e inventário
-[ ] Casa com cômodos exploráveis
-[ ] Posicionamento livre de móveis em grade
-[ ] Inventário com categorias, equipamentos e roupas
+Create an extremely detailed, massive top-down 2D pixel art city environment for a futuristic life simulation RPG called NeoLifeCity.
 
-Jardim e evolução da cidade
-[ ] Ciclos completos de crescimento das plantas
-[ ] Crescimento baseado nas sessões reais de foco
-[ ] Construção visual de novos bairros
+**VISUAL DIRECTION**
 
-Personagem, missões e minijogos
-[ ] Editor de personagem e roupas
-[ ] Missões principais e secundárias com objetivos verificáveis
-[ ] Pesca tecnológica, corrida de hoverboard e novos puzzles
+The aesthetic must resemble a high-quality 16-bit / 32-bit pixel art RPG, combining the visual density of classic top-down cyberpunk games with the charm and exploration of cozy life simulation games.
 
-Eventos, coleções e histórias
-[ ] Calendário de festivais sazonais
-[ ] Coleções de itens, espécies e locais
-[ ] Histórias dos moradores e campanha narrativa
+The city must feel enormous, alive, explorable and full of personality.
 
-Polimento técnico
-[ ] Spritesheets PNG profissionais e animações
-[ ] Colisões e iluminação dinâmica
-[ ] Controles mobile e acessibilidade
+**CITY SCALE AND LAYOUT**
+
+- A gigantic urban environment with multiple interconnected districts.
+- Dozens of buildings, blocks, alleys, plazas and intersections.
+- Dense streets with sidewalks, pedestrian crossings and neon signs.
+- Small shops between massive futuristic buildings.
+- Rooftops, bridges, elevated walkways and underground entrances.
+- Visible environmental storytelling and tiny decorative details.
+
+**BUILDINGS**
+
+Include:
+- Futuristic apartments and residential towers.
+- Cybernetic technology shops.
+- Neon supermarkets and restaurants.
+- Universities and research laboratories.
+- Gaming arcades.
+- Medical centers.
+- Robotic workshops.
+- Night markets.
+- Parks with futuristic vegetation.
+- Community centers and entertainment venues.
+
+**ENVIRONMENTAL DETAILS**
+
+- Holographic advertisements.
+- Neon shop signs.
+- Glowing windows.
+- Vending machines.
+- Small robots and delivery drones.
+- Street lamps.
+- Digital billboards.
+- Futuristic vehicles.
+- Rooftop gardens.
+- Pedestrians walking through streets.
+- Neon reflections on wet pavement.
+
+**COLOR PALETTE**
+
+Deep navy, dark purple, violet, electric blue, cyan, magenta and occasional warm orange lighting.
+
+**PIXEL ART REQUIREMENTS**
+
+- Strict pixel art aesthetics.
+- Crisp pixel edges.
+- No blurry textures.
+- No 3D rendering.
+- Consistent perspective and tile proportions.
+- Carefully designed building silhouettes.
+- Rich environmental details.
+- Professional indie game art quality.
+
+**COMPOSITION**
+
+Show a very large continuous city map from a bird's-eye / top-down perspective, with enough visible streets and buildings to communicate the scale of an entire futuristic metropolis.
+
+The result should look like an actual playable game world, not a poster, concept painting or user interface.
+
+**OUTPUT**
+
+High-resolution image, 16:9 landscape composition, detailed game environment concept art, suitable as a visual reference for creating modular 16x16 and 32x32 pixel art tilesets.
+
+No text overlays, no menus, no HUD, no logos, no watermarks.

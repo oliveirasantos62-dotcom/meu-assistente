@@ -1,0 +1,72 @@
+# PROMPT 02 — NEOLIFECITY: CHARACTER SPRITE COLLECTION
+
+Create a professional pixel art character sprite collection for a top-down futuristic cyberpunk life simulation RPG called NeoLifeCity.
+
+The characters must have a consistent visual identity, designed for actual implementation in a 2D game engine.
+
+**ART STYLE**
+
+- High-quality 16-bit / 32-bit pixel art.
+- Top-down RPG character perspective.
+- Crisp pixel edges.
+- Consistent proportions.
+- Detailed clothing and accessories.
+- Expressive silhouettes.
+- Futuristic urban fashion.
+- Purple, cyan, blue and magenta lighting accents.
+
+**CHARACTER COLLECTION**
+
+Create a diverse cast of original characters:
+
+1. Main protagonist — customizable futuristic explorer.
+2. Scientist — laboratory coat and technological accessories.
+3. Programmer — casual clothes, headphones and tablet.
+4. Engineer — utility clothing and robotic tools.
+5. Merchant — futuristic streetwear.
+6. University student — backpack and casual futuristic outfit.
+7. Doctor — futuristic medical uniform.
+8. Mechanic — work clothes and cybernetic accessories.
+9. Musician — colorful futuristic clothing.
+10. Security officer — urban protective uniform.
+11. Android NPC — humanoid robot with luminous details.
+12. Drone companion — small floating robotic assistant.
+
+**SPRITE ANIMATIONS**
+
+For the main protagonist, create a complete sprite sheet with:
+
+- Walking north.
+- Walking south.
+- Walking east.
+- Walking west.
+- Idle animation in all four directions.
+- Optional interaction animation.
+
+Use 4 frames per walking direction and 2 frames per idle animation.
+
+For secondary NPCs, create consistent sprites with at least four directional orientations.
+
+**TECHNICAL SPECIFICATIONS**
+
+- Character base size: 32x32 pixels.
+- Taller NPCs may use 32x48 pixels.
+- Transparent background.
+- No shadows detached from characters.
+- Uniform pixel density.
+- Consistent lighting direction.
+- Frames aligned to a precise grid.
+- No overlapping frames.
+- Separate character sprites clearly.
+
+**IMPORTANT**
+
+The sprites must be suitable for real game development, not merely illustrations of characters.
+
+Every character should have a recognizable silhouette and distinct clothing, colors and accessories.
+
+**OUTPUT**
+
+Create a professional sprite sheet collection on a transparent background, arranged in clearly separated rows and columns, with consistent frame dimensions and enough resolution for pixel art extraction.
+
+No UI, no text labels, no watermark, no mockup, no 3D models.
