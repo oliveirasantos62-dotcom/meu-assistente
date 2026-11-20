@@ -4,6 +4,7 @@ import brandIcon from '../../resources/icon-only.png';
 
 const SECTIONS = [
   { id: 'dashboard', icon: '🏠', fallback: 'Dashboard' },
+  { id: 'neoCity', icon: '🌆', fallback: 'Neo-Life' },
   { id: 'tasks', icon: '✅', fallback: 'Tarefas' },
   { id: 'processos', icon: '⚙️', fallback: 'Processos' },
   { id: 'calendar', icon: '📅', fallback: 'Calendário' },
@@ -29,6 +30,7 @@ const SECTIONS = [
 
 const DEFAULT_VISIBLE = {
   dashboard: true,
+  neoCity: true,
   tasks: true,
   processos: true,
   calendar: true,

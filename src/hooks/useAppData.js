@@ -311,6 +311,14 @@ function normalizeAppData(rawData) {
 
     coins: Number(source.coins) || 0,
 
+    world: {
+      ...(emptyAppData.world || {}),
+      ...(source.world && typeof source.world === 'object' ? source.world : {}),
+      missionClaims: source.world?.missionClaims && typeof source.world.missionClaims === 'object' ? source.world.missionClaims : {},
+      discoveries: Array.isArray(source.world?.discoveries) ? source.world.discoveries : [],
+      ownedCosmetics: Array.isArray(source.world?.ownedCosmetics) ? source.world.ownedCosmetics : [],
+    },
+
     finance: normalizedFinance,
     investments: Array.isArray(source.investments)
       ? source.investments.map(normalizeEntityTags)

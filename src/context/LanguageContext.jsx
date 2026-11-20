@@ -16,7 +16,7 @@ export const LANGUAGES = [
  */
 const DICTIONARY = {
   'pt-BR': {
-    'nav.dashboard': '🏠 Painel Principal', 'nav.tasks': '✅ Tarefas', 'nav.processos': '🧩 Processos',
+    'nav.dashboard': '🏠 Painel Principal', 'nav.neoCity': '🌆 Neo-Life', 'nav.tasks': '✅ Tarefas', 'nav.processos': '🧩 Processos',
     'nav.calendar': '📅 Calendário & Agenda', 'nav.diario': '📔 Diário', 'nav.estudos': '📚 Estudos',
     'nav.goals': '🎯 Objetivos', 'nav.habits': '🔥 Hábitos', 'nav.evolucao': '📈 Evolução & Progresso',
     'nav.projects': '📁 Projetos', 'nav.groups': '👥 Grupos', 'nav.collections': '🏆 Coleções & Conquistas',
@@ -34,7 +34,7 @@ const DICTIONARY = {
     'profile.updateError': 'Não foi possível atualizar o perfil.', 'header.overview': 'Visão geral', 'header.focus': '🎯 Modo foco',
   },
   'en-US': {
-    'nav.dashboard': '🏠 Dashboard', 'nav.tasks': '✅ Tasks', 'nav.processos': '🧩 Processes',
+    'nav.dashboard': '🏠 Dashboard', 'nav.neoCity': '🌆 Neo-Life', 'nav.tasks': '✅ Tasks', 'nav.processos': '🧩 Processes',
     'nav.calendar': '📅 Calendar & Agenda', 'nav.diario': '📔 Diary', 'nav.estudos': '📚 Studies',
     'nav.goals': '🎯 Goals', 'nav.habits': '🔥 Habits', 'nav.evolucao': '📈 Progress & Evolution',
     'nav.projects': '📁 Projects', 'nav.groups': '👥 Groups', 'nav.collections': '🏆 Collections & Achievements',
@@ -52,7 +52,7 @@ const DICTIONARY = {
     'profile.updateError': 'Could not update your profile.', 'header.overview': 'Overview', 'header.focus': '🎯 Focus mode',
   },
   'es-ES': {
-    'nav.dashboard': '🏠 Panel principal', 'nav.tasks': '✅ Tareas', 'nav.processos': '🧩 Procesos',
+    'nav.dashboard': '🏠 Panel principal', 'nav.neoCity': '🌆 Neo-Life', 'nav.tasks': '✅ Tareas', 'nav.processos': '🧩 Procesos',
     'nav.calendar': '📅 Calendario y agenda', 'nav.diario': '📔 Diario', 'nav.estudos': '📚 Estudios',
     'nav.goals': '🎯 Objetivos', 'nav.habits': '🔥 Hábitos', 'nav.evolucao': '📈 Evolución y progreso',
     'nav.projects': '📁 Proyectos', 'nav.groups': '👥 Grupos', 'nav.collections': '🏆 Colecciones y logros',
