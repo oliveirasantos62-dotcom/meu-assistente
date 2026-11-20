@@ -545,6 +545,81 @@ const WORLD_BUILDINGS = [
       'Salão de jogos, corrida hoverboard e desafios lógicos (12h–00h).',
     rooms: ['Arena de memória', 'Pista Hoverboard', 'Circuito lógico'],
   },
+  {
+    id: 'cafe-nova',
+    name: 'Café Nova Aurora',
+    district: 'central',
+    icon: '☕',
+    x: 11,
+    y: 8,
+    w: 2,
+    h: 2,
+    door: { x: 12, y: 10 },
+    openHour: 6,
+    closeHour: 22,
+    description: 'Café comunitário com balcão, mesas e serviços sociais.',
+    rooms: ['Balcão de pedidos', 'Mesa comunitária', 'Cozinha digital'],
+  },
+  {
+    id: 'restaurant-orion',
+    name: 'Restaurante Orion',
+    district: 'central',
+    icon: '🍜',
+    x: 17,
+    y: 3,
+    w: 2,
+    h: 2,
+    door: { x: 18, y: 5 },
+    openHour: 11,
+    closeHour: 23,
+    description: 'Cozinha futurista, cardápio local e refeições coletivas.',
+    rooms: ['Cozinha Orion', 'Salão holográfico', 'Recepção'],
+  },
+  {
+    id: 'neon-gym',
+    name: 'Academia Neon',
+    district: 'central',
+    icon: '⚡',
+    x: 6,
+    y: 8,
+    w: 2,
+    h: 2,
+    door: { x: 7, y: 10 },
+    openHour: 5,
+    closeHour: 23,
+    description: 'Estúdio de condicionamento com equipamentos inteligentes.',
+    rooms: ['Zona de força', 'Simulador orbital', 'Vestiário'],
+  },
+  {
+    id: 'life-hospital',
+    name: 'Hospital Vida+',
+    district: 'central',
+    icon: '✚',
+    x: 17,
+    y: 9,
+    w: 2,
+    h: 2,
+    door: { x: 18, y: 11 },
+    openHour: 0,
+    closeHour: 24,
+    description: 'Posto 24h, triagem e laboratório de bem-estar.',
+    rooms: ['Triagem', 'Enfermaria', 'Laboratório clínico'],
+  },
+  {
+    id: 'metro-hub',
+    name: 'Estação Central',
+    district: 'central',
+    icon: '🚉',
+    x: 10,
+    y: 10,
+    w: 2,
+    h: 2,
+    door: { x: 11, y: 10 },
+    openHour: 0,
+    closeHour: 24,
+    description: 'Terminal regional, mapa da cidade e transporte rápido.',
+    rooms: ['Plataforma', 'Bilheteria', 'Mapa interativo'],
+  },
 ];
 
 // Estações de transporte público (VLT / Expresso Urbano)
@@ -1811,6 +1886,14 @@ export default function NeoLifeCity({ data = {}, save, onNavigate }) {
       pos: 54,
       speed: 1.5,
       color: '#c7b3eb',
+    },
+    {
+      id: 'taxi-1',
+      type: 'taxi',
+      lane: 'west',
+      pos: 38,
+      speed: 1.35,
+      color: '#f5c451',
     },
     {
       id: 'bike-1',
@@ -3906,6 +3989,29 @@ export default function NeoLifeCity({ data = {}, save, onNavigate }) {
                       </div>
                     ))}
 
+                    <div className={`neo-crossing-signal signal-west ${Math.floor(animTick / 8) % 2 === 0 ? 'go' : 'stop'}`}>
+                      <span /><span /><span />
+                    </div>
+                    <div className={`neo-crossing-signal signal-central ${Math.floor(animTick / 8) % 2 === 0 ? 'stop' : 'go'}`}>
+                      <span /><span /><span />
+                    </div>
+                    <div className={`neo-crossing-signal signal-market ${Math.floor(animTick / 8) % 2 === 0 ? 'go' : 'stop'}`}>
+                      <span /><span /><span />
+                    </div>
+
+                    {[
+                      [1, 5], [4, 5], [7, 5], [10, 5], [13, 5], [16, 5],
+                      [2, 8], [6, 8], [10, 8], [14, 8], [18, 8],
+                    ].map(([x, y]) => (
+                      <span
+                        key={`lamp-${x}-${y}`}
+                        className='neo-street-lamp'
+                        style={{ left: `${(x + 0.5) * 50.4}px`, top: `${(y + 0.5) * 47.25}px` }}
+                      >
+                        <i />
+                      </span>
+                    ))}
+
                     <div
                       className={`neo-public-transit ${transitState.dwellTicks > 0 ? 'stopped' : ''}`}
                       style={{
@@ -3915,9 +4021,13 @@ export default function NeoLifeCity({ data = {}, save, onNavigate }) {
                       }}
                     >
                       <div className='neo-vlt-car'>
-                        <span>🚆</span>
+                        <span className='neo-vlt-window' />
+                        <span className='neo-vlt-window' />
                       </div>
-                      <div className='neo-vlt-car trailer' />
+                      <div className='neo-vlt-car trailer'>
+                        <span className='neo-vlt-window' />
+                        <span className='neo-vlt-window' />
+                      </div>
                       {transitState.atStop && (
                         <b
                           style={{
@@ -3931,19 +4041,25 @@ export default function NeoLifeCity({ data = {}, save, onNavigate }) {
                     </div>
 
                     {vehicles.map((v) => {
-                      if (v.type === 'car') {
+                      if (v.type === 'car' || v.type === 'taxi') {
                         const topPx =
                           v.lane === 'east' ? 7 * 47.25 + 14 : 6 * 47.25 + 26;
                         return (
                           <div
                             key={v.id}
-                            className={`neo-vehicle-car ${v.lane}`}
+                            className={`neo-vehicle-car ${v.type === 'taxi' ? 'neo-vehicle-taxi' : ''} ${v.lane}`}
                             style={{
                               left: `${v.pos}%`,
                               top: `${topPx}px`,
                               '--veh-color': v.color,
                             }}
-                          />
+                          >
+                            <span className='neo-car-cabin' />
+                            <span className='neo-car-wheel wheel-left' />
+                            <span className='neo-car-wheel wheel-right' />
+                            <span className='neo-car-light' />
+                            {v.type === 'taxi' ? <span className='neo-taxi-sign'>TAXI</span> : null}
+                          </div>
                         );
                       }
                       if (v.type === 'bike') {
@@ -3960,7 +4076,10 @@ export default function NeoLifeCity({ data = {}, save, onNavigate }) {
                               top: `${topPx}px`,
                             }}
                           >
-                            🚲
+                            <span className='neo-bike-wheel wheel-front' />
+                            <span className='neo-bike-wheel wheel-back' />
+                            <span className='neo-bike-frame' />
+                            <span className='neo-bike-rider' />
                           </div>
                         );
                       }
@@ -3979,7 +4098,10 @@ export default function NeoLifeCity({ data = {}, save, onNavigate }) {
                           className='neo-city-drone-unit'
                           style={{ left: `${dx}px`, top: `${dy}px` }}
                         >
-                          🛸
+                          <span className='neo-drone-core' />
+                          <span className='neo-drone-arm arm-a' />
+                          <span className='neo-drone-arm arm-b' />
+                          <span className='neo-drone-light' />
                         </div>
                       );
                     })}
@@ -4087,6 +4209,28 @@ export default function NeoLifeCity({ data = {}, save, onNavigate }) {
                           gridRow: y + 1,
                         }}
                       >
+                        {isBuildingAnchor ? (
+                          <div
+                            className={`neo-building-visual building-${building.id} ${bOpenStatus.isOpen ? 'open' : 'closed'}`}
+                            aria-hidden='true'
+                            style={{
+                              width: `${building.w * 50.4}px`,
+                              height: `${building.h * 47.25}px`,
+                            }}
+                          >
+                            <span className='neo-building-roof' />
+                            <span className='neo-building-sign'>{building.icon}</span>
+                            <div className='neo-building-windows'>
+                              {Array.from({ length: Math.max(4, building.w * 2) }, (_, i) => (
+                                <span key={i} />
+                              ))}
+                            </div>
+                            <span className='neo-building-door'>
+                              <i />
+                            </span>
+                            <span className='neo-building-base' />
+                          </div>
+                        ) : null}
                         {isBuildingAnchor && bOpenStatus ? (
                           <button
                             type='button'
@@ -4486,6 +4630,34 @@ export default function NeoLifeCity({ data = {}, save, onNavigate }) {
                 </span>
                 <button onClick={leaveBuilding}>← Sair para a cidade</button>
               </div>
+
+              {!insideBuilding.isHome && (
+                <div className={`neo-interior-atmosphere interior-${insideBuilding.id}`}>
+                  <div className='neo-atmosphere-sign'>
+                    <span>{insideBuilding.icon}</span>
+                    <div>
+                      <b>{insideBuilding.name}</b>
+                      <small>{insideBuilding.description}</small>
+                    </div>
+                  </div>
+                  <div className='neo-interior-service-grid'>
+                    {insideBuilding.rooms.map((room, index) => (
+                      <button
+                        key={room}
+                        type='button'
+                        onClick={() => {
+                          setNotice(`${room} ativo em ${insideBuilding.name}.`);
+                          if (index === 0) setQuickInput(insideBuilding.id === 'cafe-nova' ? 'Pedido comunitário concluído' : '');
+                        }}
+                      >
+                        <span>{['01', '02', '03'][index]}</span>
+                        <b>{room}</b>
+                        <small>Explorar atividade</small>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               <div className='neo-interior-room'>
                 <div className='neo-interior-map'>
@@ -5343,11 +5515,15 @@ export default function NeoLifeCity({ data = {}, save, onNavigate }) {
                           className={`neo-race-entity ${o.isOrb ? 'orb' : 'cone'}`}
                           style={{ top: `${o.y}%` }}
                         >
-                          {o.isOrb ? '✨' : '🚧'}
+                          {o.isOrb ? <><i /><b /></> : <><i /><i /><b /></>}
                         </span>
                       ))}
                     {raceLane === lane && (
-                      <span className='neo-race-player'>🛹</span>
+                      <span className='neo-race-player'>
+                        <i className='neo-hover-deck' />
+                        <i className='neo-hover-rider' />
+                        <b className='neo-hover-flame' />
+                      </span>
                     )}
                   </div>
                 ))}
@@ -6028,6 +6204,20 @@ const styles = `
   transition:filter .5s ease,box-shadow .5s ease;
   overflow:hidden;
 }
+.neo-world-map::before{
+  content:"";position:absolute;inset:0;z-index:1;pointer-events:none;
+  background:
+    linear-gradient(90deg,transparent 39.2%,rgba(16,23,38,.72) 39.2% 43.2%,transparent 43.2% 59.2%,rgba(16,23,38,.72) 59.2% 63.2%,transparent 63.2%),
+    linear-gradient(0deg,transparent 38.5%,rgba(18,27,43,.78) 38.5% 43.5%,transparent 43.5% 51.5%,rgba(18,27,43,.78) 51.5% 57.5%,transparent 57.5%);
+  box-shadow:inset 0 0 40px rgba(12,18,38,.28);
+}
+.neo-world-map::after{
+  content:"";position:absolute;inset:0;z-index:1;pointer-events:none;
+  background:
+    linear-gradient(90deg,transparent 0 49.7%,rgba(237,198,108,.22) 49.7% 50.3%,transparent 50.3%) 0 0/100.8px 100%,
+    linear-gradient(0deg,transparent 0 49.2%,rgba(237,198,108,.18) 49.2% 50.8%,transparent 50.8%) 0 0/100% 94.5px;
+  opacity:.8;
+}
 .neo-world-map.period-morning{filter:brightness(1.04) saturate(1.06)}
 .neo-world-map.period-afternoon{filter:brightness(1) saturate(1)}
 .neo-world-map.period-sunset{filter:sepia(.2) saturate(1.18) brightness(.94)}
@@ -6049,6 +6239,34 @@ const styles = `
   color:#b6ebed;font-size:9px;font-weight:900;white-space:nowrap;
   box-shadow:0 2px 4px rgba(0,0,0,.45);
 }
+.neo-crossing-signal{
+  position:absolute;width:8px;height:21px;border-radius:3px;
+  border:1px solid #1a2530;background:#18202a;z-index:7;
+  box-shadow:0 3px 5px rgba(0,0,0,.55);
+}
+.neo-crossing-signal span{
+  position:absolute;left:2px;width:4px;height:4px;border-radius:50%;
+  background:#26313b;
+}
+.neo-crossing-signal span:nth-child(1){top:2px}
+.neo-crossing-signal span:nth-child(2){top:8px}
+.neo-crossing-signal span:nth-child(3){top:14px}
+.neo-crossing-signal.go span:nth-child(3){background:#7ec272;box-shadow:0 0 7px #7ec272}
+.neo-crossing-signal.go span:nth-child(1){background:#26313b}
+.neo-crossing-signal.stop span:nth-child(1){background:#ef6a68;box-shadow:0 0 7px #ef6a68}
+.neo-crossing-signal.stop span:nth-child(3){background:#26313b}
+.signal-west{left:151px;top:294px}.signal-central{left:454px;top:294px}.signal-market{left:757px;top:294px}
+.neo-street-lamp{
+  position:absolute;width:5px;height:22px;z-index:6;
+  transform:translate(-2px,-18px);
+  border-radius:2px;background:#263746;
+  box-shadow:2px 2px 4px rgba(0,0,0,.5);
+}
+.neo-street-lamp i{
+  position:absolute;left:-4px;top:-4px;width:13px;height:6px;border-radius:5px;
+  border:1px solid #6ec2c9;background:#dffbca;
+  box-shadow:0 0 12px rgba(182,235,237,.9),0 7px 18px rgba(245,196,81,.18);
+}
 .neo-public-transit{
   position:absolute;display:flex;align-items:center;gap:2px;
   transition:left .26s linear;z-index:5;
@@ -6067,38 +6285,90 @@ const styles = `
   background:#234736;border:1px solid #7ec272;
   color:#b2de8e;font-size:8px;letter-spacing:.5px;
 }
+.neo-vlt-window{
+  width:6px;height:5px;border-radius:1px;background:#b6ebed;
+  box-shadow:0 0 5px rgba(182,235,237,.75);
+  opacity:.9;
+}
+.neo-public-transit.stopped .neo-vlt-window{
+  background:#fff0a6;box-shadow:0 0 7px #f5c451;
+}
 
 .neo-vehicle-car{
-  position:absolute;width:24px;height:11px;border-radius:3px;
+  position:absolute;width:30px;height:14px;border-radius:7px 8px 4px 4px;
   background:var(--veh-color,#6ec2c9);
-  border:1.5px solid #16232b;
-  box-shadow:0 2px 4px rgba(0,0,0,.5);
+  border:1.5px solid #0c1822;
+  box-shadow:0 3px 5px rgba(0,0,0,.58),0 0 8px color-mix(in srgb,var(--veh-color) 55%,transparent);
   transition:left .26s linear;
 }
-.neo-vehicle-car::before{
-  content:"";position:absolute;top:2px;left:5px;right:5px;height:4px;
-  background:#1c313d;border-radius:1px;
+.neo-car-cabin{
+  position:absolute;left:8px;top:-4px;width:15px;height:8px;
+  border-radius:7px 7px 2px 2px;border:1px solid #0c1822;
+  background:linear-gradient(135deg,#9ae5e5 0 28%,#1b3b4b 29% 68%,#70c3ca 69%);
 }
-.neo-vehicle-car.east::after{
-  content:"";position:absolute;right:-3px;top:3px;width:4px;height:5px;
-  background:#fff0a6;border-radius:50%;box-shadow:4px 0 8px #f5c451;
+.neo-car-wheel{
+  position:absolute;bottom:-4px;width:6px;height:6px;border-radius:50%;
+  background:#090d12;border:1px solid #6c7d82;
+  box-shadow:inset 0 0 0 1px #2e4147;
 }
-.neo-vehicle-car.west::after{
-  content:"";position:absolute;left:-3px;top:3px;width:4px;height:5px;
-  background:#fff0a6;border-radius:50%;box-shadow:-4px 0 8px #f5c451;
+.neo-car-wheel.wheel-left{left:4px}.neo-car-wheel.wheel-right{right:4px}
+.neo-car-light{
+  position:absolute;right:-2px;top:4px;width:4px;height:4px;border-radius:50%;
+  background:#fff0a6;box-shadow:4px 0 9px #f5c451;
 }
+.neo-vehicle-taxi{
+  border-color:#8d7042;
+  background:linear-gradient(180deg,#f8d96e 0 58%,#c79732 59%);
+  box-shadow:0 3px 5px rgba(0,0,0,.58),0 0 9px rgba(245,196,81,.7);
+}
+.neo-taxi-sign{
+  position:absolute;left:9px;top:-9px;width:14px;height:6px;
+  display:flex;align-items:center;justify-content:center;
+  border:1px solid #fff0a6;border-radius:2px;
+  background:#8d4eb8;color:#fff;font-size:4px;font-weight:900;
+  box-shadow:0 0 5px #c7b3eb;
+}
+.neo-vehicle-car.west{transform:scaleX(-1)}
+.neo-vehicle-car.west .neo-car-cabin{transform:scaleX(-1)}
 
 .neo-vehicle-bike{
-  position:absolute;font-size:13px;line-height:1;
+  position:absolute;width:24px;height:18px;
   transition:left .26s linear;
   filter:drop-shadow(0 2px 2px rgba(0,0,0,.55));
+}
+.neo-bike-wheel{
+  position:absolute;bottom:0;width:7px;height:7px;border-radius:50%;
+  border:1.5px solid #9ed9d7;box-shadow:inset 0 0 0 1px #1b2b36;
+}
+.wheel-front{right:0}.wheel-back{left:0}
+.neo-bike-frame{
+  position:absolute;left:5px;bottom:5px;width:13px;height:8px;
+  border-left:2px solid #f5c451;border-bottom:2px solid #f5c451;
+  transform:skewX(-24deg);
+}
+.neo-bike-rider{
+  position:absolute;left:9px;top:1px;width:6px;height:7px;border-radius:50%;
+  background:#c7b3eb;box-shadow:0 5px 0 -1px #4d5f72;
 }
 .neo-vehicle-bike.bike-east{transform:scaleX(-1)}
 
 .neo-city-drone-unit{
-  position:absolute;font-size:14px;line-height:1;
+  position:absolute;width:30px;height:20px;
   transition:left .26s linear,top .26s linear;
   filter:drop-shadow(0 4px 6px rgba(110,194,201,.65));
+}
+.neo-drone-core{
+  position:absolute;left:8px;top:7px;width:14px;height:7px;border-radius:50%;
+  border:1px solid #b6ebed;background:#263d55;
+  box-shadow:0 0 8px rgba(110,194,201,.8);
+}
+.neo-drone-arm{
+  position:absolute;top:9px;width:12px;height:2px;background:#6ec2c9;
+}
+.arm-a{left:-1px;transform:rotate(24deg)}.arm-b{right:-1px;transform:rotate(-24deg)}
+.neo-drone-light{
+  position:absolute;left:13px;bottom:0;width:4px;height:2px;border-radius:50%;
+  background:#f5c451;box-shadow:0 0 7px #f5c451;
 }
 
 .neo-city-glow{
@@ -6149,6 +6419,82 @@ const styles = `
 }
 .neo-building-hours-badge.open{border-color:#7ec272;color:#b2de8e}
 .neo-building-hours-badge.closed{border-color:#cf9132;color:#f5c451}
+.neo-building-visual{
+  position:absolute;left:0;top:0;z-index:2;overflow:hidden;
+  border:3px solid #273a47;border-bottom:7px solid #182631;border-radius:5px 5px 2px 2px;
+  background:
+    linear-gradient(90deg,rgba(110,194,201,.12) 1px,transparent 1px) 0 0/16px 16px,
+    linear-gradient(180deg,#40566a 0 12%,#26394a 13% 72%,#1a2a36 73%);
+  box-shadow:0 8px 14px rgba(0,0,0,.58),inset 0 0 18px rgba(110,194,201,.12);
+  pointer-events:none;
+}
+.neo-building-roof{
+  position:absolute;left:-4px;right:-4px;top:-4px;height:15px;
+  border:2px solid #738096;border-radius:4px 4px 1px 1px;
+  background:linear-gradient(180deg,#66788b,#263849);
+  box-shadow:0 3px 6px rgba(0,0,0,.45);
+}
+.neo-building-sign{
+  position:absolute;right:8px;top:18px;min-width:24px;height:18px;
+  display:flex;align-items:center;justify-content:center;
+  border:1px solid #6ec2c9;border-radius:3px;background:#172936;
+  font-size:10px;box-shadow:0 0 8px rgba(110,194,201,.5);
+}
+.neo-building-windows{
+  position:absolute;left:9px;right:9px;top:38px;
+  display:grid;grid-template-columns:repeat(3,1fr);gap:8px 10px;
+}
+.neo-building-windows span{
+  height:9px;border:1px solid #30495a;border-radius:1px;
+  background:#75cfd1;box-shadow:0 0 6px rgba(110,194,201,.7);
+  opacity:.72;
+  animation:neoWindowPulse 4.2s steps(2,end) infinite;
+}
+.neo-building-windows span:nth-child(3n){animation-delay:-1.4s}
+.neo-building-windows span:nth-child(2n){animation-delay:-2.7s}
+.neo-building-visual.closed .neo-building-windows span{
+  background:#263544;box-shadow:none;opacity:.45;animation:none;
+}
+.neo-building-door{
+  position:absolute;left:50%;bottom:0;width:24px;height:31px;
+  transform:translateX(-50%);
+  border:2px solid #b8bd91;border-bottom:0;border-radius:5px 5px 0 0;
+  background:linear-gradient(90deg,#24414a 0 35%,#79c5c7 36% 64%,#24414a 65%);
+  box-shadow:0 0 10px rgba(110,194,201,.55);
+}
+.neo-building-door i{
+  position:absolute;right:3px;top:14px;width:3px;height:3px;border-radius:50%;
+  background:#fff0a6;
+}
+.neo-building-base{
+  position:absolute;left:-3px;right:-3px;bottom:-7px;height:8px;
+  border-top:2px solid #6ec2c9;background:#151f29;
+}
+.neo-building-visual.building-player-home{
+  border-color:#426050;background:
+    linear-gradient(90deg,rgba(126,194,114,.12) 1px,transparent 1px) 0 0/16px 16px,
+    linear-gradient(180deg,#60705d,#31473d 65%,#26352f);
+}
+.neo-building-visual.building-university{
+  border-color:#6577a1;background:
+    linear-gradient(90deg,rgba(199,179,235,.12) 1px,transparent 1px) 0 0/18px 18px,
+    linear-gradient(180deg,#586281,#313b5b 70%,#20283f);
+}
+.neo-building-visual.building-greenhouse{
+  border-color:#60996a;background:linear-gradient(180deg,#4f7b61,#2c5541 75%,#1d3a2e);
+  box-shadow:0 8px 14px rgba(0,0,0,.58),inset 0 0 18px rgba(126,194,114,.25);
+}
+.neo-building-visual.building-innovation-lab{
+  border-color:#6e8bb1;background:linear-gradient(150deg,#4b6078,#26374d 60%,#172738);
+}
+.neo-building-visual.building-neon-market{
+  border-color:#987267;background:linear-gradient(180deg,#76575e,#45364d 72%,#302536);
+}
+.neo-building-visual.closed .neo-building-sign{filter:grayscale(.8);opacity:.75}
+@keyframes neoWindowPulse{
+  0%,74%,100%{opacity:.72}
+  75%,88%{opacity:.18}
+}
 
 .neo-plot-btn{
   position:relative;border:0;padding:0;background-color:transparent;
@@ -6290,6 +6636,43 @@ const styles = `
 .neo-interior-header{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
 .neo-interior-header span{font-size:11px;font-weight:900;letter-spacing:1.5px;color:#f5c451}
 .neo-interior-room{display:flex;flex-direction:column;gap:14px}
+.neo-interior-atmosphere{
+  position:relative;display:grid;grid-template-columns:minmax(180px,.8fr) 1.6fr;
+  gap:12px;padding:12px;border:2px solid #52618f;border-radius:8px;
+  min-height:118px;overflow:hidden;
+  background:
+    linear-gradient(90deg,rgba(110,194,201,.09) 1px,transparent 1px) 0 0/24px 24px,
+    radial-gradient(circle at 72% 20%,rgba(110,194,201,.18),transparent 28%),
+    linear-gradient(135deg,#1b2a3a,#101b28);
+  box-shadow:inset 0 0 24px rgba(110,194,201,.12);
+}
+.neo-interior-atmosphere::after{
+  content:"";position:absolute;right:-20px;bottom:-46px;width:150px;height:150px;
+  border:18px solid rgba(110,194,201,.08);border-radius:50%;
+  box-shadow:0 0 30px rgba(110,194,201,.12);
+}
+.interior-cafe-nova{border-color:#7e8c67;background:linear-gradient(135deg,#24382f,#172426)}
+.interior-restaurant-orion{border-color:#9d6a76;background:linear-gradient(135deg,#4a2d43,#1b2435)}
+.interior-neon-gym{border-color:#6ec2c9;background:linear-gradient(135deg,#283c58,#182537)}
+.interior-life-hospital{border-color:#79bda8;background:linear-gradient(135deg,#254948,#17262b)}
+.interior-metro-hub{border-color:#8c7dc0;background:linear-gradient(135deg,#373058,#171e31)}
+.neo-atmosphere-sign{display:flex;align-items:center;gap:10px;z-index:2}
+.neo-atmosphere-sign>span{
+  width:48px;height:48px;border:2px solid #f5c451;border-radius:8px;
+  display:flex;align-items:center;justify-content:center;font-size:24px;
+  background:rgba(16,28,34,.86);box-shadow:0 0 16px rgba(245,196,81,.18);
+}
+.neo-atmosphere-sign div{display:flex;flex-direction:column;gap:3px}
+.neo-atmosphere-sign b{font-size:14px;color:#fff8e3}.neo-atmosphere-sign small{font-size:10px;color:#cbd5bd;line-height:1.35}
+.neo-interior-service-grid{display:grid;grid-template-columns:repeat(3,minmax(95px,1fr));gap:8px;z-index:2}
+.neo-interior-service-grid button{
+  min-height:82px;display:flex;flex-direction:column;align-items:flex-start;justify-content:space-between;
+  border:1px solid #5c755d;border-radius:6px;padding:8px;
+  background:rgba(18,38,42,.9);color:#eef4e2;text-align:left;cursor:pointer;
+}
+.neo-interior-service-grid button:hover{border-color:#fff0a6;transform:translateY(-2px)}
+.neo-interior-service-grid button span{font-size:9px;font-weight:900;color:#6ec2c9}
+.neo-interior-service-grid button b{font-size:11px}.neo-interior-service-grid button small{font-size:8px;color:#b2de8e}
 .neo-interior-map{
   display:grid;
   grid-template-columns:repeat(10,52.8px);
@@ -6507,8 +6890,26 @@ const styles = `
 }
 .neo-race-lane{position:relative;border-right:1px dashed rgba(110,194,201,.3)}
 .neo-race-lane:last-child{border-right:0}
-.neo-race-entity{position:absolute;left:50%;transform:translateX(-50%);font-size:20px}
-.neo-race-player{position:absolute;bottom:12px;left:50%;transform:translateX(-50%);font-size:24px}
+.neo-race-entity{position:absolute;left:50%;width:22px;height:22px;transform:translateX(-50%)}
+.neo-race-entity.cone i{
+  position:absolute;left:7px;bottom:2px;width:9px;height:16px;
+  clip-path:polygon(50% 0,100% 100%,0 100%);background:#f5c451;
+  border:1px solid #fff0a6;
+}
+.neo-race-entity.cone i:nth-child(2){left:3px;width:16px;height:4px;clip-path:none;bottom:0;border-radius:2px;background:#c7b3eb}
+.neo-race-entity.cone b{position:absolute;left:8px;top:8px;width:7px;height:3px;background:#ef6a68}
+.neo-race-entity.orb i{
+  position:absolute;left:5px;top:3px;width:12px;height:12px;border-radius:50%;
+  background:#fff0a6;box-shadow:0 0 14px #f5c451,0 0 24px rgba(110,194,201,.8);
+  animation:neoOrbSpin 1s linear infinite;
+}
+.neo-race-entity.orb b{position:absolute;left:10px;top:-3px;width:3px;height:28px;background:rgba(255,240,166,.45);transform:rotate(45deg)}
+.neo-race-player{position:absolute;bottom:12px;left:50%;width:34px;height:26px;transform:translateX(-50%)}
+.neo-hover-deck{position:absolute;left:3px;bottom:2px;width:28px;height:7px;border-radius:50%;border:2px solid #6ec2c9;background:#26394a;box-shadow:0 0 10px #6ec2c9}
+.neo-hover-rider{position:absolute;left:13px;bottom:8px;width:10px;height:12px;border-radius:50% 50% 35% 35%;background:#c7b3eb;box-shadow:0 8px 0 -2px #4d5f72}
+.neo-hover-flame{position:absolute;left:11px;bottom:-3px;width:12px;height:7px;border-radius:50%;background:#f5c451;box-shadow:0 0 12px #ef6a68;animation:neoFlame .18s alternate infinite}
+@keyframes neoOrbSpin{to{transform:rotate(360deg)}}
+@keyframes neoFlame{to{transform:scaleX(.72);opacity:.65}}
 
 .neo-circuit-grid{
   display:grid;grid-template-columns:repeat(3,88px);gap:10px;
