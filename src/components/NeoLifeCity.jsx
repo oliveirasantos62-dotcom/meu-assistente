@@ -93,10 +93,10 @@ const RESIDENTS = [
     focus: 'study',
     spriteRow: 0,
     schedule: {
-      morning: { x: 11, y: 4, label: 'Caminho da Universidade' },
+      morning: { x: 9, y: 2, label: 'Entrada da Universidade' },
       afternoon: { x: 10, y: 4, label: 'Pátio Acadêmico' },
-      sunset: { x: 8, y: 6, label: 'Praça Central' },
-      night: { x: 11, y: 3, label: 'Observatório' },
+      sunset: { x: 9, y: 5, label: 'Praça Central' },
+      night: { x: 10, y: 1, label: 'Observatório' },
     },
     storyChapters: [
       {
@@ -125,10 +125,10 @@ const RESIDENTS = [
     focus: 'tasks',
     spriteRow: 1,
     schedule: {
-      morning: { x: 5, y: 7, label: 'Oficina Sul' },
-      afternoon: { x: 4, y: 8, label: 'Laboratório de Inovação' },
-      sunset: { x: 7, y: 6, label: 'Avenida Central' },
-      night: { x: 5, y: 5, label: 'Poste de Calibração' },
+      morning: { x: 4, y: 9, label: 'Oficina Sul' },
+      afternoon: { x: 5, y: 9, label: 'Laboratório de Inovação' },
+      sunset: { x: 7, y: 7, label: 'Avenida Central' },
+      night: { x: 5, y: 8, label: 'Poste de Calibração' },
     },
     storyChapters: [
       {
@@ -157,10 +157,10 @@ const RESIDENTS = [
     focus: 'coins',
     spriteRow: 2,
     schedule: {
-      morning: { x: 10, y: 7, label: 'Banca do Mercado' },
-      afternoon: { x: 9, y: 8, label: 'Mercado Neon' },
-      sunset: { x: 11, y: 7, label: 'Alameda das Lanternas' },
-      night: { x: 8, y: 7, label: 'Feira Noturna' },
+      morning: { x: 15, y: 8, label: 'Banca do Mercado' },
+      afternoon: { x: 14, y: 8, label: 'Mercado Neon' },
+      sunset: { x: 16, y: 7, label: 'Alameda das Lanternas' },
+      night: { x: 15, y: 9, label: 'Feira Noturna' },
     },
     storyChapters: [
       {
@@ -189,10 +189,10 @@ const RESIDENTS = [
     focus: 'habits',
     spriteRow: 3,
     schedule: {
-      morning: { x: 14, y: 5, label: 'Trilha dos Jardins' },
-      afternoon: { x: 13, y: 4, label: 'Horta Comunitária' },
-      sunset: { x: 15, y: 5, label: 'Mirante Verde' },
-      night: { x: 12, y: 6, label: 'Ronda Noturna' },
+      morning: { x: 17, y: 4, label: 'Trilha dos Jardins' },
+      afternoon: { x: 16, y: 5, label: 'Horta Comunitária' },
+      sunset: { x: 18, y: 4, label: 'Mirante Verde' },
+      night: { x: 17, y: 3, label: 'Ronda Noturna' },
     },
     storyChapters: [
       {
@@ -221,10 +221,10 @@ const RESIDENTS = [
     focus: 'reading',
     spriteRow: 4,
     schedule: {
-      morning: { x: 6, y: 4, label: 'Alameda Oeste' },
-      afternoon: { x: 9, y: 4, label: 'Jardim de Leitura' },
-      sunset: { x: 4, y: 5, label: 'Praça do Núcleo' },
-      night: { x: 9, y: 3, label: 'Arquivo Silencioso' },
+      morning: { x: 7, y: 2, label: 'Alameda Oeste' },
+      afternoon: { x: 9, y: 3, label: 'Jardim de Leitura' },
+      sunset: { x: 8, y: 5, label: 'Praça do Núcleo' },
+      night: { x: 11, y: 2, label: 'Arquivo Silencioso' },
     },
     storyChapters: [
       {
@@ -253,10 +253,10 @@ const WORLD_BUILDINGS = [
     district: 'central',
     icon: '🏡',
     x: 1,
-    y: 4,
+    y: 1,
     w: 3,
     h: 2,
-    door: { x: 2, y: 6 },
+    door: { x: 2, y: 3 },
     spriteCol: 0,
     spriteRow: 2,
     isHome: true,
@@ -268,11 +268,11 @@ const WORLD_BUILDINGS = [
     name: 'Núcleo Central',
     district: 'central',
     icon: '🏢',
-    x: 4,
-    y: 1,
+    x: 8,
+    y: 4,
     w: 3,
     h: 2,
-    door: { x: 5, y: 3 },
+    door: { x: 9, y: 6 },
     spriteCol: 0,
     spriteRow: 0,
     description: 'Central de operações, tarefas reais e ponto de encontro.',
@@ -283,11 +283,11 @@ const WORLD_BUILDINGS = [
     name: 'Universidade Neon',
     district: 'academy',
     icon: '🎓',
-    x: 9,
-    y: 1,
+    x: 8,
+    y: 0,
     w: 3,
     h: 2,
-    door: { x: 10, y: 3 },
+    door: { x: 9, y: 2 },
     spriteCol: 1,
     spriteRow: 0,
     description: 'Salas de estudo, biblioteca e laboratório de foco.',
@@ -303,10 +303,10 @@ const WORLD_BUILDINGS = [
     district: 'green',
     icon: '🌿',
     x: 15,
-    y: 1,
+    y: 3,
     w: 3,
     h: 2,
-    door: { x: 16, y: 3 },
+    door: { x: 16, y: 5 },
     spriteCol: 2,
     spriteRow: 0,
     description: 'Um refúgio verde alimentado por seus hábitos e foco.',
@@ -318,10 +318,10 @@ const WORLD_BUILDINGS = [
     district: 'innovation',
     icon: '🧬',
     x: 3,
-    y: 9,
+    y: 8,
     w: 3,
     h: 2,
-    door: { x: 4, y: 8 },
+    door: { x: 4, y: 10 },
     spriteCol: 0,
     spriteRow: 1,
     description: 'Oficinas, protótipos e incubadoras de projetos.',
@@ -332,11 +332,11 @@ const WORLD_BUILDINGS = [
     name: 'Mercado Neon',
     district: 'commerce',
     icon: '🛍️',
-    x: 8,
-    y: 9,
+    x: 14,
+    y: 7,
     w: 3,
     h: 2,
-    door: { x: 9, y: 8 },
+    door: { x: 15, y: 9 },
     spriteCol: 1,
     spriteRow: 1,
     description: 'Lojas, móveis para sua casa e equipamentos.',
@@ -347,11 +347,11 @@ const WORLD_BUILDINGS = [
     name: 'Arcade 88',
     district: 'arcade',
     icon: '🕹️',
-    x: 15,
-    y: 9,
+    x: 13,
+    y: 0,
     w: 3,
     h: 2,
-    door: { x: 16, y: 8 },
+    door: { x: 14, y: 2 },
     spriteCol: 2,
     spriteRow: 1,
     description: 'Salão de jogos, corrida hoverboard e desafios lógicos.',
@@ -4966,9 +4966,9 @@ const styles = `
 }
 .neo-world-map{
   position:relative;display:grid;
-  grid-template-columns:repeat(20,48px);
-  grid-template-rows:repeat(12,48px);
-  gap:0;width:max-content;margin:auto;
+  grid-template-columns:repeat(20,50.4px);
+  grid-template-rows:repeat(12,47.25px);
+  gap:0;width:1008px;height:567px;margin:auto;
   border:4px solid #52618f;border-radius:4px;
   background:#10152d;box-shadow:0 0 0 3px #171d3c,0 0 28px rgba(70,105,255,.28);
   image-rendering:pixelated;
@@ -4987,12 +4987,10 @@ const styles = `
   filter:brightness(1.45) drop-shadow(0 0 10px rgba(245,196,81,.9));
 }
 
-.neo-world-tile{position:relative;width:48px;height:48px;overflow:visible;isolation:isolate}
-.neo-world-tile::before{
-  content:'';position:absolute;inset:0;z-index:1;pointer-events:none;opacity:.16;
-  background:linear-gradient(135deg,transparent 46%,rgba(102,220,255,.42) 47%,transparent 50%),
-    repeating-linear-gradient(0deg,transparent 0 11px,rgba(135,113,255,.16) 12px 13px);
-}
+.neo-world-tile{position:relative;width:50.4px;height:47.25px;overflow:visible;isolation:isolate;background:transparent!important}
+/* O WEBP é a arte definitiva do cenário. A grade serve apenas como camada de colisão/interação. */
+.neo-world-tile{background-image:none!important}
+.neo-world-tile::before{display:none!important}
 .neo-world-tile.city-road::before{
   opacity:.8;background:
     linear-gradient(90deg,transparent 0 45%,rgba(78,220,255,.5) 47% 49%,transparent 52%),
@@ -5057,6 +5055,26 @@ const styles = `
 }
 .neo-npc-drone{position:absolute;left:50%;bottom:14px;transform:translateX(-50%);z-index:11;pointer-events:none}
 .neo-player-sprite{position:absolute;left:50%;bottom:2px;transform:translateX(-50%);z-index:10;pointer-events:none}
+
+/* NeoLifeCity — segunda etapa: cenário fiel ao WEBP de public/maps.
+   Elementos procedurais antigos deixam de ser desenhados sobre a arte; seus
+   alvos invisíveis continuam ativos para preservar portas, prédios e canteiros. */
+.neo-world-map{
+  width:1008px;height:567px;aspect-ratio:1672 / 941;
+  background-image:url('/maps/cyberpunk-metropolis.webp')!important;
+  background-size:100% 100%!important;background-position:center;background-repeat:no-repeat;
+}
+.neo-world-tile.city-road::before,.neo-world-tile.city-water::before,.neo-world-tile.city-park::before{display:none!important}
+.neo-district-waypoint,.neo-building-tag,.neo-door-marker{display:none!important}
+.neo-building-sprite-sheet,.neo-scaffold-overlay,.neo-prop-sprite,.neo-plot-btn,.neo-spot-tag{
+  opacity:0!important;
+}
+.neo-building-sprite-sheet{background-image:none!important}
+.neo-plot-btn{box-shadow:none!important}
+.neo-map-resident{z-index:18}
+.neo-map-resident b{z-index:19}
+.neo-player-sprite{z-index:20}
+@media(max-width:760px){.neo-world-map{margin:0}}
 
 /* DIÁLOGO RAMIFICADO NO MAPA */
 .neo-world-bubble{
