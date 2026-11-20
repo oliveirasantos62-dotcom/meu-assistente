@@ -60,6 +60,29 @@ const DISTRICTS = [
   },
 ];
 
+// Grade oficial dos sprites: todos os quadros são alinhados à mesma origem.
+// Jogador: 4 colunas x 4 direções (32x32 por quadro).
+// Moradores: 4 colunas x 5 personagens (32x48 por quadro).
+const SPRITE_SHEET_LAYOUT = Object.freeze({
+  player: Object.freeze({
+    frameWidth: 32,
+    frameHeight: 32,
+    columns: 4,
+    rows: 4,
+    width: 128,
+    height: 128,
+  }),
+  residents: Object.freeze({
+    frameWidth: 32,
+    frameHeight: 48,
+    columns: 4,
+    rows: 5,
+    width: 128,
+    height: 240,
+  }),
+  directions: Object.freeze({ down: 0, up: 1, left: 2, right: 3 }),
+});
+
 const RESIDENTS = [
   {
     id: 'luna',
@@ -691,7 +714,10 @@ function createPixelCanvas(width, height) {
 
 // 1. Jogador 32x32 px customizável — 4 direções x 4 quadros de caminhada (128x128 px)
 function generatePlayerSheet(appearance = {}) {
-  const g = createPixelCanvas(128, 128);
+  const g = createPixelCanvas(
+    SPRITE_SHEET_LAYOUT.player.width,
+    SPRITE_SHEET_LAYOUT.player.height,
+  );
   const dirs = ['down', 'up', 'left', 'right'];
 
   const skinMap = {
@@ -862,7 +888,10 @@ function generatePlayerSheet(appearance = {}) {
 
 // 2. Moradores 32x48 px — Luna, Kai, Maya, Nox e Íris (128x240 px)
 function generateResidentsSheet() {
-  const g = createPixelCanvas(128, 240);
+  const g = createPixelCanvas(
+    SPRITE_SHEET_LAYOUT.residents.width,
+    SPRITE_SHEET_LAYOUT.residents.height,
+  );
   const configs = [
     {
       skin: 'S2',
@@ -2583,7 +2612,7 @@ export default function NeoLifeCity({ data = {}, save, onNavigate }) {
     };
   };
 
-  const dirRowMap = { down: 0, up: 1, left: 2, right: 3 };
+  const dirRowMap = SPRITE_SHEET_LAYOUT.directions;
   const activeWalkCol = isWalking ? walkFrame : 0;
   const dronePos = {
     x: Math.max(0, player.x - 1),
@@ -3244,12 +3273,16 @@ export default function NeoLifeCity({ data = {}, save, onNavigate }) {
                               className='neo-resident-sprite'
                               style={tileSpriteStyle(
                                 sprites.residents,
-                                128,
-                                240,
-                                ((animTick + residentHere.spriteRow) % 4) * 32,
-                                residentHere.spriteRow * 48,
-                                32,
-                                48,
+                                SPRITE_SHEET_LAYOUT.residents.width,
+                                SPRITE_SHEET_LAYOUT.residents.height,
+                                ((Math.floor(animTick / 6) +
+                                  residentHere.spriteRow) %
+                                  SPRITE_SHEET_LAYOUT.residents.columns) *
+                                  SPRITE_SHEET_LAYOUT.residents.frameWidth,
+                                residentHere.spriteRow *
+                                  SPRITE_SHEET_LAYOUT.residents.frameHeight,
+                                SPRITE_SHEET_LAYOUT.residents.frameWidth,
+                                SPRITE_SHEET_LAYOUT.residents.frameHeight,
                                 1.35,
                               )}
                             />
@@ -3281,12 +3314,14 @@ export default function NeoLifeCity({ data = {}, save, onNavigate }) {
                             aria-label='Jogador'
                             style={tileSpriteStyle(
                               sprites.player,
-                              128,
-                              128,
-                              activeWalkCol * 32,
-                              dirRowMap[lastDirection] * 32,
-                              32,
-                              32,
+                              SPRITE_SHEET_LAYOUT.player.width,
+                              SPRITE_SHEET_LAYOUT.player.height,
+                              activeWalkCol *
+                                SPRITE_SHEET_LAYOUT.player.frameWidth,
+                              dirRowMap[lastDirection] *
+                                SPRITE_SHEET_LAYOUT.player.frameHeight,
+                              SPRITE_SHEET_LAYOUT.player.frameWidth,
+                              SPRITE_SHEET_LAYOUT.player.frameHeight,
                               1.65,
                             )}
                           />
@@ -3578,12 +3613,14 @@ export default function NeoLifeCity({ data = {}, save, onNavigate }) {
                             className='neo-player-sprite interior'
                             style={tileSpriteStyle(
                               sprites.player,
-                              128,
-                              128,
-                              activeWalkCol * 32,
-                              dirRowMap[lastDirection] * 32,
-                              32,
-                              32,
+                              SPRITE_SHEET_LAYOUT.player.width,
+                              SPRITE_SHEET_LAYOUT.player.height,
+                              activeWalkCol *
+                                SPRITE_SHEET_LAYOUT.player.frameWidth,
+                              dirRowMap[lastDirection] *
+                                SPRITE_SHEET_LAYOUT.player.frameHeight,
+                              SPRITE_SHEET_LAYOUT.player.frameWidth,
+                              SPRITE_SHEET_LAYOUT.player.frameHeight,
                               1.55,
                             )}
                           />

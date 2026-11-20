@@ -1,0 +1,27 @@
+{
+  "runtimeSheets": {
+    "player": {
+      "generatedBy": "NeoLifeCity.jsx / generatePlayerSheet",
+      "file": "runtime-generated-data-url",
+      "frameSize": [32, 32],
+      "columns": 4,
+      "rows": 4,
+      "sheetSize": [128, 128],
+      "rowOrder": ["down", "up", "left", "right"],
+      "columnsMeaning": "4 frames per direction"
+    },
+    "residents": {
+      "generatedBy": "NeoLifeCity.jsx / generateResidentsSheet",
+      "file": "runtime-generated-data-url",
+      "frameSize": [32, 48],
+      "columns": 4,
+      "rows": 5,
+      "sheetSize": [128, 240],
+      "rowOrder": ["Luna", "Kai", "Maya", "Nox", "Íris"],
+      "columnsMeaning": "4 animation frames per resident"
+    }
+  },
+  "referenceArt": {
+    "note": "PNG originals are kept as reference art; they are not used as runtime animation sheets because their source backgrounds and frame boundaries are not uniformly clean."
+  }
+}
