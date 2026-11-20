@@ -1,70 +1,284 @@
 import React, { useEffect, useMemo, useState } from 'react';
 
 const DISTRICTS = [
-  { id: 'central', name: 'Núcleo Central', icon: '🏙️', desc: 'O coração da cidade. Cada tarefa concluída mantém suas luzes acesas.', metric: 'tasks', threshold: 0, color: 'cyan' },
-  { id: 'academy', name: 'Distrito Acadêmico', icon: '🎓', desc: 'Laboratórios, bibliotecas e centros de pesquisa alimentados pelo conhecimento.', metric: 'minutes', threshold: 60, color: 'violet' },
-  { id: 'green', name: 'Jardins BioTech', icon: '🌿', desc: 'Um refúgio vivo que floresce com hábitos consistentes.', metric: 'habits', threshold: 3, color: 'green' },
-  { id: 'innovation', name: 'Distrito de Inovação', icon: '🧬', desc: 'Oficinas e startups que crescem junto com seus projetos.', metric: 'projects', threshold: 1, color: 'blue' },
-  { id: 'commerce', name: 'Mercado Neon', icon: '🛍️', desc: 'Lojas, personalização e itens para sua vida na cidade.', metric: 'goals', threshold: 1, color: 'pink' },
-  { id: 'arcade', name: 'Arcade 88', icon: '🕹️', desc: 'Desafios de lógica e habilidade para jogar com os moradores.', metric: 'xp', threshold: 0, color: 'orange' },
+  {
+    id: 'central',
+    name: 'Núcleo Central',
+    icon: '🏙️',
+    desc: 'O coração da cidade. Cada tarefa concluída mantém suas luzes acesas.',
+    metric: 'tasks',
+    threshold: 0,
+    color: 'cyan',
+  },
+  {
+    id: 'academy',
+    name: 'Distrito Acadêmico',
+    icon: '🎓',
+    desc: 'Laboratórios, bibliotecas e centros de pesquisa alimentados pelo conhecimento.',
+    metric: 'minutes',
+    threshold: 60,
+    color: 'violet',
+  },
+  {
+    id: 'green',
+    name: 'Jardins BioTech',
+    icon: '🌿',
+    desc: 'Um refúgio vivo que floresce com hábitos consistentes.',
+    metric: 'habits',
+    threshold: 3,
+    color: 'green',
+  },
+  {
+    id: 'innovation',
+    name: 'Distrito de Inovação',
+    icon: '🧬',
+    desc: 'Oficinas e startups que crescem junto com seus projetos.',
+    metric: 'projects',
+    threshold: 1,
+    color: 'blue',
+  },
+  {
+    id: 'commerce',
+    name: 'Mercado Neon',
+    icon: '🛍️',
+    desc: 'Lojas, personalização e itens para sua vida na cidade.',
+    metric: 'goals',
+    threshold: 1,
+    color: 'pink',
+  },
+  {
+    id: 'arcade',
+    name: 'Arcade 88',
+    icon: '🕹️',
+    desc: 'Desafios de lógica e habilidade para jogar com os moradores.',
+    metric: 'xp',
+    threshold: 0,
+    color: 'orange',
+  },
 ];
 
 const RESIDENTS = [
-  { id: 'luna', name: 'Luna', role: 'Estudante de cibernética', avatar: '👩🏻‍🎓', district: 'academy', focus: 'study' },
-  { id: 'kai', name: 'Kai', role: 'Engenheiro de sistemas', avatar: '🧑🏽‍💻', district: 'innovation', focus: 'tasks' },
-  { id: 'maya', name: 'Maya', role: 'Comerciante do Mercado Neon', avatar: '👩🏽‍🔧', district: 'commerce', focus: 'coins' },
-  { id: 'nox', name: 'Nox', role: 'Treinador de rotina', avatar: '🧑🏻‍🚀', district: 'green', focus: 'habits' },
-  { id: 'iris', name: 'Íris', role: 'Bibliotecária de dados', avatar: '🧝🏻‍♀️', district: 'academy', focus: 'reading' },
+  {
+    id: 'luna',
+    name: 'Luna',
+    role: 'Estudante de cibernética',
+    avatar: '👩🏻‍🎓',
+    district: 'academy',
+    focus: 'study',
+  },
+  {
+    id: 'kai',
+    name: 'Kai',
+    role: 'Engenheiro de sistemas',
+    avatar: '🧑🏽‍💻',
+    district: 'innovation',
+    focus: 'tasks',
+  },
+  {
+    id: 'maya',
+    name: 'Maya',
+    role: 'Comerciante do Mercado Neon',
+    avatar: '👩🏽‍🔧',
+    district: 'commerce',
+    focus: 'coins',
+  },
+  {
+    id: 'nox',
+    name: 'Nox',
+    role: 'Treinador de rotina',
+    avatar: '🧑🏻‍🚀',
+    district: 'green',
+    focus: 'habits',
+  },
+  {
+    id: 'iris',
+    name: 'Íris',
+    role: 'Bibliotecária de dados',
+    avatar: '🧝🏻‍♀️',
+    district: 'academy',
+    focus: 'reading',
+  },
 ];
 
 const WORLD_BUILDINGS = [
-  { id: 'central-hub', name: 'Núcleo Central', district: 'central', icon: '🏢', x: 3, y: 2, w: 3, h: 2, door: { x: 4, y: 4 }, description: 'Central de operações e ponto de encontro da cidade.', rooms: ['Painel de evolução', 'Central de missões', 'Terminal de serviços'] },
-  { id: 'university', name: 'Universidade Neon', district: 'academy', icon: '🎓', x: 9, y: 1, w: 3, h: 2, door: { x: 10, y: 3 }, description: 'Salas de aula, biblioteca e laboratórios de pesquisa.', rooms: ['Biblioteca holográfica', 'Laboratório de cibernética', 'Sala de estudos'] },
-  { id: 'greenhouse', name: 'Estufa BioTech', district: 'green', icon: '🌿', x: 14, y: 2, w: 3, h: 2, door: { x: 15, y: 4 }, description: 'Um refúgio verde alimentado por energia limpa.', rooms: ['Jardim de foco', 'Laboratório botânico', 'Banco de sementes'] },
-  { id: 'innovation-lab', name: 'Laboratório de Inovação', district: 'innovation', icon: '🧬', x: 2, y: 8, w: 3, h: 2, door: { x: 3, y: 7 }, description: 'Oficinas, protótipos e incubadoras de projetos.', rooms: ['Oficina de protótipos', 'Sala de planejamento', 'Núcleo de robótica'] },
-  { id: 'neon-market', name: 'Mercado Neon', district: 'commerce', icon: '🛍️', x: 8, y: 8, w: 3, h: 2, door: { x: 9, y: 7 }, description: 'Lojas, personalização e comércio local.', rooms: ['Loja de decoração', 'Ateliê de roupas', 'Balcão de trocas'] },
-  { id: 'arcade-88', name: 'Arcade 88', district: 'arcade', icon: '🕹️', x: 14, y: 8, w: 3, h: 2, door: { x: 15, y: 7 }, description: 'Salão de jogos e desafios de habilidade.', rooms: ['Arena de memória', 'Cabine de ritmo', 'Sala de enigmas'] },
+  {
+    id: 'central-hub',
+    name: 'Núcleo Central',
+    district: 'central',
+    icon: '🏢',
+    x: 3,
+    y: 2,
+    w: 3,
+    h: 2,
+    door: { x: 4, y: 4 },
+    description: 'Central de operações e ponto de encontro da cidade.',
+    rooms: ['Painel de evolução', 'Central de missões', 'Terminal de serviços'],
+  },
+  {
+    id: 'university',
+    name: 'Universidade Neon',
+    district: 'academy',
+    icon: '🎓',
+    x: 9,
+    y: 1,
+    w: 3,
+    h: 2,
+    door: { x: 10, y: 3 },
+    description: 'Salas de aula, biblioteca e laboratórios de pesquisa.',
+    rooms: [
+      'Biblioteca holográfica',
+      'Laboratório de cibernética',
+      'Sala de estudos',
+    ],
+  },
+  {
+    id: 'greenhouse',
+    name: 'Estufa BioTech',
+    district: 'green',
+    icon: '🌿',
+    x: 14,
+    y: 2,
+    w: 3,
+    h: 2,
+    door: { x: 15, y: 4 },
+    description: 'Um refúgio verde alimentado por energia limpa.',
+    rooms: ['Jardim de foco', 'Laboratório botânico', 'Banco de sementes'],
+  },
+  {
+    id: 'innovation-lab',
+    name: 'Laboratório de Inovação',
+    district: 'innovation',
+    icon: '🧬',
+    x: 2,
+    y: 8,
+    w: 3,
+    h: 2,
+    door: { x: 3, y: 7 },
+    description: 'Oficinas, protótipos e incubadoras de projetos.',
+    rooms: [
+      'Oficina de protótipos',
+      'Sala de planejamento',
+      'Núcleo de robótica',
+    ],
+  },
+  {
+    id: 'neon-market',
+    name: 'Mercado Neon',
+    district: 'commerce',
+    icon: '🛍️',
+    x: 8,
+    y: 8,
+    w: 3,
+    h: 2,
+    door: { x: 9, y: 7 },
+    description: 'Lojas, personalização e comércio local.',
+    rooms: ['Loja de decoração', 'Ateliê de roupas', 'Balcão de trocas'],
+  },
+  {
+    id: 'arcade-88',
+    name: 'Arcade 88',
+    district: 'arcade',
+    icon: '🕹️',
+    x: 14,
+    y: 8,
+    w: 3,
+    h: 2,
+    door: { x: 15, y: 7 },
+    description: 'Salão de jogos e desafios de habilidade.',
+    rooms: ['Arena de memória', 'Cabine de ritmo', 'Sala de enigmas'],
+  },
 ];
 
 const STORE_ITEMS = [
-  { id: 'holo-plant', name: 'Planta holográfica', type: 'Decoração', icon: '🪴', price: 35, description: 'Um toque de natureza sintética para seu apartamento.' },
-  { id: 'neon-sign', name: 'Placa Neon', type: 'Decoração', icon: '💡', price: 55, description: 'Personalize seu espaço com luzes da cidade.' },
-  { id: 'drone-pet', name: 'Drone companheiro', type: 'Companheiro', icon: '🤖', price: 90, description: 'Um pequeno robô para acompanhar suas explorações.' },
-  { id: 'streetwear', name: 'Jaqueta Synthwave', type: 'Visual', icon: '🧥', price: 120, description: 'Estilo para atravessar a cidade à noite.' },
-  { id: 'skyboard', name: 'Hoverboard', type: 'Mobilidade', icon: '🛹', price: 180, description: 'Deslize pelas avenidas suspensas.' },
-  { id: 'neon-cat', name: 'Gato de plasma', type: 'Companheiro', icon: '🐈‍⬛', price: 240, description: 'Um felino luminoso que adora explorar.' },
+  {
+    id: 'holo-plant',
+    name: 'Planta holográfica',
+    type: 'Decoração',
+    icon: '🪴',
+    price: 35,
+    description: 'Um toque de natureza sintética para seu apartamento.',
+  },
+  {
+    id: 'neon-sign',
+    name: 'Placa Neon',
+    type: 'Decoração',
+    icon: '💡',
+    price: 55,
+    description: 'Personalize seu espaço com luzes da cidade.',
+  },
+  {
+    id: 'drone-pet',
+    name: 'Drone companheiro',
+    type: 'Companheiro',
+    icon: '🤖',
+    price: 90,
+    description: 'Um pequeno robô para acompanhar suas explorações.',
+  },
+  {
+    id: 'streetwear',
+    name: 'Jaqueta Synthwave',
+    type: 'Visual',
+    icon: '🧥',
+    price: 120,
+    description: 'Estilo para atravessar a cidade à noite.',
+  },
+  {
+    id: 'skyboard',
+    name: 'Hoverboard',
+    type: 'Mobilidade',
+    icon: '🛹',
+    price: 180,
+    description: 'Deslize pelas avenidas suspensas.',
+  },
+  {
+    id: 'neon-cat',
+    name: 'Gato de plasma',
+    type: 'Companheiro',
+    icon: '🐈‍⬛',
+    price: 240,
+    description: 'Um felino luminoso que adora explorar.',
+  },
 ];
 
 const localDay = () => {
   const now = new Date();
   return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
 };
-const safeArray = (value) => Array.isArray(value) ? value : [];
-const completed = (task) => task?.done === true || task?.status === 'done' || task?.completed === true;
+const safeArray = (value) => (Array.isArray(value) ? value : []);
+const completed = (task) =>
+  task?.done === true || task?.status === 'done' || task?.completed === true;
 
 function residentLine(resident, stats, history = {}) {
   const count = Number(history[resident.id]) || 0;
-  const hello = count > 0 ? 'Bom te ver de novo por aqui.' : 'Prazer em conhecer você!';
+  const hello =
+    count > 0 ? 'Bom te ver de novo por aqui.' : 'Prazer em conhecer você!';
   if (resident.id === 'luna') {
-    if (stats.studyMinutes >= 60) return `${hello} Vi que você já dedicou ${stats.studyMinutes} minutos aos estudos. O laboratório está avançando graças a pessoas curiosas como você.`;
+    if (stats.studyMinutes >= 60)
+      return `${hello} Vi que você já dedicou ${stats.studyMinutes} minutos aos estudos. O laboratório está avançando graças a pessoas curiosas como você.`;
     return `${hello} Estou pesquisando novas tecnologias. Uma sessão de estudo sua já seria uma ótima contribuição para nosso laboratório.`;
   }
   if (resident.id === 'kai') {
-    if (stats.tasks >= 3) return `${hello} ${stats.tasks} tarefas concluídas registradas! Seu foco está ajudando a manter os sistemas do distrito funcionando.`;
+    if (stats.tasks >= 3)
+      return `${hello} ${stats.tasks} tarefas concluídas registradas! Seu foco está ajudando a manter os sistemas do distrito funcionando.`;
     return `${hello} Estou calibrando os servidores da cidade. Cada tarefa concluída ajuda a manter tudo em ordem.`;
   }
-  if (resident.id === 'maya') return `${hello} Você tem ${stats.coins} moedas no bolso. Passe na loja quando quiser; aqui os preços são claros e não existem compras com dinheiro real.`;
+  if (resident.id === 'maya')
+    return `${hello} Você tem ${stats.coins} moedas no bolso. Passe na loja quando quiser; aqui os preços são claros e não existem compras com dinheiro real.`;
   if (resident.id === 'nox') {
-    if (stats.habits >= 3) return `${hello} Já existem ${stats.habits} registros de hábitos no seu histórico. Consistência não é perfeição: é voltar quando puder.`;
+    if (stats.habits >= 3)
+      return `${hello} Já existem ${stats.habits} registros de hábitos no seu histórico. Consistência não é perfeição: é voltar quando puder.`;
     return `${hello} Que tal cuidar de um pequeno hábito hoje? O importante é escolher algo que caiba na sua rotina.`;
   }
-  if (stats.readings > 0) return `${hello} Seu registro de leitura já soma ${stats.readings} item(ns). Conhecimento é uma das melhores formas de explorar novos mundos.`;
+  if (stats.readings > 0)
+    return `${hello} Seu registro de leitura já soma ${stats.readings} item(ns). Conhecimento é uma das melhores formas de explorar novos mundos.`;
   return `${hello} Cada livro ou material que você registra amplia o acervo da cidade. Volte quando tiver uma nova descoberta.`;
 }
 
 function cityWorldStart(data) {
   const saved = data?.neoCity?.world?.player;
-  return saved && Number.isFinite(saved.x) && Number.isFinite(saved.y) ? { x: saved.x, y: saved.y } : { x: 8, y: 6 };
+  return saved && Number.isFinite(saved.x) && Number.isFinite(saved.y)
+    ? { x: saved.x, y: saved.y }
+    : { x: 8, y: 6 };
 }
 
 export default function NeoLifeCity({ data = {}, save, onNavigate }) {
@@ -80,74 +294,149 @@ export default function NeoLifeCity({ data = {}, save, onNavigate }) {
   const [interiorPlayer, setInteriorPlayer] = useState({ x: 5, y: 4 });
   const [lastDirection, setLastDirection] = useState('down');
 
-  const city = data.neoCity && typeof data.neoCity === 'object' ? data.neoCity : {};
+  const city =
+    data.neoCity && typeof data.neoCity === 'object' ? data.neoCity : {};
   const inventory = safeArray(city.inventory);
   const talks = city.talks && typeof city.talks === 'object' ? city.talks : {};
-  const arcade = city.arcade && typeof city.arcade === 'object' ? city.arcade : {};
+  const arcade =
+    city.arcade && typeof city.arcade === 'object' ? city.arcade : {};
   const coins = Math.max(0, Number(data.coins) || 0);
   const xp = Math.max(0, Number(data.xp) || 0);
   const tasks = safeArray(data.tasks);
   const habits = safeArray(data.habits);
   const sessions = safeArray(data.studySessions);
-  const readings = safeArray(data.readings).concat(safeArray(data.knowledgeItems));
+  const readings = safeArray(data.readings).concat(
+    safeArray(data.knowledgeItems),
+  );
   const goals = safeArray(data.goals);
   const projects = safeArray(data.projects);
-  const stats = useMemo(() => ({
-    tasks: tasks.filter(completed).length,
-    studyMinutes: sessions.reduce((sum, item) => sum + Math.max(0, Number(item.minutes) || 0), 0),
-    habits: habits.reduce((sum, habit) => sum + new Set([
-      ...Object.entries(habit.history || {}).filter(([, done]) => done).map(([day]) => day),
-      ...safeArray(habit.completedDates),
-    ]).size, 0),
-    readings: readings.length,
-    goals: goals.filter((goal) => goal.status === 'completed' || Number(goal.progress) >= 100).length,
-    projects: projects.length,
-    coins,
-    xp,
-  }), [tasks, sessions, habits, readings, goals, projects, coins, xp]);
+  const stats = useMemo(
+    () => ({
+      tasks: tasks.filter(completed).length,
+      studyMinutes: sessions.reduce(
+        (sum, item) => sum + Math.max(0, Number(item.minutes) || 0),
+        0,
+      ),
+      habits: habits.reduce(
+        (sum, habit) =>
+          sum +
+          new Set([
+            ...Object.entries(habit.history || {})
+              .filter(([, done]) => done)
+              .map(([day]) => day),
+            ...safeArray(habit.completedDates),
+          ]).size,
+        0,
+      ),
+      readings: readings.length,
+      goals: goals.filter(
+        (goal) => goal.status === 'completed' || Number(goal.progress) >= 100,
+      ).length,
+      projects: projects.length,
+      coins,
+      xp,
+    }),
+    [tasks, sessions, habits, readings, goals, projects, coins, xp],
+  );
 
   const districtValue = (district) => stats[district.metric] || 0;
-  const districtOpen = (district) => districtValue(district) >= district.threshold;
+  const districtOpen = (district) =>
+    districtValue(district) >= district.threshold;
   const openCount = DISTRICTS.filter(districtOpen).length;
   const today = localDay();
   const attemptedToday = arcade.lastAttemptDate === today;
   const ownedIds = new Set(inventory);
 
-  const persistCity = (nextCity, extra = {}) => save?.({ ...data, ...extra, neoCity: nextCity });
+  const persistCity = (nextCity, extra = {}) =>
+    save?.({ ...data, ...extra, neoCity: nextCity });
 
   const isBlocked = (x, y) => {
     if (x < 0 || x > 17 || y < 0 || y > 11) return true;
     if ((x === 0 || x === 17) && y > 0 && y < 11) return true;
-    return WORLD_BUILDINGS.some((building) => x >= building.x && x < building.x + building.w && y >= building.y && y < building.y + building.h);
+    return WORLD_BUILDINGS.some(
+      (building) =>
+        x >= building.x &&
+        x < building.x + building.w &&
+        y >= building.y &&
+        y < building.y + building.h,
+    );
   };
   const movePlayer = (dx, dy) => {
     if (insideBuilding) {
-      setInteriorPlayer((current) => ({ x: Math.max(0, Math.min(9, current.x + dx)), y: Math.max(0, Math.min(5, current.y + dy)) }));
-      setLastDirection(dx < 0 ? 'left' : dx > 0 ? 'right' : dy < 0 ? 'up' : 'down');
+      setInteriorPlayer((current) => ({
+        x: Math.max(0, Math.min(9, current.x + dx)),
+        y: Math.max(0, Math.min(5, current.y + dy)),
+      }));
+      setLastDirection(
+        dx < 0 ? 'left' : dx > 0 ? 'right' : dy < 0 ? 'up' : 'down',
+      );
       return;
     }
     const nx = Math.max(0, Math.min(17, player.x + dx));
     const ny = Math.max(0, Math.min(11, player.y + dy));
-    const blocked = isBlocked(nx, ny) && !WORLD_BUILDINGS.some((b) => b.door.x === nx && b.door.y === ny);
-    if (!blocked) { setPlayer({ x: nx, y: ny }); setLastDirection(dx < 0 ? 'left' : dx > 0 ? 'right' : dy < 0 ? 'up' : 'down'); }
+    const blocked =
+      isBlocked(nx, ny) &&
+      !WORLD_BUILDINGS.some((b) => b.door.x === nx && b.door.y === ny);
+    if (!blocked) {
+      setPlayer({ x: nx, y: ny });
+      setLastDirection(
+        dx < 0 ? 'left' : dx > 0 ? 'right' : dy < 0 ? 'up' : 'down',
+      );
+    }
   };
   useEffect(() => {
     const onKeyDown = (event) => {
       if (activeTab !== 'explore') return;
-      if (['INPUT', 'TEXTAREA', 'SELECT'].includes(event.target?.tagName) || event.target?.isContentEditable) return;
+      if (
+        ['INPUT', 'TEXTAREA', 'SELECT'].includes(event.target?.tagName) ||
+        event.target?.isContentEditable
+      )
+        return;
       const key = event.key.toLowerCase();
-      const directions = { arrowup: [0, -1], w: [0, -1], arrowdown: [0, 1], s: [0, 1], arrowleft: [-1, 0], a: [-1, 0], arrowright: [1, 0], d: [1, 0] };
-      if (directions[key]) { event.preventDefault(); movePlayer(...directions[key]); }
+      const directions = {
+        arrowup: [0, -1],
+        w: [0, -1],
+        arrowdown: [0, 1],
+        s: [0, 1],
+        arrowleft: [-1, 0],
+        a: [-1, 0],
+        arrowright: [1, 0],
+        d: [1, 0],
+      };
+      if (directions[key]) {
+        event.preventDefault();
+        movePlayer(...directions[key]);
+      }
       if (key === 'e' && !insideBuilding) {
-        const nearby = WORLD_BUILDINGS.find((building) => Math.abs(building.door.x - player.x) + Math.abs(building.door.y - player.y) <= 1);
+        const nearby = WORLD_BUILDINGS.find(
+          (building) =>
+            Math.abs(building.door.x - player.x) +
+              Math.abs(building.door.y - player.y) <=
+            1,
+        );
         if (nearby) enterBuilding(nearby);
       } else if (key === 'e' && insideBuilding) {
-        if (Math.abs(interiorPlayer.x - 5) <= 1 && interiorPlayer.y >= 4) leaveBuilding();
+        if (Math.abs(interiorPlayer.x - 5) <= 1 && interiorPlayer.y >= 4)
+          leaveBuilding();
         else {
-          const stations = [{ x: 1, y: 2, index: 0 }, { x: 4, y: 2, index: 1 }, { x: 8, y: 2, index: 2 }];
-          const nearbyStation = stations.find((station) => Math.abs(station.x - interiorPlayer.x) + Math.abs(station.y - interiorPlayer.y) <= 1);
-          const room = nearbyStation ? insideBuilding.rooms[nearbyStation.index] : null;
-          if (room) setNotice(`Você está explorando: ${room}. Em breve este espaço terá atividades interativas.`);
+          const stations = [
+            { x: 1, y: 2, index: 0 },
+            { x: 4, y: 2, index: 1 },
+            { x: 8, y: 2, index: 2 },
+          ];
+          const nearbyStation = stations.find(
+            (station) =>
+              Math.abs(station.x - interiorPlayer.x) +
+                Math.abs(station.y - interiorPlayer.y) <=
+              1,
+          );
+          const room = nearbyStation
+            ? insideBuilding.rooms[nearbyStation.index]
+            : null;
+          if (room)
+            setNotice(
+              `Você está explorando: ${room}. Em breve este espaço terá atividades interativas.`,
+            );
         }
       }
       if (key === 'escape' && insideBuilding) leaveBuilding();
@@ -162,35 +451,70 @@ export default function NeoLifeCity({ data = {}, save, onNavigate }) {
   }, [player.x, player.y]);
   const enterBuilding = (building) => {
     const district = DISTRICTS.find((item) => item.id === building.district);
-    if (district && !districtOpen(district)) { setNotice(`O ${building.name} ainda está em construção. Continue evoluindo no Meu Assistente para liberar este local.`); return; }
+    if (district && !districtOpen(district)) {
+      setNotice(
+        `O ${building.name} ainda está em construção. Continue evoluindo no Meu Assistente para liberar este local.`,
+      );
+      return;
+    }
     setInteriorPlayer({ x: 5, y: 4 });
     setInsideBuilding(building);
     persistCity({ ...city, world: { ...(city.world || {}), player } });
   };
-  const leaveBuilding = () => { setInsideBuilding(null); persistCity({ ...city, world: { ...(city.world || {}), player } }); };
+  const leaveBuilding = () => {
+    setInsideBuilding(null);
+    persistCity({ ...city, world: { ...(city.world || {}), player } });
+  };
 
   const talkTo = (resident) => {
-    const nextTalks = { ...talks, [resident.id]: (Number(talks[resident.id]) || 0) + 1 };
+    const nextTalks = {
+      ...talks,
+      [resident.id]: (Number(talks[resident.id]) || 0) + 1,
+    };
     persistCity({ ...city, talks: nextTalks });
-    setSelectedResident({ ...resident, dialogue: residentLine(resident, stats, talks) });
+    setSelectedResident({
+      ...resident,
+      dialogue: residentLine(resident, stats, talks),
+    });
   };
 
   const buyItem = (item) => {
     if (ownedIds.has(item.id)) return;
-    if (coins < item.price) { setNotice(`Faltam ${item.price - coins} moedas para comprar ${item.name}.`); return; }
-    persistCity({ ...city, inventory: [...inventory, item.id] }, { coins: coins - item.price });
+    if (coins < item.price) {
+      setNotice(
+        `Faltam ${item.price - coins} moedas para comprar ${item.name}.`,
+      );
+      return;
+    }
+    persistCity(
+      { ...city, inventory: [...inventory, item.id] },
+      { coins: coins - item.price },
+    );
     setNotice(`${item.name} foi adicionado ao seu inventário.`);
   };
 
   const startGame = () => {
-    if (attemptedToday) { setNotice('Você já participou do desafio de hoje. O Arcade terá uma nova rodada amanhã.'); return; }
-    if (coins < 5) { setNotice('Você precisa de 5 moedas para entrar no desafio.'); return; }
-    const nextSequence = Array.from({ length: 4 }, () => Math.floor(Math.random() * 4));
+    if (attemptedToday) {
+      setNotice(
+        'Você já participou do desafio de hoje. O Arcade terá uma nova rodada amanhã.',
+      );
+      return;
+    }
+    if (coins < 5) {
+      setNotice('Você precisa de 5 moedas para entrar no desafio.');
+      return;
+    }
+    const nextSequence = Array.from({ length: 4 }, () =>
+      Math.floor(Math.random() * 4),
+    );
     setSequence(nextSequence);
     setPlayerSequence([]);
     setGameSeed((value) => value + 1);
     setGameState('preview');
-    persistCity({ ...city, arcade: { ...arcade, lastAttemptDate: today } }, { coins: coins - 5 });
+    persistCity(
+      { ...city, arcade: { ...arcade, lastAttemptDate: today } },
+      { coins: coins - 5 },
+    );
   };
 
   const choosePad = (value) => {
@@ -199,97 +523,712 @@ export default function NeoLifeCity({ data = {}, save, onNavigate }) {
     setPlayerSequence(next);
     if (next.some((item, index) => item !== sequence[index])) {
       setGameState('lost');
-      setNotice('Quase! O desafio de hoje foi encerrado. Amanhã você pode tentar outra sequência.');
+      setNotice(
+        'Quase! O desafio de hoje foi encerrado. Amanhã você pode tentar outra sequência.',
+      );
       return;
     }
     if (next.length === sequence.length) {
       setGameState('won');
-      const nextArcade = { ...arcade, lastAttemptDate: today, lastWinDate: today };
-      persistCity({ ...city, arcade: nextArcade }, { coins: Math.max(0, Number(data.coins) || 0) + 12 });
+      const nextArcade = {
+        ...arcade,
+        lastAttemptDate: today,
+        lastWinDate: today,
+      };
+      persistCity(
+        { ...city, arcade: nextArcade },
+        { coins: Math.max(0, Number(data.coins) || 0) + 12 },
+      );
       setNotice('Sequência perfeita! Você ganhou 12 moedas.');
     }
   };
 
   const tabs = [
-    ['explore', '🕹️ Explorar'], ['city', '🌆 Distritos'], ['residents', '🧑‍🤝‍🧑 Moradores'], ['market', '🛍️ Mercado'], ['arcade', '🕹️ Arcade'], ['inventory', '🎒 Inventário'],
+    ['explore', '🕹️ Explorar'],
+    ['city', '🌆 Distritos'],
+    ['residents', '🧑‍🤝‍🧑 Moradores'],
+    ['market', '🛍️ Mercado'],
+    ['arcade', '🕹️ Arcade'],
+    ['inventory', '🎒 Inventário'],
   ];
 
   return (
-    <main className="neo-city-page">
+    <main className='neo-city-page'>
       <style>{styles}</style>
-      <section className="neo-hero">
-        <div className="neo-hero-grid" />
-        <div className="neo-hero-copy">
-          <span className="neo-kicker">NEO-LIFE // SIMULADOR DE EVOLUÇÃO</span>
-          <h1>Sua vida real. <em>Sua cidade.</em></h1>
-          <p>Uma metrópole futurista que cresce com seus estudos, tarefas, hábitos e conquistas. Explore, converse com moradores e construa seu próprio canto da cidade.</p>
-          <div className="neo-hero-actions"><button onClick={() => onNavigate?.('tasks')}>＋ Registrar progresso</button><span>Sem perder progresso por descansar.</span></div>
+      <section className='neo-hero'>
+        <div className='neo-hero-grid' />
+        <div className='neo-hero-copy'>
+          <span className='neo-kicker'>NEO-LIFE // SIMULADOR DE EVOLUÇÃO</span>
+          <h1>
+            Sua vida real. <em>Sua cidade.</em>
+          </h1>
+          <p>
+            Uma metrópole futurista que cresce com seus estudos, tarefas,
+            hábitos e conquistas. Explore, converse com moradores e construa seu
+            próprio canto da cidade.
+          </p>
+          <div className='neo-hero-actions'>
+            <button onClick={() => onNavigate?.('tasks')}>
+              ＋ Registrar progresso
+            </button>
+            <span>Sem perder progresso por descansar.</span>
+          </div>
         </div>
-        <div className="neo-city-skyline" aria-label="Ilustração de uma cidade futurista">
-          <div className="neo-moon" /><div className="neo-tower tower-a" /><div className="neo-tower tower-b" /><div className="neo-tower tower-c" /><div className="neo-tower tower-d" /><div className="neo-road" />
-          <span className="skyline-label">SETORES CONECTADOS <b>{openCount}/{DISTRICTS.length}</b></span>
+        <div
+          className='neo-city-skyline'
+          aria-label='Ilustração de uma cidade futurista'
+        >
+          <div className='neo-moon' />
+          <div className='neo-tower tower-a' />
+          <div className='neo-tower tower-b' />
+          <div className='neo-tower tower-c' />
+          <div className='neo-tower tower-d' />
+          <div className='neo-road' />
+          <span className='skyline-label'>
+            SETORES CONECTADOS{' '}
+            <b>
+              {openCount}/{DISTRICTS.length}
+            </b>
+          </span>
         </div>
-        <div className="neo-wallet"><span>CARTEIRA DIGITAL</span><strong>🪙 {coins.toLocaleString('pt-BR')}</strong><small>moedas disponíveis</small></div>
+        <div className='neo-wallet'>
+          <span>CARTEIRA DIGITAL</span>
+          <strong>🪙 {coins.toLocaleString('pt-BR')}</strong>
+          <small>moedas disponíveis</small>
+        </div>
       </section>
 
-      <div className="neo-tabs" role="tablist" aria-label="Áreas da cidade">
-        {tabs.map(([id, label]) => <button key={id} role="tab" aria-selected={activeTab === id} className={activeTab === id ? 'active' : ''} onClick={() => setActiveTab(id)}>{label}</button>)}
+      <div className='neo-tabs' role='tablist' aria-label='Áreas da cidade'>
+        {tabs.map(([id, label]) => (
+          <button
+            key={id}
+            role='tab'
+            aria-selected={activeTab === id}
+            className={activeTab === id ? 'active' : ''}
+            onClick={() => setActiveTab(id)}
+          >
+            {label}
+          </button>
+        ))}
       </div>
 
-      {notice && <div className="neo-notice" role="status">✨ {notice}<button onClick={() => setNotice('')} aria-label="Fechar aviso">×</button></div>}
+      {notice && (
+        <div className='neo-notice' role='status'>
+          ✨ {notice}
+          <button onClick={() => setNotice('')} aria-label='Fechar aviso'>
+            ×
+          </button>
+        </div>
+      )}
 
-      {activeTab === 'explore' && <>
-        <section className="neo-section-heading"><div><span>NEO-LIFE // MUNDO ABERTO</span><h2>{insideBuilding ? insideBuilding.name : 'Explore a cidade'}</h2><p>{insideBuilding ? insideBuilding.description : 'Caminhe livremente, descubra os distritos e entre nos prédios. Use WASD ou as setas do teclado; no celular, use os controles direcionais.'}</p></div><div className="neo-level-chip">📍 {insideBuilding ? 'INTERIOR' : `SETOR ${player.x + 1} · ${player.y + 1}`}</div></section>
-        {!insideBuilding ? <>
-          <div className="neo-world-toolbar"><span>🌙 NEO-CITY • CICLO NOTURNO</span><span>WASD / SETAS • E PARA ENTRAR</span><button onClick={() => setPlayer({ x: 8, y: 6 })}>Voltar à praça central</button></div>
-          <div className="neo-world-scroll"><div className="neo-world-map" role="application" aria-label="Mapa explorável da cidade">
-            {Array.from({ length: 18 * 12 }, (_, index) => { const x = index % 18; const y = Math.floor(index / 18); const building = WORLD_BUILDINGS.find((b) => x >= b.x && x < b.x + b.w && y >= b.y && y < b.y + b.h); const door = WORLD_BUILDINGS.find((b) => b.door.x === x && b.door.y === y); const isRoad = y === 5 || y === 6 || x === 7 || x === 12; const isPark = (x >= 5 && x <= 6 && y >= 1 && y <= 3) || (x >= 12 && x <= 13 && y >= 8 && y <= 10); const playerHere = player.x === x && player.y === y; return <div key={`${x}-${y}`} className={`neo-world-tile ${isRoad ? 'road' : isPark ? 'park' : 'ground'} ${building ? 'building-tile' : ''} ${door ? 'door-tile' : ''} ${playerHere ? 'player-tile' : ''}`} style={{ gridColumn: x + 1, gridRow: y + 1 }}>{building && x === building.x + 1 && y === building.y ? <span className="neo-building-label">{building.icon} {building.name}</span> : null}{isPark && !building && (x + y) % 2 === 0 ? <span className="neo-tree">🌳</span> : null}{door ? <button className="neo-door" title={`Entrar em ${door.name}`} onClick={() => enterBuilding(door)}>🚪</button> : null}{playerHere ? <span className={`neo-player ${lastDirection}`} aria-label="Você">🧑‍🚀</span> : null}</div>; })}
-          </div></div>
-          <div className="neo-world-controls"><div className="neo-dpad"><button onClick={() => movePlayer(0,-1)} aria-label="Mover para cima">▲</button><div><button onClick={() => movePlayer(-1,0)} aria-label="Mover para esquerda">◀</button><button onClick={() => movePlayer(0,1)} aria-label="Mover para baixo">▼</button><button onClick={() => movePlayer(1,0)} aria-label="Mover para direita">▶</button></div></div><p>Aproxime-se de uma porta e pressione E, ou clique nela. Os locais bloqueados serão liberados conforme seu progresso.</p></div>
-          <section className="neo-building-list"><h3>Locais da cidade</h3><div>{WORLD_BUILDINGS.map((building) => { const district = DISTRICTS.find((d) => d.id === building.district); const unlocked = districtOpen(district); return <button key={building.id} disabled={!unlocked} onClick={() => enterBuilding(building)}><span>{building.icon}</span><b>{building.name}</b><small>{unlocked ? 'Entrar no prédio ↗' : '🔒 Em construção'}</small></button>; })}</div></section>
-        </> : <div className="neo-interior"><div className="neo-interior-header"><span>INTERIOR // {insideBuilding.district.toUpperCase()}</span><button onClick={leaveBuilding}>← Sair para a cidade</button></div><div className="neo-interior-room"><div className="neo-interior-window">🌃</div><div className="neo-interior-sign">{insideBuilding.icon}<h3>{insideBuilding.name}</h3><p>{insideBuilding.description}</p></div><div className="neo-interior-map">{Array.from({ length: 60 }, (_, index) => { const x = index % 10; const y = Math.floor(index / 10); const stationIndex = y === 2 ? (x < 3 ? 0 : x < 7 ? 1 : 2) : -1; const station = y === 2 && [1,4,8].includes(x) ? insideBuilding.rooms[stationIndex] : null; const isPlayer = interiorPlayer.x === x && interiorPlayer.y === y; return <div key={index} className={`neo-interior-tile ${y === 0 || y === 5 || x === 0 || x === 9 ? 'wall' : ''} ${station ? 'station' : ''} ${isPlayer ? 'occupied' : ''}`} style={{ gridColumn: x + 1, gridRow: y + 1 }}>{station ? <button onClick={() => setNotice(`${station}: área preparada para receber atividades e interações.`)}><span>{['🖥️','📚','🧪'][stationIndex]}</span><b>{station}</b><small>Interagir</small></button> : null}{isPlayer ? <span className={`neo-player ${lastDirection}`}>🧑‍🚀</span> : null}{x === 5 && y === 5 ? <button className="neo-interior-door" onClick={leaveBuilding}>🚪</button> : null}</div>; })}</div><div className="neo-interior-help">Use WASD / setas para explorar este ambiente. Pressione E perto de uma estação para interagir ou na saída para voltar.</div></div><div className="neo-world-controls"><div className="neo-dpad"><button onClick={() => movePlayer(0,-1)}>▲</button><div><button onClick={() => movePlayer(-1,0)}>◀</button><button onClick={() => movePlayer(0,1)}>▼</button><button onClick={() => movePlayer(1,0)}>▶</button></div></div><p>Explore o interior e aproxime-se das estações para interagir.</p></div></div>}
-      </>}
+      {activeTab === 'explore' && (
+        <>
+          <section className='neo-section-heading'>
+            <div>
+              <span>NEO-LIFE // MUNDO ABERTO</span>
+              <h2>
+                {insideBuilding ? insideBuilding.name : 'Explore a cidade'}
+              </h2>
+              <p>
+                {insideBuilding
+                  ? insideBuilding.description
+                  : 'Caminhe livremente, descubra os distritos e entre nos prédios. Use WASD ou as setas do teclado; no celular, use os controles direcionais.'}
+              </p>
+            </div>
+            <div className='neo-level-chip'>
+              📍{' '}
+              {insideBuilding
+                ? 'INTERIOR'
+                : `SETOR ${player.x + 1} · ${player.y + 1}`}
+            </div>
+          </section>
+          {!insideBuilding ? (
+            <>
+              <div className='neo-world-toolbar'>
+                <span>🌙 NEO-CITY • CICLO NOTURNO</span>
+                <span>WASD / SETAS • E PARA ENTRAR</span>
+                <button onClick={() => setPlayer({ x: 8, y: 6 })}>
+                  Voltar à praça central
+                </button>
+              </div>
+              <div className='neo-world-scroll'>
+                <div
+                  className='neo-world-map'
+                  role='application'
+                  aria-label='Mapa explorável da cidade'
+                >
+                  {Array.from({ length: 18 * 12 }, (_, index) => {
+                    const x = index % 18;
+                    const y = Math.floor(index / 18);
+                    const building = WORLD_BUILDINGS.find(
+                      (b) =>
+                        x >= b.x && x < b.x + b.w && y >= b.y && y < b.y + b.h,
+                    );
+                    const door = WORLD_BUILDINGS.find(
+                      (b) => b.door.x === x && b.door.y === y,
+                    );
+                    const isRoad = y === 5 || y === 6 || x === 7 || x === 12;
+                    const isPark =
+                      (x >= 5 && x <= 6 && y >= 1 && y <= 3) ||
+                      (x >= 12 && x <= 13 && y >= 8 && y <= 10);
+                    const playerHere = player.x === x && player.y === y;
+                    return (
+                      <div
+                        key={`${x}-${y}`}
+                        className={`neo-world-tile ${isRoad ? 'road' : isPark ? 'park' : 'ground'} ${building ? 'building-tile' : ''} ${door ? 'door-tile' : ''} ${playerHere ? 'player-tile' : ''}`}
+                        style={{ gridColumn: x + 1, gridRow: y + 1 }}
+                      >
+                        {building &&
+                        x === building.x + 1 &&
+                        y === building.y ? (
+                          <span className='neo-building-label'>
+                            {building.icon} {building.name}
+                          </span>
+                        ) : null}
+                        {isPark && !building && (x + y) % 2 === 0 ? (
+                          <span className='neo-tree'>🌳</span>
+                        ) : null}
+                        {door ? (
+                          <button
+                            className='neo-door'
+                            title={`Entrar em ${door.name}`}
+                            onClick={() => enterBuilding(door)}
+                          >
+                            🚪
+                          </button>
+                        ) : null}
+                        {playerHere ? (
+                          <span
+                            className={`neo-player ${lastDirection}`}
+                            aria-label='Você'
+                          >
+                            🧑‍🚀
+                          </span>
+                        ) : null}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+              <div className='neo-world-controls'>
+                <div className='neo-dpad'>
+                  <button
+                    onClick={() => movePlayer(0, -1)}
+                    aria-label='Mover para cima'
+                  >
+                    ▲
+                  </button>
+                  <div>
+                    <button
+                      onClick={() => movePlayer(-1, 0)}
+                      aria-label='Mover para esquerda'
+                    >
+                      ◀
+                    </button>
+                    <button
+                      onClick={() => movePlayer(0, 1)}
+                      aria-label='Mover para baixo'
+                    >
+                      ▼
+                    </button>
+                    <button
+                      onClick={() => movePlayer(1, 0)}
+                      aria-label='Mover para direita'
+                    >
+                      ▶
+                    </button>
+                  </div>
+                </div>
+                <p>
+                  Aproxime-se de uma porta e pressione E, ou clique nela. Os
+                  locais bloqueados serão liberados conforme seu progresso.
+                </p>
+              </div>
+              <section className='neo-building-list'>
+                <h3>Locais da cidade</h3>
+                <div>
+                  {WORLD_BUILDINGS.map((building) => {
+                    const district = DISTRICTS.find(
+                      (d) => d.id === building.district,
+                    );
+                    const unlocked = districtOpen(district);
+                    return (
+                      <button
+                        key={building.id}
+                        disabled={!unlocked}
+                        onClick={() => enterBuilding(building)}
+                      >
+                        <span>{building.icon}</span>
+                        <b>{building.name}</b>
+                        <small>
+                          {unlocked ? 'Entrar no prédio ↗' : '🔒 Em construção'}
+                        </small>
+                      </button>
+                    );
+                  })}
+                </div>
+              </section>
+            </>
+          ) : (
+            <div className='neo-interior'>
+              <div className='neo-interior-header'>
+                <span>INTERIOR // {insideBuilding.district.toUpperCase()}</span>
+                <button onClick={leaveBuilding}>← Sair para a cidade</button>
+              </div>
+              <div className='neo-interior-room'>
+                <div className='neo-interior-window'>🌃</div>
+                <div className='neo-interior-sign'>
+                  {insideBuilding.icon}
+                  <h3>{insideBuilding.name}</h3>
+                  <p>{insideBuilding.description}</p>
+                </div>
+                <div className='neo-interior-map'>
+                  {Array.from({ length: 60 }, (_, index) => {
+                    const x = index % 10;
+                    const y = Math.floor(index / 10);
+                    const stationIndex =
+                      y === 2 ? (x < 3 ? 0 : x < 7 ? 1 : 2) : -1;
+                    const station =
+                      y === 2 && [1, 4, 8].includes(x)
+                        ? insideBuilding.rooms[stationIndex]
+                        : null;
+                    const isPlayer =
+                      interiorPlayer.x === x && interiorPlayer.y === y;
+                    return (
+                      <div
+                        key={index}
+                        className={`neo-interior-tile ${y === 0 || y === 5 || x === 0 || x === 9 ? 'wall' : ''} ${station ? 'station' : ''} ${isPlayer ? 'occupied' : ''}`}
+                        style={{ gridColumn: x + 1, gridRow: y + 1 }}
+                      >
+                        {station ? (
+                          <button
+                            onClick={() =>
+                              setNotice(
+                                `${station}: área preparada para receber atividades e interações.`,
+                              )
+                            }
+                          >
+                            <span>{['🖥️', '📚', '🧪'][stationIndex]}</span>
+                            <b>{station}</b>
+                            <small>Interagir</small>
+                          </button>
+                        ) : null}
+                        {isPlayer ? (
+                          <span className={`neo-player ${lastDirection}`}>
+                            🧑‍🚀
+                          </span>
+                        ) : null}
+                        {x === 5 && y === 5 ? (
+                          <button
+                            className='neo-interior-door'
+                            onClick={leaveBuilding}
+                          >
+                            🚪
+                          </button>
+                        ) : null}
+                      </div>
+                    );
+                  })}
+                </div>
+                <div className='neo-interior-help'>
+                  Use WASD / setas para explorar este ambiente. Pressione E
+                  perto de uma estação para interagir ou na saída para voltar.
+                </div>
+              </div>
+              <div className='neo-world-controls'>
+                <div className='neo-dpad'>
+                  <button onClick={() => movePlayer(0, -1)}>▲</button>
+                  <div>
+                    <button onClick={() => movePlayer(-1, 0)}>◀</button>
+                    <button onClick={() => movePlayer(0, 1)}>▼</button>
+                    <button onClick={() => movePlayer(1, 0)}>▶</button>
+                  </div>
+                </div>
+                <p>
+                  Explore o interior e aproxime-se das estações para interagir.
+                </p>
+              </div>
+            </div>
+          )}
+        </>
+      )}
 
-      {activeTab === 'city' && <>
-        <section className="neo-section-heading"><div><span>MAPA URBANO</span><h2>Explore os distritos</h2><p>O desenvolvimento de cada região é calculado a partir dos registros existentes no Meu Assistente.</p></div><div className="neo-level-chip">⚡ {xp.toLocaleString('pt-BR')} XP acumulados</div></section>
-        <section className="neo-district-grid">
-          {DISTRICTS.map((district, index) => {
-            const unlocked = districtOpen(district);
-            const value = districtValue(district);
-            const pct = district.threshold === 0 ? 100 : Math.min(100, Math.round(value / district.threshold * 100));
-            return <article key={district.id} className={`neo-district ${district.color} ${unlocked ? '' : 'locked'}`} style={{ '--delay': `${index * 55}ms` }}>
-              <div className="neo-district-top"><span className="neo-district-icon">{unlocked ? district.icon : '🔒'}</span><span className="neo-status">{unlocked ? 'ACESSÍVEL' : 'EM CONSTRUÇÃO'}</span></div>
-              <h3>{district.name}</h3><p>{district.desc}</p>
-              <div className="neo-district-progress"><div><span>{district.metric === 'minutes' ? 'Minutos estudados' : district.metric === 'tasks' ? 'Tarefas concluídas' : district.metric === 'habits' ? 'Registros de hábitos' : district.metric === 'projects' ? 'Projetos criados' : district.metric === 'goals' ? 'Metas concluídas' : 'Experiência total'}</span><b>{value.toLocaleString('pt-BR')}{district.metric === 'minutes' ? ' min' : ''}</b></div><i><u style={{ width: `${pct}%` }} /></i></div>
-              {!unlocked && <small>Meta para abrir: {district.threshold} {district.metric === 'minutes' ? 'minutos' : district.metric === 'habits' ? 'registros' : district.metric === 'projects' || district.metric === 'goals' ? 'unidade(s)' : 'pontos'}</small>}
-            </article>;
-          })}
-        </section>
-        <section className="neo-city-bottom"><div><span>💬 VIDA NA CIDADE</span><h2>Os moradores percebem sua evolução</h2><p>Converse com personagens que reconhecem atividades realmente registradas. Eles não inventam conquistas nem cobram quando você tira um tempo para descansar.</p><button onClick={() => setActiveTab('residents')}>Conhecer moradores →</button></div><div className="neo-resident-preview">{RESIDENTS.slice(0, 4).map((resident) => <button key={resident.id} onClick={() => { setActiveTab('residents'); talkTo(resident); }}><span>{resident.avatar}</span><b>{resident.name}</b><small>{resident.role}</small></button>)}</div></section>
-      </>}
+      {activeTab === 'city' && (
+        <>
+          <section className='neo-section-heading'>
+            <div>
+              <span>MAPA URBANO</span>
+              <h2>Explore os distritos</h2>
+              <p>
+                O desenvolvimento de cada região é calculado a partir dos
+                registros existentes no Meu Assistente.
+              </p>
+            </div>
+            <div className='neo-level-chip'>
+              ⚡ {xp.toLocaleString('pt-BR')} XP acumulados
+            </div>
+          </section>
+          <section className='neo-district-grid'>
+            {DISTRICTS.map((district, index) => {
+              const unlocked = districtOpen(district);
+              const value = districtValue(district);
+              const pct =
+                district.threshold === 0
+                  ? 100
+                  : Math.min(
+                      100,
+                      Math.round((value / district.threshold) * 100),
+                    );
+              return (
+                <article
+                  key={district.id}
+                  className={`neo-district ${district.color} ${unlocked ? '' : 'locked'}`}
+                  style={{ '--delay': `${index * 55}ms` }}
+                >
+                  <div className='neo-district-top'>
+                    <span className='neo-district-icon'>
+                      {unlocked ? district.icon : '🔒'}
+                    </span>
+                    <span className='neo-status'>
+                      {unlocked ? 'ACESSÍVEL' : 'EM CONSTRUÇÃO'}
+                    </span>
+                  </div>
+                  <h3>{district.name}</h3>
+                  <p>{district.desc}</p>
+                  <div className='neo-district-progress'>
+                    <div>
+                      <span>
+                        {district.metric === 'minutes'
+                          ? 'Minutos estudados'
+                          : district.metric === 'tasks'
+                            ? 'Tarefas concluídas'
+                            : district.metric === 'habits'
+                              ? 'Registros de hábitos'
+                              : district.metric === 'projects'
+                                ? 'Projetos criados'
+                                : district.metric === 'goals'
+                                  ? 'Metas concluídas'
+                                  : 'Experiência total'}
+                      </span>
+                      <b>
+                        {value.toLocaleString('pt-BR')}
+                        {district.metric === 'minutes' ? ' min' : ''}
+                      </b>
+                    </div>
+                    <i>
+                      <u style={{ width: `${pct}%` }} />
+                    </i>
+                  </div>
+                  {!unlocked && (
+                    <small>
+                      Meta para abrir: {district.threshold}{' '}
+                      {district.metric === 'minutes'
+                        ? 'minutos'
+                        : district.metric === 'habits'
+                          ? 'registros'
+                          : district.metric === 'projects' ||
+                              district.metric === 'goals'
+                            ? 'unidade(s)'
+                            : 'pontos'}
+                    </small>
+                  )}
+                </article>
+              );
+            })}
+          </section>
+          <section className='neo-city-bottom'>
+            <div>
+              <span>💬 VIDA NA CIDADE</span>
+              <h2>Os moradores percebem sua evolução</h2>
+              <p>
+                Converse com personagens que reconhecem atividades realmente
+                registradas. Eles não inventam conquistas nem cobram quando você
+                tira um tempo para descansar.
+              </p>
+              <button onClick={() => setActiveTab('residents')}>
+                Conhecer moradores →
+              </button>
+            </div>
+            <div className='neo-resident-preview'>
+              {RESIDENTS.slice(0, 4).map((resident) => (
+                <button
+                  key={resident.id}
+                  onClick={() => {
+                    setActiveTab('residents');
+                    talkTo(resident);
+                  }}
+                >
+                  <span>{resident.avatar}</span>
+                  <b>{resident.name}</b>
+                  <small>{resident.role}</small>
+                </button>
+              ))}
+            </div>
+          </section>
+        </>
+      )}
 
-      {activeTab === 'residents' && <>
-        <section className="neo-section-heading"><div><span>PERSONAGENS DA CIDADE</span><h2>Gente que acompanha sua jornada</h2><p>As conversas mudam conforme suas atividades e seu histórico de interação.</p></div></section>
-        <section className="neo-resident-grid">{RESIDENTS.map((resident) => <article className="neo-resident-card" key={resident.id}><div className="neo-resident-avatar">{resident.avatar}</div><div><span>{DISTRICTS.find((item) => item.id === resident.district)?.name}</span><h3>{resident.name}</h3><p>{resident.role}</p><small>{Number(talks[resident.id]) || 0} conversas</small></div><button onClick={() => talkTo(resident)}>Conversar <span>↗</span></button></article>)}</section>
-        {selectedResident && <div className="neo-dialogue" role="dialog" aria-modal="true" aria-label={`Conversa com ${selectedResident.name}`}><button className="neo-dialogue-close" onClick={() => setSelectedResident(null)} aria-label="Fechar">×</button><div>{selectedResident.avatar}</div><span>TRANSMISSÃO LOCAL // {selectedResident.name.toUpperCase()}</span><h3>{selectedResident.name}</h3><p>“{selectedResident.dialogue}”</p><button onClick={() => setSelectedResident(null)}>Continuar explorando</button></div>}
-      </>}
+      {activeTab === 'residents' && (
+        <>
+          <section className='neo-section-heading'>
+            <div>
+              <span>PERSONAGENS DA CIDADE</span>
+              <h2>Gente que acompanha sua jornada</h2>
+              <p>
+                As conversas mudam conforme suas atividades e seu histórico de
+                interação.
+              </p>
+            </div>
+          </section>
+          <section className='neo-resident-grid'>
+            {RESIDENTS.map((resident) => (
+              <article className='neo-resident-card' key={resident.id}>
+                <div className='neo-resident-avatar'>{resident.avatar}</div>
+                <div>
+                  <span>
+                    {
+                      DISTRICTS.find((item) => item.id === resident.district)
+                        ?.name
+                    }
+                  </span>
+                  <h3>{resident.name}</h3>
+                  <p>{resident.role}</p>
+                  <small>{Number(talks[resident.id]) || 0} conversas</small>
+                </div>
+                <button onClick={() => talkTo(resident)}>
+                  Conversar <span>↗</span>
+                </button>
+              </article>
+            ))}
+          </section>
+          {selectedResident && (
+            <div
+              className='neo-dialogue'
+              role='dialog'
+              aria-modal='true'
+              aria-label={`Conversa com ${selectedResident.name}`}
+            >
+              <button
+                className='neo-dialogue-close'
+                onClick={() => setSelectedResident(null)}
+                aria-label='Fechar'
+              >
+                ×
+              </button>
+              <div>{selectedResident.avatar}</div>
+              <span>
+                TRANSMISSÃO LOCAL // {selectedResident.name.toUpperCase()}
+              </span>
+              <h3>{selectedResident.name}</h3>
+              <p>“{selectedResident.dialogue}”</p>
+              <button onClick={() => setSelectedResident(null)}>
+                Continuar explorando
+              </button>
+            </div>
+          )}
+        </>
+      )}
 
-      {activeTab === 'market' && <>
-        <section className="neo-section-heading"><div><span>MERCADO NEON</span><h2>Personalize sua vida na cidade</h2><p>Compre itens usando apenas as moedas conquistadas no aplicativo. Cada preço é fixo e aparece antes da compra.</p></div><div className="neo-level-chip">🪙 {coins} moedas</div></section>
-        <section className="neo-shop-grid">{STORE_ITEMS.map((item) => { const owned = ownedIds.has(item.id); return <article className="neo-shop-item" key={item.id}><div className="neo-item-art">{item.icon}<span>{item.type}</span></div><h3>{item.name}</h3><p>{item.description}</p><div><b>🪙 {item.price}</b><button disabled={owned || coins < item.price} onClick={() => buyItem(item)}>{owned ? '✓ Adquirido' : coins < item.price ? 'Moedas insuficientes' : 'Comprar'}</button></div></article>; })}</section>
-      </>}
+      {activeTab === 'market' && (
+        <>
+          <section className='neo-section-heading'>
+            <div>
+              <span>MERCADO NEON</span>
+              <h2>Personalize sua vida na cidade</h2>
+              <p>
+                Compre itens usando apenas as moedas conquistadas no aplicativo.
+                Cada preço é fixo e aparece antes da compra.
+              </p>
+            </div>
+            <div className='neo-level-chip'>🪙 {coins} moedas</div>
+          </section>
+          <section className='neo-shop-grid'>
+            {STORE_ITEMS.map((item) => {
+              const owned = ownedIds.has(item.id);
+              return (
+                <article className='neo-shop-item' key={item.id}>
+                  <div className='neo-item-art'>
+                    {item.icon}
+                    <span>{item.type}</span>
+                  </div>
+                  <h3>{item.name}</h3>
+                  <p>{item.description}</p>
+                  <div>
+                    <b>🪙 {item.price}</b>
+                    <button
+                      disabled={owned || coins < item.price}
+                      onClick={() => buyItem(item)}
+                    >
+                      {owned
+                        ? '✓ Adquirido'
+                        : coins < item.price
+                          ? 'Moedas insuficientes'
+                          : 'Comprar'}
+                    </button>
+                  </div>
+                </article>
+              );
+            })}
+          </section>
+        </>
+      )}
 
-      {activeTab === 'arcade' && <>
-        <section className="neo-section-heading"><div><span>ARCADE 88 // JOGO DE HABILIDADE</span><h2>Desafio de sequência</h2><p>Memorize a sequência de luzes e repita na ordem correta. Uma tentativa por dia, entrada de 5 moedas e recompensa fixa de 12 moedas ao vencer.</p></div><div className="neo-level-chip">🎟️ Entrada: 5 moedas</div></section>
-        <section className="neo-arcade-card"><div className="neo-arcade-screen"><div className="neo-arcade-top"><span>NEURAL LINK // MEMORY GRID</span><b>{gameState === 'playing' ? `${playerSequence.length}/4` : gameState === 'preview' ? 'MEMORIZE' : gameState === 'won' ? 'VITÓRIA' : gameState === 'lost' ? 'FIM DE JOGO' : 'AGUARDANDO'}</b></div><div className="neo-sequence-preview">{gameState === 'preview' ? sequence.map((entry, index) => <span key={index}>{['✦', '◈', '⌁', '✧'][entry]}</span>) : null}</div><div className="neo-pad-grid" key={gameSeed}>{[0, 1, 2, 3].map((value) => <button key={value} className={`neo-pad pad-${value} ${playerSequence.includes(value) && gameState === 'playing' ? 'selected' : ''}`} disabled={gameState !== 'playing'} onClick={() => choosePad(value)} aria-label={`Botão ${value + 1}`}>{['✦', '◈', '⌁', '✧'][value]}</button>)}</div><p>{gameState === 'preview' ? 'Memorize a sequência exibida e depois comece.' : gameState === 'playing' ? 'Repita a sequência de quatro símbolos.' : gameState === 'won' ? 'Conexão estabelecida. +12 moedas adicionadas à carteira.' : gameState === 'lost' ? 'A sequência não correspondeu. Tente novamente amanhã.' : attemptedToday ? 'Você já usou sua tentativa de hoje.' : 'Inicie o desafio para receber sua sequência.'}</p>{gameState === 'preview' ? <button className="neo-game-start" onClick={() => setGameState('playing')}>Já memorizei · começar</button> : <button className="neo-game-start" disabled={attemptedToday || coins < 5 || gameState === 'playing'} onClick={startGame}>{gameState === 'won' ? 'Desafio concluído' : attemptedToday ? 'Volte amanhã' : coins < 5 ? 'Precisa de 5 moedas' : 'Iniciar desafio · 5 moedas'}</button>}</div><aside className="neo-arcade-info"><span>COMO JOGAR</span><h3>Teste sua memória</h3><ol><li>Entre no desafio por 5 moedas.</li><li>Observe os quatro símbolos que formam sua sequência.</li><li>Toque nos símbolos na mesma ordem.</li><li>Se acertar tudo, recebe 12 moedas.</li></ol><small>Sem apostas, sem compras com dinheiro real e sem recompensas aleatórias.</small></aside></section>
-      </>}
+      {activeTab === 'arcade' && (
+        <>
+          <section className='neo-section-heading'>
+            <div>
+              <span>ARCADE 88 // JOGO DE HABILIDADE</span>
+              <h2>Desafio de sequência</h2>
+              <p>
+                Memorize a sequência de luzes e repita na ordem correta. Uma
+                tentativa por dia, entrada de 5 moedas e recompensa fixa de 12
+                moedas ao vencer.
+              </p>
+            </div>
+            <div className='neo-level-chip'>🎟️ Entrada: 5 moedas</div>
+          </section>
+          <section className='neo-arcade-card'>
+            <div className='neo-arcade-screen'>
+              <div className='neo-arcade-top'>
+                <span>NEURAL LINK // MEMORY GRID</span>
+                <b>
+                  {gameState === 'playing'
+                    ? `${playerSequence.length}/4`
+                    : gameState === 'preview'
+                      ? 'MEMORIZE'
+                      : gameState === 'won'
+                        ? 'VITÓRIA'
+                        : gameState === 'lost'
+                          ? 'FIM DE JOGO'
+                          : 'AGUARDANDO'}
+                </b>
+              </div>
+              <div className='neo-sequence-preview'>
+                {gameState === 'preview'
+                  ? sequence.map((entry, index) => (
+                      <span key={index}>{['✦', '◈', '⌁', '✧'][entry]}</span>
+                    ))
+                  : null}
+              </div>
+              <div className='neo-pad-grid' key={gameSeed}>
+                {[0, 1, 2, 3].map((value) => (
+                  <button
+                    key={value}
+                    className={`neo-pad pad-${value} ${playerSequence.includes(value) && gameState === 'playing' ? 'selected' : ''}`}
+                    disabled={gameState !== 'playing'}
+                    onClick={() => choosePad(value)}
+                    aria-label={`Botão ${value + 1}`}
+                  >
+                    {['✦', '◈', '⌁', '✧'][value]}
+                  </button>
+                ))}
+              </div>
+              <p>
+                {gameState === 'preview'
+                  ? 'Memorize a sequência exibida e depois comece.'
+                  : gameState === 'playing'
+                    ? 'Repita a sequência de quatro símbolos.'
+                    : gameState === 'won'
+                      ? 'Conexão estabelecida. +12 moedas adicionadas à carteira.'
+                      : gameState === 'lost'
+                        ? 'A sequência não correspondeu. Tente novamente amanhã.'
+                        : attemptedToday
+                          ? 'Você já usou sua tentativa de hoje.'
+                          : 'Inicie o desafio para receber sua sequência.'}
+              </p>
+              {gameState === 'preview' ? (
+                <button
+                  className='neo-game-start'
+                  onClick={() => setGameState('playing')}
+                >
+                  Já memorizei · começar
+                </button>
+              ) : (
+                <button
+                  className='neo-game-start'
+                  disabled={
+                    attemptedToday || coins < 5 || gameState === 'playing'
+                  }
+                  onClick={startGame}
+                >
+                  {gameState === 'won'
+                    ? 'Desafio concluído'
+                    : attemptedToday
+                      ? 'Volte amanhã'
+                      : coins < 5
+                        ? 'Precisa de 5 moedas'
+                        : 'Iniciar desafio · 5 moedas'}
+                </button>
+              )}
+            </div>
+            <aside className='neo-arcade-info'>
+              <span>COMO JOGAR</span>
+              <h3>Teste sua memória</h3>
+              <ol>
+                <li>Entre no desafio por 5 moedas.</li>
+                <li>Observe os quatro símbolos que formam sua sequência.</li>
+                <li>Toque nos símbolos na mesma ordem.</li>
+                <li>Se acertar tudo, recebe 12 moedas.</li>
+              </ol>
+              <small>
+                Sem apostas, sem compras com dinheiro real e sem recompensas
+                aleatórias.
+              </small>
+            </aside>
+          </section>
+        </>
+      )}
 
-      {activeTab === 'inventory' && <>
-        <section className="neo-section-heading"><div><span>SEUS PERTENCES</span><h2>Inventário pessoal</h2><p>Itens que você comprou no Mercado Neon ficam guardados aqui.</p></div><div className="neo-level-chip">🎒 {inventory.length} itens</div></section>
-        {inventory.length ? <section className="neo-inventory-grid">{STORE_ITEMS.filter((item) => ownedIds.has(item.id)).map((item) => <article key={item.id}><span>{item.icon}</span><div><b>{item.name}</b><small>{item.type}</small></div><i>✓</i></article>)}</section> : <div className="neo-empty-inventory"><span>🎒</span><h3>Sua mochila está esperando aventuras</h3><p>Visite o Mercado Neon para comprar seu primeiro item.</p><button onClick={() => setActiveTab('market')}>Explorar mercado</button></div>}
-      </>}
+      {activeTab === 'inventory' && (
+        <>
+          <section className='neo-section-heading'>
+            <div>
+              <span>SEUS PERTENCES</span>
+              <h2>Inventário pessoal</h2>
+              <p>
+                Itens que você comprou no Mercado Neon ficam guardados aqui.
+              </p>
+            </div>
+            <div className='neo-level-chip'>🎒 {inventory.length} itens</div>
+          </section>
+          {inventory.length ? (
+            <section className='neo-inventory-grid'>
+              {STORE_ITEMS.filter((item) => ownedIds.has(item.id)).map(
+                (item) => (
+                  <article key={item.id}>
+                    <span>{item.icon}</span>
+                    <div>
+                      <b>{item.name}</b>
+                      <small>{item.type}</small>
+                    </div>
+                    <i>✓</i>
+                  </article>
+                ),
+              )}
+            </section>
+          ) : (
+            <div className='neo-empty-inventory'>
+              <span>🎒</span>
+              <h3>Sua mochila está esperando aventuras</h3>
+              <p>Visite o Mercado Neon para comprar seu primeiro item.</p>
+              <button onClick={() => setActiveTab('market')}>
+                Explorar mercado
+              </button>
+            </div>
+          )}
+        </>
+      )}
 
-      <footer className="neo-footer"><span>NEO-LIFE / BUILD 01</span><p>Seu progresso real constrói a cidade. Seu descanso também faz parte da jornada.</p><span>XP {xp.toLocaleString('pt-BR')} · 🪙 {coins}</span></footer>
+      <footer className='neo-footer'>
+        <span>NEO-LIFE / BUILD 01</span>
+        <p>
+          Seu progresso real constrói a cidade. Seu descanso também faz parte da
+          jornada.
+        </p>
+        <span>
+          XP {xp.toLocaleString('pt-BR')} · 🪙 {coins}
+        </span>
+      </footer>
     </main>
   );
 }
@@ -318,4 +1257,427 @@ const styles = `
 @keyframes neo-rise{from{opacity:0;transform:translateY(9px)}to{opacity:1;transform:translateY(0)}}
 @media(max-width:900px){.neo-hero{grid-template-columns:1fr;padding:24px}.neo-city-skyline{height:150px}.neo-wallet{top:auto;bottom:18px;right:18px}.neo-district-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.neo-shop-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.neo-city-bottom{grid-template-columns:1fr}.neo-arcade-card{grid-template-columns:1fr}}
 @media(max-width:600px){.neo-city-page{gap:17px}.neo-hero{padding:20px;min-height:0}.neo-hero h1{font-size:31px}.neo-hero-copy>p{font-size:12px}.neo-city-skyline{height:125px}.neo-wallet{padding:7px 10px}.neo-tabs{gap:3px}.neo-tabs button{padding:9px 11px;font-size:10px}.neo-section-heading{align-items:flex-start;flex-direction:column}.neo-section-heading h2{font-size:20px}.neo-district-grid,.neo-resident-grid,.neo-shop-grid,.neo-inventory-grid{grid-template-columns:1fr}.neo-district{min-height:195px}.neo-resident-card{grid-template-columns:50px 1fr}.neo-resident-avatar{width:48px;height:48px;font-size:27px}.neo-resident-card>button{grid-column:2;justify-self:start}.neo-resident-preview{grid-template-columns:repeat(2,minmax(0,1fr))}.neo-city-bottom{padding:17px}.neo-footer{flex-wrap:wrap}.neo-footer p{order:3;width:100%;text-align:left}.neo-pad-grid{grid-template-columns:repeat(2,76px)}.neo-pad{height:70px}}
+
+/* =========================================================
+   NEO-LIFE — COZY PIXEL WORLD REFRESH
+   Direção: farming RPG acolhedor + tecnologia futurista
+   ========================================================= */
+.neo-city-page{
+  --neo-bg:#101b20;
+  --neo-panel:#1c2c2c;
+  --neo-line:rgba(190,211,160,.22);
+  --neo-text:#f5f0d8;
+  --neo-muted:#b4c2a1;
+  gap:22px;
+  color:var(--neo-text);
+  font-family:ui-rounded,"Trebuchet MS",system-ui,sans-serif;
+}
+.neo-city-page button{font-family:inherit}
+.neo-hero{
+  min-height:330px;
+  border:3px solid #526b59;
+  border-radius:8px;
+  background:
+    radial-gradient(ellipse at 78% 24%,rgba(255,224,151,.25),transparent 20%),
+    linear-gradient(180deg,#263e59 0%,#42677a 48%,#647e68 100%);
+  padding:30px;
+  box-shadow:0 7px 0 #263b35,0 15px 35px rgba(0,0,0,.24);
+}
+.neo-hero-grid{
+  opacity:.13;
+  background-image:
+    linear-gradient(rgba(232,224,173,.25) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(232,224,173,.25) 1px,transparent 1px);
+  background-size:24px 24px;
+  mask-image:linear-gradient(90deg,transparent,#000);
+}
+.neo-kicker,.neo-section-heading>div>span,.neo-city-bottom>div>span{
+  color:#d7df9b;
+  font-size:10px;
+  letter-spacing:2px;
+  text-shadow:1px 2px #334a43;
+}
+.neo-hero h1{
+  color:#fff5d8;
+  text-shadow:3px 3px 0 #354e4b,5px 5px 0 rgba(20,35,34,.4);
+  letter-spacing:-1px;
+}
+.neo-hero h1 em{
+  color:#d5e6a2;
+  text-shadow:3px 3px 0 #405c50;
+}
+.neo-hero-copy>p{color:#f0e9cf;text-shadow:1px 1px 2px #263d42}
+.neo-hero-actions button,.neo-city-bottom button,.neo-dialogue>button:last-child,.neo-empty-inventory button{
+  border:2px solid #f1d99b;
+  border-radius:5px;
+  background:linear-gradient(#f3d98f,#d7ae63);
+  color:#394638;
+  box-shadow:0 4px 0 #8e7048;
+  padding:12px 17px;
+}
+.neo-hero-actions button:active,.neo-city-bottom button:active{
+  transform:translateY(3px);box-shadow:0 1px 0 #8e7048;
+}
+.neo-hero-actions span{color:#f5edce}
+.neo-city-skyline{
+  height:215px;
+  border:2px solid rgba(228,222,164,.3);
+  border-radius:5px;
+  background:
+    linear-gradient(180deg,rgba(27,46,64,.05),rgba(21,43,39,.35)),
+    repeating-linear-gradient(90deg,transparent 0 22px,rgba(255,226,151,.06) 23px 24px);
+  image-rendering:pixelated;
+}
+.neo-moon{
+  width:48px;height:48px;
+  background:#f5e5a7;
+  border-radius:3px;
+  box-shadow:0 0 0 5px rgba(245,229,167,.08),0 0 35px rgba(255,226,151,.35);
+}
+.neo-tower{
+  border:3px solid #344b4b;
+  border-bottom:0;
+  background:
+    repeating-linear-gradient(0deg,transparent 0 13px,rgba(245,222,151,.75) 14px 18px),
+    repeating-linear-gradient(90deg,#45666a 0 12px,#36545c 13px 20px);
+  box-shadow:inset 4px 0 rgba(255,255,255,.08);
+}
+.tower-a{height:54%;left:4%;width:22%}
+.tower-b{height:82%;left:29%;width:20%}
+.tower-c{height:66%;left:53%;width:18%}
+.tower-d{height:44%;right:5%;width:20%}
+.neo-road{height:8px;background:#e7c77e;box-shadow:0 0 0 3px #4a6151}
+.skyline-label{color:#f0e9c8}
+.skyline-label b{color:#f7dc91}
+.neo-wallet{
+  background:#263d3a;
+  border:2px solid #81956b;
+  border-radius:5px;
+  box-shadow:0 4px 0 rgba(20,35,30,.45);
+}
+.neo-wallet span{color:#c5d2a7}
+.neo-wallet strong{color:#f4d98e}
+.neo-wallet small{color:#d0d7b9}
+
+.neo-tabs{
+  gap:6px;padding:7px;
+  border:2px solid #405a4d;
+  border-radius:6px;
+  background:#1b2c2b;
+  box-shadow:0 4px 0 #101e1e;
+}
+.neo-tabs button{
+  border-radius:4px;
+  color:#c2cbaa;
+  font-size:12px;
+  border:1px solid transparent;
+}
+.neo-tabs button.active{
+  color:#293b35;
+  background:#d6df9c;
+  border:2px solid #f0e5b6;
+  box-shadow:0 3px 0 #879568;
+}
+.neo-notice{
+  border:2px solid #a5b77b;
+  border-radius:5px;
+  background:#344b3d;
+  color:#f4edc9;
+}
+.neo-section-heading h2,.neo-city-bottom h2{color:#f2edcf;text-shadow:2px 2px #253b35}
+.neo-section-heading p,.neo-city-bottom p{color:#b8c7ad}
+.neo-level-chip{
+  border:2px solid #718b69;
+  background:#2b443b;
+  border-radius:5px;
+  color:#e4e9b9;
+  box-shadow:0 3px 0 #172923;
+}
+
+.neo-district{
+  min-height:220px;
+  border:2px solid color-mix(in srgb,var(--accent),#33483b 48%);
+  border-radius:6px;
+  background:
+    linear-gradient(145deg,rgba(54,77,62,.97),rgba(31,52,47,.98));
+  box-shadow:0 5px 0 #142622,0 9px 18px rgba(0,0,0,.16);
+}
+.neo-district:after{
+  width:100px;height:100px;right:-35px;top:-35px;
+  opacity:.13;filter:none;border-radius:8px;
+}
+.neo-district.violet{--accent:#d0b5ed}
+.neo-district.green{--accent:#c0d98d}
+.neo-district.blue{--accent:#a7d5d2}
+.neo-district.pink{--accent:#efb8bd}
+.neo-district.orange{--accent:#f1d18c}
+.neo-district.locked{filter:saturate(.6);opacity:.76}
+.neo-district-icon{
+  width:46px;height:46px;display:grid;place-items:center;
+  border:2px solid rgba(231,226,181,.24);
+  border-radius:5px;background:rgba(13,30,26,.28);
+}
+.neo-status{font-size:8px;color:var(--accent)}
+.neo-district h3{color:#f4edcf}
+.neo-district p{color:#c1cbb1}
+.neo-district-progress>div{color:#c2cbae}
+.neo-district-progress b{color:var(--accent)}
+.neo-district-progress i{height:9px;background:#1a3029;border:1px solid #61775a;border-radius:2px}
+.neo-district-progress u{background:var(--accent);box-shadow:none;border-radius:1px}
+.neo-district>small{color:#c0c8a9}
+
+.neo-city-bottom{
+  border:2px solid #536d54;border-radius:6px;
+  background:linear-gradient(120deg,#344f43,#293f43);
+  box-shadow:0 5px 0 #182b27;
+}
+.neo-city-bottom button{font-size:11px}
+.neo-resident-preview button{
+  background:#253d37;border:2px solid #526d55;border-radius:5px;
+  color:#f1edcf;box-shadow:0 3px 0 #172923;
+}
+.neo-resident-preview button>span{filter:drop-shadow(2px 2px 0 rgba(0,0,0,.25))}
+.neo-resident-preview small{color:#c1c9a9}
+
+.neo-resident-card{
+  border:2px solid #526b54;border-radius:6px;
+  background:linear-gradient(130deg,#344e42,#263e3b);
+  box-shadow:0 4px 0 #172a25;
+}
+.neo-resident-avatar{
+  border:2px solid #8a9d6c;border-radius:5px;
+  background:#526b50;
+  box-shadow:inset 0 -5px rgba(0,0,0,.12);
+}
+.neo-resident-card>div:nth-child(2)>span{color:#d8df9d}
+.neo-resident-card p{color:#c3cbb1}
+.neo-resident-card small{color:#aebd9f}
+.neo-resident-card>button{
+  border:2px solid #87996a;border-radius:4px;
+  background:#d4dc9b;color:#344538;
+  box-shadow:0 3px 0 #74845b;
+}
+.neo-dialogue{
+  border:3px solid #82976c;border-radius:6px;
+  background:#2b443b;box-shadow:0 7px 0 #142822;
+}
+.neo-dialogue>span{color:#d9e3a0}
+.neo-dialogue p{color:#eee9ce}
+
+.neo-shop-item{
+  padding:13px;border:2px solid #536c54;border-radius:6px;
+  background:#2c453b;box-shadow:0 4px 0 #172923;
+}
+.neo-item-art{
+  border:2px solid #6e8760;border-radius:4px;
+  background:
+    radial-gradient(circle at 50% 55%,rgba(222,220,151,.2),transparent 58%),
+    linear-gradient(135deg,#46634e,#304d4c);
+  image-rendering:pixelated;
+}
+.neo-item-art>span{background:#21382f;color:#e5e6bf;border:1px solid #758960}
+.neo-shop-item h3{color:#f1edcf}
+.neo-shop-item p{color:#c1cbb1}
+.neo-shop-item b{color:#f2d58c}
+.neo-shop-item button{
+  border:2px solid #f1dfa8;border-radius:4px;
+  background:#d7df9d;color:#344637;
+  box-shadow:0 3px 0 #829365;
+}
+.neo-shop-item button:disabled{background:#526354;color:#c1c8ad;box-shadow:none;border-color:#68785d}
+
+.neo-arcade-screen{
+  border:3px solid #708c69;border-radius:6px;
+  background:radial-gradient(ellipse at 50% 20%,rgba(198,217,143,.13),transparent 60%),#1c302d;
+  box-shadow:0 5px 0 #12231f;
+}
+.neo-arcade-top{color:#d5e29d}
+.neo-arcade-top b{color:#f2d58e}
+.neo-sequence-preview span{color:#e5e7a9;text-shadow:2px 2px #546c4a}
+.neo-pad{border:3px solid rgba(30,48,37,.65);border-radius:5px;box-shadow:0 4px 0 rgba(10,22,18,.45)}
+.pad-0{background:#a9d5a0}
+.pad-1{background:#c7b0e3}
+.pad-2{background:#e7aeb2}
+.pad-3{background:#efd18a}
+.neo-pad.selected{filter:brightness(1.18);box-shadow:0 0 0 3px #f5edc8,0 0 20px currentColor}
+.neo-arcade-screen>p{color:#c7d0b2}
+.neo-game-start{
+  border:2px solid #f0dda5;border-radius:4px;
+  background:#d7df9d;color:#344637;box-shadow:0 4px 0 #819265;
+}
+.neo-arcade-info{
+  border:2px solid #536c54;border-radius:6px;
+  background:#2b443b;box-shadow:0 4px 0 #172923;
+}
+.neo-arcade-info>span{color:#d6e29b}
+.neo-arcade-info ol{color:#c8d0b7}
+.neo-arcade-info small{border-color:#526a53;color:#b2c1a5}
+
+.neo-inventory-grid article{
+  border:2px solid #536c54;border-radius:5px;
+  background:#2c453b;box-shadow:0 4px 0 #172923;
+}
+.neo-inventory-grid b{color:#f1edcf}
+.neo-inventory-grid small{color:#c0cbb0}
+.neo-inventory-grid i{color:#d5e39a}
+.neo-empty-inventory{
+  border:2px dashed #82976c;border-radius:6px;
+  background:#253d35;
+}
+.neo-empty-inventory p{color:#c0cbb0}
+.neo-footer{border-color:#405b49;color:#9eaf91}
+.neo-footer p{color:#b4c1a5}
+
+/* Mapa: terreno orgânico, trilhas e edifícios com leitura de pixel art */
+.neo-world-toolbar{
+  border:2px solid #536c54;border-radius:5px;
+  background:#263e36;color:#dbe2a8;
+}
+.neo-world-toolbar button,.neo-interior-header button{
+  border:2px solid #87976b;border-radius:4px;
+  background:#d4dc9b;color:#344637;
+  box-shadow:0 3px 0 #71845d;
+}
+.neo-world-scroll{
+  border:3px solid #526d55;border-radius:7px;
+  padding:14px;
+  background:
+    radial-gradient(ellipse at 50% 40%,rgba(171,196,115,.12),transparent 70%),
+    #172d27;
+  box-shadow:0 7px 0 #0e201b,inset 0 0 35px rgba(0,0,0,.28);
+}
+.neo-world-map{
+  gap:3px;
+  padding:12px;
+  border:3px solid #647b56;
+  border-radius:4px;
+  background:#243c31;
+  box-shadow:inset 0 0 0 3px rgba(220,218,159,.08);
+  image-rendering:pixelated;
+}
+.neo-world-tile{
+  border-radius:1px;
+  box-shadow:inset 0 0 0 1px rgba(12,31,23,.12);
+  transition:filter .12s;
+}
+.neo-world-tile.ground{
+  background:
+    radial-gradient(circle at 22% 28%,rgba(208,219,143,.16) 0 1px,transparent 2px),
+    radial-gradient(circle at 72% 70%,rgba(16,49,33,.2) 0 1px,transparent 2px),
+    linear-gradient(135deg,#668b55,#527b4b);
+}
+.neo-world-tile.road{
+  border:0;
+  background:
+    radial-gradient(circle at 20% 30%,rgba(255,232,171,.22) 0 1px,transparent 2px),
+    linear-gradient(135deg,#b89a65,#a98a58);
+  box-shadow:inset 0 2px rgba(255,235,183,.12),inset 0 -2px rgba(85,67,44,.13);
+}
+.neo-world-tile.park{
+  background:
+    radial-gradient(circle at 30% 20%,rgba(184,218,125,.2) 0 2px,transparent 3px),
+    linear-gradient(135deg,#477e4c,#356c46);
+  box-shadow:inset 0 0 0 1px rgba(190,221,132,.13);
+}
+.neo-world-tile.building-tile{
+  border:2px solid #5c6650;
+  background:
+    linear-gradient(90deg,transparent 0 12%,rgba(240,213,139,.8) 13% 19%,transparent 20% 80%,rgba(240,213,139,.8) 81% 87%,transparent 88%),
+    linear-gradient(180deg,#71918a 0 22%,#456b68 23% 100%);
+  box-shadow:inset 0 5px rgba(255,255,255,.12),inset 0 -5px rgba(16,38,31,.25),0 2px 0 #30483a;
+}
+.neo-world-tile.door-tile{
+  border:2px solid #d8c184;
+  background:#8d7652;
+}
+.neo-building-label{
+  top:3px;left:3px;max-width:145px;
+  padding:3px 5px;border:1px solid #e3d19a;
+  border-radius:2px;background:#263d35;
+  color:#fff2c8;font-size:8px;
+  box-shadow:2px 2px 0 rgba(16,32,25,.4);
+}
+.neo-tree{
+  font-size:23px;
+  filter:drop-shadow(2px 3px 0 rgba(27,54,31,.55));
+}
+.neo-door{
+  font-size:18px;
+  filter:drop-shadow(2px 2px 0 #4b5339);
+}
+.neo-player{
+  font-size:27px;
+  filter:drop-shadow(2px 3px 0 rgba(20,35,26,.65));
+  animation:neo-player-bob .65s steps(2,end) infinite alternate;
+}
+.neo-world-controls{
+  border:2px solid #536c54;border-radius:5px;
+  background:#263e36;box-shadow:0 4px 0 #142720;
+}
+.neo-world-controls p{color:#c4ceb0}
+.neo-dpad button{
+  border:2px solid #82966a;border-radius:4px;
+  background:#d2dc9b;color:#344637;
+  box-shadow:0 3px 0 #72845a;
+}
+.neo-dpad button:active{background:#f0dda0;transform:translateY(2px);box-shadow:0 1px 0 #72845a}
+.neo-building-list{
+  border:2px solid #536c54;border-radius:6px;
+  background:#263e36;box-shadow:0 4px 0 #142720;
+}
+.neo-building-list h3{color:#f1edcf}
+.neo-building-list button{
+  border:2px solid #536d54;border-radius:4px;
+  background:#344f40;color:#f2edcf;
+  box-shadow:0 3px 0 #172a24;
+}
+.neo-building-list button small{color:#c2cdae}
+.neo-interior{
+  border:3px solid #647b56;border-radius:6px;
+  background:linear-gradient(145deg,#314c40,#263d39);
+  box-shadow:0 6px 0 #142720;
+}
+.neo-interior-header{color:#e0e5a8}
+.neo-interior-room{
+  border:8px solid #806d4d;border-radius:3px;
+  background:
+    linear-gradient(180deg,#597c78 0 13%,#b18b5e 14% 17%,#765d45 18% 100%);
+  box-shadow:inset 0 0 0 4px rgba(255,224,157,.12);
+}
+.neo-interior-window{
+  border:5px solid #806d4d;border-radius:2px;
+  background:linear-gradient(135deg,#789da0,#4b6c80 55%,#d3b77d);
+  box-shadow:0 0 0 2px #c7ad78;
+}
+.neo-interior-sign h3{color:#fff1ca;text-shadow:2px 2px #3d5142}
+.neo-interior-sign p{color:#e2dfc2}
+.neo-interior-map{
+  border:5px solid #806d4d;border-radius:3px;
+  background:#8b704d;box-shadow:inset 0 0 0 3px #b69a69;
+}
+.neo-interior-tile{
+  border-radius:1px;
+  background:repeating-linear-gradient(90deg,#9b7952 0 19px,#a9875e 20px 22px);
+}
+.neo-interior-tile.wall{
+  background:repeating-linear-gradient(90deg,#617d6b 0 18px,#4e6c5d 19px 22px);
+  border:1px solid #a58b5e;
+}
+.neo-interior-tile.station{
+  background:linear-gradient(145deg,#557b70,#3c625b);
+  border:2px solid #c7b17a;
+}
+.neo-interior-tile.station button{color:#fff0c8}
+.neo-interior-tile.station button small{color:#e0e5a8}
+.neo-interior-tile.occupied{box-shadow:0 0 0 2px #e8d48f,0 0 12px rgba(232,212,143,.4)}
+.neo-interior-help{color:#d2d9b9}
+
+@keyframes neo-player-bob{from{transform:translateY(0)}to{transform:translateY(-2px)}}
+@media(max-width:650px){
+  .neo-hero{border-radius:5px;padding:19px}
+  .neo-world-scroll{padding:7px}
+  .neo-world-map{grid-template-columns:repeat(18,minmax(34px,1fr));grid-template-rows:repeat(12,44px);min-width:680px}
+  .neo-building-list>div{grid-template-columns:1fr 1fr}
+}
+
 `;
