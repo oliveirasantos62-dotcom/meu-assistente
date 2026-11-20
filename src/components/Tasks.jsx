@@ -14,6 +14,7 @@ const EMPTY_FORM = {
   areaId: '',
   tags: [],
   subtasks: [],
+  subtaskColumns: [],
 };
 
 const EMPTY_AREA = {
@@ -336,6 +337,96 @@ export default function Tasks({ data, save, completeTask }) {
       ...prev,
       subtasks: removeSubtaskTree(prev.subtasks, id),
     }));
+  const addSubtaskColumn = () =>
+    updateForm('subtaskColumns', [
+      ...(form.subtaskColumns || []),
+      { id: createId(), title: '', items: [] },
+    ]);
+  const updateSubtaskColumn = (columnId, changes) =>
+    setForm((prev) => ({
+      ...prev,
+      subtaskColumns: (prev.subtaskColumns || []).map((col) =>
+        col.id === columnId ? { ...col, ...changes } : col,
+      ),
+    }));
+  const deleteSubtaskColumn = (columnId) =>
+    setForm((prev) => ({
+      ...prev,
+      subtaskColumns: (prev.subtaskColumns || []).filter(
+        (col) => col.id !== columnId,
+      ),
+    }));
+  const addSubtaskColumnItem = (columnId) =>
+    updateSubtaskColumn(columnId, {
+      items: [
+        ...((form.subtaskColumns || []).find((c) => c.id === columnId)?.items ||
+          []),
+        { id: createId(), text: '' },
+      ],
+    });
+  const updateSubtaskColumnItem = (columnId, itemId, text) =>
+    updateSubtaskColumn(columnId, {
+      items: (
+        (form.subtaskColumns || []).find((c) => c.id === columnId)?.items || []
+      ).map((item) => (item.id === itemId ? { ...item, text } : item)),
+    });
+  const deleteSubtaskColumnItem = (columnId, itemId) =>
+    updateSubtaskColumn(columnId, {
+      items: (
+        (form.subtaskColumns || []).find((c) => c.id === columnId)?.items || []
+      ).filter((item) => item.id !== itemId),
+    });
+
+  const renderIndependentSubtaskColumns = () =>
+    (form.subtaskColumns || []).map((column) => (
+      <div className='subtask-independent-column' key={column.id}>
+        <div className='subtask-independent-column-heading'>
+          <input
+            value={column.title || ''}
+            placeholder='Título da coluna'
+            aria-label='Título da coluna'
+            onChange={(e) =>
+              updateSubtaskColumn(column.id, { title: e.target.value })
+            }
+          />
+          <button
+            type='button'
+            className='ghost'
+            title='Excluir coluna'
+            onClick={() => deleteSubtaskColumn(column.id)}
+          >
+            🗑️
+          </button>
+        </div>
+        {(column.items || []).map((item) => (
+          <div className='subtask-independent-item' key={item.id}>
+            <input
+              value={item.text || ''}
+              placeholder='Item...'
+              onChange={(e) =>
+                updateSubtaskColumnItem(column.id, item.id, e.target.value)
+              }
+            />
+            <button
+              type='button'
+              className='ghost'
+              title='Excluir item'
+              onClick={() => deleteSubtaskColumnItem(column.id, item.id)}
+            >
+              ×
+            </button>
+          </div>
+        ))}
+        <button
+          type='button'
+          className='secondary'
+          onClick={() => addSubtaskColumnItem(column.id)}
+        >
+          ＋ Item
+        </button>
+      </div>
+    ));
+
   const renderSubtaskEditor = (items, depth = 0) =>
     (Array.isArray(items) ? items : []).map((subtask) => (
       <div
@@ -864,6 +955,16 @@ export default function Tasks({ data, save, completeTask }) {
           note: String(item.note || '').trim(),
         }))
         .filter((item) => item.title),
+      subtaskColumns: (Array.isArray(form.subtaskColumns)
+        ? form.subtaskColumns
+        : []
+      ).map((column) => ({
+        ...column,
+        title: String(column.title || '').trim(),
+        items: (Array.isArray(column.items) ? column.items : []).map(
+          (item) => ({ ...item, text: String(item.text || '').trim() }),
+        ),
+      })),
       updatedAt: new Date().toISOString(),
     };
 
@@ -2151,6 +2252,22 @@ export default function Tasks({ data, save, completeTask }) {
                       {task.description && (
                         <p className='subtitle'>{task.description}</p>
                       )}
+                      {Array.isArray(task.subtaskColumns) &&
+                        task.subtaskColumns.length > 0 && (
+                          <div className='task-independent-columns-display'>
+                            {task.subtaskColumns.map((column) => (
+                              <section
+                                className='task-independent-column-display'
+                                key={column.id}
+                              >
+                                <strong>{column.title || 'Coluna'}</strong>
+                                {(column.items || []).map((item) => (
+                                  <div key={item.id}>{item.text || '—'}</div>
+                                ))}
+                              </section>
+                            ))}
+                          </div>
+                        )}
 
                       {Array.isArray(task.subtasks) &&
                         task.subtasks.length > 0 &&
@@ -2629,7 +2746,20 @@ export default function Tasks({ data, save, completeTask }) {
 
             <section className='subtask-editor' aria-label='Subtarefas'>
               <div className='subtask-editor-title'>
-                <strong>☑️ Subtarefas</strong>
+                <strong>▦ Colunas independentes</strong>
+                <button
+                  type='button'
+                  className='secondary'
+                  onClick={addSubtaskColumn}
+                >
+                  ＋ Criar coluna
+                </button>
+              </div>
+              <div className='subtask-independent-columns'>
+                {renderIndependentSubtaskColumns()}
+              </div>
+              <div className='subtask-editor-title'>
+                <strong>☑️ Subtarefas tradicionais</strong>
                 <small>
                   {countCompletedSubtasks(form.subtasks)}/
                   {countSubtasks(form.subtasks)}
@@ -3336,6 +3466,13 @@ export default function Tasks({ data, save, completeTask }) {
         }
         .tasks-page .task-subtask input, .tasks-page .subtask-edit-row input[type='checkbox'] { width: 16px; height: 16px; flex: 0 0 auto; }
         .tasks-page .task-subtask.is-done span, .tasks-page .subtask-edit-row .is-done { text-decoration: line-through; opacity: .6; }
+        .tasks-page .task-independent-columns-display { display:flex; gap:10px; overflow-x:auto; margin:8px 0; }
+        .tasks-page .task-independent-column-display { min-width:160px; max-width:260px; flex:1; display:grid; gap:5px; border:1px solid var(--border-color, rgba(120,120,120,.2)); border-radius:9px; padding:8px; }
+        .tasks-page .task-independent-column-display > div { overflow-wrap:anywhere; }
+        .tasks-page .subtask-independent-columns { display:flex; gap:12px; overflow-x:auto; align-items:flex-start; }
+        .tasks-page .subtask-independent-column { min-width:220px; flex:1; display:grid; gap:8px; border:1px solid var(--border-color, rgba(120,120,120,.2)); border-radius:10px; padding:10px; }
+        .tasks-page .subtask-independent-column-heading, .tasks-page .subtask-independent-item { display:flex; gap:6px; align-items:center; }
+        .tasks-page .subtask-independent-column-heading input, .tasks-page .subtask-independent-item input { min-width:0; flex:1; }
         .tasks-page .subtask-editor { display: grid; gap: 8px; padding: 12px; border: 1px solid var(--border-color, rgba(120,120,120,.2)); border-radius: 12px; }
         .tasks-page .subtask-edit-item { display: grid; gap: 7px; min-width: 0; }
         .tasks-page .subtask-edit-row, .tasks-page .subtask-add-row { display: flex; align-items: center; gap: 8px; min-width: 0; }
