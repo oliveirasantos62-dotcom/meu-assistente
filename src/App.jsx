@@ -46,6 +46,7 @@ import Processos from './components/Processos';
 import { getReferenceData } from './utils/moduleReferences';
 import { isTaskCancelled } from './utils/taskStatus';
 import { useLanguage } from './context/LanguageContext.jsx';
+import FuturisticTools from './components/FuturisticTools.jsx';
 
 export default function App() {
   const { t, language } = useLanguage();
@@ -928,6 +929,7 @@ export default function App() {
       {/* CONTEÚDO */}
 
       <main className='main-content'>
+        <FuturisticTools data={data} save={save} activeSection={activeSection} />
         {/* HEADER */}
 
         <header className='main-header'>

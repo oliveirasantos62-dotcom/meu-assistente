@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useLanguage } from '../context/LanguageContext';
-import './Sidebar.css';
 import brandIcon from '../../resources/icon-only.png';
 
 const SECTIONS = [
