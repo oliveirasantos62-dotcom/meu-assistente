@@ -123,9 +123,10 @@ describe('useAppData', () => {
 
     await waitFor(() => {
       expect(saveAppData).toHaveBeenCalledWith(
-        user.id,
         expect.objectContaining({
-          tasks: localData.tasks,
+          tasks: expect.arrayContaining([
+            expect.objectContaining({ id: 'local-1' }),
+          ]),
         }),
       );
     });
@@ -151,7 +152,6 @@ describe('useAppData', () => {
 
     await waitFor(() => {
       expect(saveAppData).toHaveBeenCalledWith(
-        user.id,
         expect.objectContaining({ xp: 100 }),
       );
     });

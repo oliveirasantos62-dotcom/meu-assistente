@@ -1,0 +1,69 @@
+.neo-state-map{
+  display:flex;flex-direction:column;gap:10px;margin:2px 0 10px;
+  padding:12px;border:2px solid #7e68b8;border-radius:8px;
+  background:linear-gradient(135deg,#19254a,#10182e 68%,#241838);
+  box-shadow:0 8px 18px rgba(8,12,30,.44),inset 0 0 20px rgba(110,194,201,.08);
+}
+.neo-state-map-header{display:flex;align-items:flex-start;justify-content:space-between}
+.neo-state-map-header span{font-size:9px;color:#6ec2c9;font-weight:900;letter-spacing:1.4px}
+.neo-state-map-header h3{margin:3px 0 0;font-size:17px;color:#fff8e3}
+.neo-state-map-header button{
+  width:28px;height:28px;border:1.5px solid #c7b3eb;border-radius:5px;
+  background:#1e2a48;color:#fff;font-size:18px;cursor:pointer;
+}
+.neo-state-cities{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:8px}
+.neo-state-city{
+  min-height:92px;display:grid;grid-template-columns:54px 1fr auto;align-items:center;gap:8px;
+  border:1.5px solid #53618f;border-radius:7px;padding:8px;
+  background:linear-gradient(135deg,rgba(38,58,92,.88),rgba(18,27,49,.94));
+  color:#eef4e2;text-align:left;cursor:pointer;
+}
+.neo-state-city:hover:not(:disabled),.neo-state-city.active{
+  border-color:#fff0a6;box-shadow:0 0 14px rgba(245,196,81,.16);transform:translateY(-1px);
+}
+.neo-state-city:disabled{opacity:.48;cursor:not-allowed}
+.neo-state-city.theme-blue-coast{border-left:4px solid #56bde8}
+.neo-state-city.theme-green-tech{border-left:4px solid #72d875}
+.neo-state-city.theme-violet-academy{border-left:4px solid #b58bea}
+.neo-state-city.theme-cyan-orbit{border-left:4px solid #58e1e6}
+.neo-state-city.theme-gold-port{border-left:4px solid #f5c451}
+.neo-state-city.theme-sun-islands{border-left:4px solid #ef9b69}
+.neo-state-city.theme-magenta-cyber{border-left:4px solid #f52ba8}
+.neo-state-city-mark{
+  position:relative;width:46px;height:46px;border-radius:50%;
+  border:2px solid #6ec2c9;background:radial-gradient(circle,#283d66 0 38%,#10182e 39%);
+  box-shadow:0 0 12px rgba(110,194,201,.28);
+}
+.neo-state-city-mark i{
+  position:absolute;left:18px;top:7px;width:11px;height:24px;
+  clip-path:polygon(50% 0,100% 60%,72% 100%,28% 100%,0 60%);
+  background:linear-gradient(180deg,#c7b3eb,#f52ba8);
+  box-shadow:0 0 8px #c7b3eb;
+}
+.neo-state-city-mark b{
+  position:absolute;left:8px;right:8px;bottom:7px;height:3px;
+  background:#6ec2c9;box-shadow:0 0 6px #6ec2c9;
+}
+.neo-state-city small{display:block;color:#f5c451;font-size:8px;text-transform:uppercase}
+.neo-state-city div>b{display:block;font-size:12px;color:#fff8e3;margin:2px 0}
+.neo-state-city p{margin:0;font-size:9px;color:#bfcbe0;line-height:1.25}
+.neo-state-city em{align-self:start;font-style:normal;font-size:7px;font-weight:900;color:#b2de8e}
+
+.neo-city-theme-blue-coast{background:
+  radial-gradient(circle at 20% 72%,rgba(86,189,232,.28),transparent 16%),
+  linear-gradient(135deg,#173a64,#10243b 58%,#24305c)}
+.neo-city-theme-green-tech{background:
+  radial-gradient(circle at 72% 28%,rgba(114,216,117,.20),transparent 18%),
+  linear-gradient(135deg,#1b5147,#15283b 58%,#263153)}
+.neo-city-theme-violet-academy{background:
+  radial-gradient(circle at 50% 18%,rgba(181,139,234,.22),transparent 20%),
+  linear-gradient(135deg,#352b66,#172445 58%,#252653)}
+.neo-city-theme-cyan-orbit{background:
+  radial-gradient(circle at 80% 20%,rgba(88,225,230,.24),transparent 18%),
+  linear-gradient(135deg,#1a5263,#13243f 58%,#2c315f)}
+.neo-city-theme-gold-port{background:
+  radial-gradient(circle at 30% 65%,rgba(245,196,81,.18),transparent 18%),
+  linear-gradient(135deg,#4b4639,#1d2b3d 58%,#31304d)}
+.neo-city-theme-sun-islands{background:
+  radial-gradient(circle at 65% 70%,rgba(239,155,105,.20),transparent 18%),
+  linear-gradient(135deg,#31504f,#183a48 58%,#3a3156)}

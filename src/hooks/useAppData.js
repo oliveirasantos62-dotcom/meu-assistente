@@ -508,7 +508,9 @@ export function useAppData(user) {
         setData(localData);
 
         setSyncError(
-          error?.message || 'Não foi possível carregar os dados do TiDB.',
+          `Não foi possível carregar os dados do TiDB: ${
+            error?.message || 'Falha de conexão'
+          }`,
         );
 
         setSyncStatus('error');
@@ -560,7 +562,9 @@ export function useAppData(user) {
         if (cancelled) return;
 
         setSyncError(
-          error?.message || 'Não foi possível salvar os dados no TiDB.',
+          `Não foi possível salvar os dados no TiDB: ${
+            error?.message || 'Falha de conexão'
+          }`,
         );
 
         setSyncStatus('error');
