@@ -2880,8 +2880,39 @@ export default function NeoLifeCity({ data = {}, save, onNavigate }) {
                       return pos && pos.x === x && pos.y === y;
                     });
 
-                    const isRoad = y === 6 || y === 7 || x === 8 || x === 12;
+                    // Malha urbana: avenidas principais, ruas secundárias e seis zonas
+                    // inspiradas no mapa metropolitano neon.
+                    const isRoad =
+                      y === 6 ||
+                      y === 7 ||
+                      x === 8 ||
+                      x === 12 ||
+                      (y === 5 && x >= 3 && x <= 17) ||
+                      (y === 10 && x >= 2 && x <= 17) ||
+                      (x === 5 && y >= 1 && y <= 10) ||
+                      (x === 15 && y >= 1 && y <= 10);
                     const isWater = isWaterTile(x, y);
+                    const cityZone =
+                      x <= 7 && y <= 5
+                        ? 'central'
+                        : x >= 8 && x <= 13 && y <= 5
+                          ? 'academy'
+                          : x >= 14 && y <= 7
+                            ? 'green'
+                            : x <= 6 && y >= 8
+                              ? 'innovation'
+                              : x >= 7 && x <= 13 && y >= 8
+                                ? 'commerce'
+                                : x >= 14 && y >= 8
+                                  ? 'arcade'
+                                  : 'boulevard';
+                    const districtSign =
+                      (x === 3 && y === 4) ||
+                      (x === 10 && y === 4) ||
+                      (x === 17 && y === 4) ||
+                      (x === 3 && y === 11) ||
+                      (x === 9 && y === 11) ||
+                      (x === 17 && y === 11);
                     const isPark =
                       (x >= 7 && x <= 8 && y >= 1 && y <= 3) ||
                       (x >= 14 && x <= 14 && y >= 8 && y <= 10);
@@ -2928,7 +2959,7 @@ export default function NeoLifeCity({ data = {}, save, onNavigate }) {
                     return (
                       <div
                         key={`${x}-${y}`}
-                        className='neo-world-tile'
+                        className={`neo-world-tile zone-${cityZone} ${isRoad ? 'city-road' : ''} ${isWater ? 'city-water' : ''} ${isPark ? 'city-park' : ''}`}
                         style={{
                           gridColumn: x + 1,
                           gridRow: y + 1,
@@ -2944,6 +2975,23 @@ export default function NeoLifeCity({ data = {}, save, onNavigate }) {
                           ),
                         }}
                       >
+                        {districtSign && !building && !isWater ? (
+                          <span
+                            className={`neo-district-waypoint waypoint-${cityZone}`}
+                          >
+                            {
+                              {
+                                central: 'NÚCLEO',
+                                academy: 'CAMPUS',
+                                green: 'BIO PARQUE',
+                                innovation: 'INOVAÇÃO',
+                                commerce: 'MERCADO',
+                                arcade: 'ARCADE',
+                              }[cityZone]
+                            }
+                          </span>
+                        ) : null}
+
                         {/* Construção 96x64 px (ou andaime se ainda estiver em construção!) */}
                         {isBuildingAnchor && sprites?.buildings ? (
                           <div
@@ -4810,14 +4858,16 @@ const styles = `
 }
 .neo-world-scroll{
   overflow:auto;padding:12px;border:3px solid #7d5136;border-radius:8px;
-  background:#1a2e2b;
+  background:radial-gradient(ellipse at 50% 40%,#20264d,#101629 72%);
+  border-color:#53618f;box-shadow:inset 0 0 24px rgba(61,104,255,.18);
 }
 .neo-world-map{
   position:relative;display:grid;
   grid-template-columns:repeat(20,48px);
   grid-template-rows:repeat(12,48px);
   gap:0;width:max-content;margin:auto;
-  border:4px solid #523422;border-radius:4px;
+  border:4px solid #52618f;border-radius:4px;
+  background:#10152d;box-shadow:0 0 0 3px #171d3c,0 0 28px rgba(70,105,255,.28);
   image-rendering:pixelated;
   transition:filter .4s ease;
 }
@@ -4831,7 +4881,33 @@ const styles = `
   filter:brightness(1.45) drop-shadow(0 0 10px rgba(245,196,81,.9));
 }
 
-.neo-world-tile{position:relative;width:48px;height:48px;overflow:visible}
+.neo-world-tile{position:relative;width:48px;height:48px;overflow:visible;isolation:isolate}
+.neo-world-tile::before{
+  content:'';position:absolute;inset:0;z-index:1;pointer-events:none;opacity:.16;
+  background:linear-gradient(135deg,transparent 46%,rgba(102,220,255,.42) 47%,transparent 50%),
+    repeating-linear-gradient(0deg,transparent 0 11px,rgba(135,113,255,.16) 12px 13px);
+}
+.neo-world-tile.city-road::before{
+  opacity:.8;background:
+    linear-gradient(90deg,transparent 0 45%,rgba(78,220,255,.5) 47% 49%,transparent 52%),
+    linear-gradient(0deg,transparent 0 45%,rgba(255,91,205,.42) 47% 49%,transparent 52%);
+  box-shadow:inset 0 0 0 1px rgba(75,204,255,.18),inset 0 0 12px rgba(30,122,190,.22);
+}
+.neo-world-tile.city-water::before{
+  opacity:.55;background:repeating-linear-gradient(135deg,transparent 0 8px,rgba(83,225,255,.38) 9px 11px);
+}
+.neo-world-tile.city-park::before{
+  opacity:.28;background:radial-gradient(ellipse,rgba(83,255,177,.5),transparent 70%);
+}
+.neo-district-waypoint{
+  position:absolute;left:50%;top:3px;transform:translateX(-50%);z-index:4;
+  white-space:nowrap;padding:2px 5px;border:1px solid currentColor;border-radius:3px;
+  background:rgba(9,17,42,.88);font:900 7px/1.2 monospace;letter-spacing:.5px;
+  color:#74eaff;text-shadow:0 0 6px currentColor;pointer-events:none;
+}
+.waypoint-academy{color:#c8a0ff}.waypoint-green{color:#8affbd}
+.waypoint-innovation{color:#7dbdff}.waypoint-commerce{color:#ff8bdc}
+.waypoint-arcade{color:#ffc078}
 .neo-building-sprite-sheet{
   position:absolute;left:0;top:0;z-index:5;cursor:pointer;
   filter:drop-shadow(0 4px 0 rgba(22,36,34,.45));
