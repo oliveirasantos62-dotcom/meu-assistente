@@ -9,6 +9,7 @@ export function getTravelRoute(fromId, toId) {
 
 export function canUnlockTravel(world = {}, fromId, toId) {
   if (!fromId || !toId) return false;
+  if (fromId === toId) return true;
   const visited = Array.isArray(world.visitedCities) ? world.visitedCities : [];
-  return fromId === toId || visited.includes(fromId) || visited.length >= 2;
+  return visited.length === 0 || visited.includes(fromId) || visited.length >= 2;
 }

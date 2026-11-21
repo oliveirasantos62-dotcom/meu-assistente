@@ -38,4 +38,3 @@ export function getCityNpcPosition(npc, period, dayIndex = new Date().getDay(), 
   }
   return { ...(npc.home || {x:8,y:6}), x: Math.max(1, (npc.home?.x || 8) - (offset === 2 ? 1 : 0)), activity:'resting', label:'Em casa' };
 }
-

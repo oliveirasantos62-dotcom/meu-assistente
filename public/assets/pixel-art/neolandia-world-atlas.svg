@@ -1,0 +1,251 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="256" viewBox="0 0 640 256" shape-rendering="crispEdges">
+  <defs>
+    <pattern id="grid" width="64" height="64" patternUnits="userSpaceOnUse">
+      <rect width="64" height="64" fill="#121a2d"/>
+      <path d="M64 0H0V64" fill="none" stroke="#29344d" stroke-width="2"/>
+      <path d="M4 4H60V60H4Z" fill="none" stroke="#1b263c" stroke-width="1"/>
+    </pattern>
+    <symbol id="grass" viewBox="0 0 32 32">
+      <rect width="32" height="32" fill="#355b45"/>
+      <path d="M2 5h4v3H2zM21 3h3v3h-3zM11 14h3v3h-3zM26 19h4v3h-4zM5 25h3v3H5z" fill="#75a95d"/>
+      <path d="M16 7h3v2h-3zM2 18h3v2H2zM19 26h3v2h-3z" fill="#a2c875"/>
+    </symbol>
+    <symbol id="stone" viewBox="0 0 32 32">
+      <rect width="32" height="32" fill="#414b61"/>
+      <path d="M1 1h14v8H1zM17 1h14v8H17zM1 11h8v8H1zM11 11h20v8H11zM1 21h14v10H1zM17 21h14v10H17z" fill="#59667e"/>
+      <path d="M2 2h12v2H2zM18 2h12v2H18zM12 12h18v2H12zM2 22h12v2H2z" fill="#78839a"/>
+      <path d="M15 1v8M9 11v8M15 21v10" stroke="#303b51" stroke-width="2"/>
+    </symbol>
+    <symbol id="shore" viewBox="0 0 32 32">
+      <rect width="32" height="32" fill="#80754f"/>
+      <path d="M0 5h10v3H0zM17 2h11v3H17zM8 16h13v3H8zM23 25h9v3h-9z" fill="#b29a60"/>
+      <path d="M2 24h7v2H2zM25 10h5v2h-5z" fill="#d2bd7a"/>
+    </symbol>
+    <symbol id="water" viewBox="0 0 32 32">
+      <rect width="32" height="32" fill="#18506d"/>
+      <path d="M3 5h12v2H3zM20 5h8v2h-8zM10 14h15v2H10zM1 23h10v2H1zM21 25h9v2h-9z" fill="#42a7bb"/>
+      <path d="M5 8h7v1H5zM22 8h5v1h-5zM13 17h9v1h-9zM3 26h6v1H3z" fill="#92d7d4"/>
+      <path d="M17 3h2v2h-2zM6 19h2v2H6zM28 17h2v2h-2z" fill="#27728e"/>
+    </symbol>
+    <symbol id="road" viewBox="0 0 32 32">
+      <rect width="32" height="32" fill="#30394c"/>
+      <path d="M0 2h32v3H0zM0 27h32v3H0z" fill="#4b5360"/>
+      <path d="M3 15h7v2H3zM14 15h7v2h-7zM25 15h5v2h-5z" fill="#d6bd75"/>
+      <path d="M1 7h30M1 25h30" stroke="#232c3e" stroke-width="1"/>
+    </symbol>
+    <symbol id="bridge" viewBox="0 0 32 32">
+      <rect width="32" height="32" fill="#18506d"/>
+      <path d="M3 0h26v32H3z" fill="#705a45"/>
+      <path d="M5 1h22v4H5zM5 9h22v4H5zM5 17h22v4H5zM5 25h22v4H5z" fill="#9b7955"/>
+      <path d="M7 1v28M25 1v28" stroke="#413b43" stroke-width="2"/>
+    </symbol>
+    <symbol id="mountain" viewBox="0 0 32 32">
+      <rect width="32" height="32" fill="#334258"/>
+      <path d="M2 27 12 7l5 8 4-6 10 18z" fill="#67748a"/>
+      <path d="m9 13 3-6 4 7-3-1-2 2zM19 12l2-3 5 9-4-2-2 2z" fill="#c6ced1"/>
+      <path d="M2 27h29v4H2z" fill="#48556c"/>
+    </symbol>
+    <symbol id="house" viewBox="0 0 32 32">
+      <rect x="3" y="12" width="26" height="17" fill="#33455c"/>
+      <path d="M1 13 16 2l15 11v4H1z" fill="#51456d"/>
+      <path d="M4 12 16 4l12 8v2H4z" fill="#9063a7"/>
+      <rect x="6" y="17" width="5" height="6" fill="#51c5d0"/>
+      <rect x="21" y="17" width="5" height="6" fill="#51c5d0"/>
+      <rect x="13" y="19" width="6" height="10" fill="#a17452"/>
+      <rect x="14" y="20" width="4" height="8" fill="#4a4055"/>
+      <rect x="8" y="18" width="2" height="4" fill="#d8e6a3"/>
+    </symbol>
+    <symbol id="shop" viewBox="0 0 32 32">
+      <rect x="3" y="13" width="26" height="16" fill="#30465b"/>
+      <rect x="2" y="9" width="28" height="5" fill="#42c1cf"/>
+      <path d="M4 4h24v7H4z" fill="#613e78"/>
+      <path d="M6 5h20v3H6z" fill="#db5eb6"/>
+      <rect x="5" y="16" width="7" height="8" fill="#22364c" stroke="#55cedb" stroke-width="2"/>
+      <rect x="20" y="16" width="7" height="8" fill="#22364c" stroke="#e9bc6a" stroke-width="2"/>
+      <rect x="14" y="19" width="5" height="10" fill="#a9784b"/>
+      <rect x="7" y="17" width="3" height="3" fill="#ffd275"/>
+      <rect x="22" y="17" width="3" height="3" fill="#f3a5db"/>
+    </symbol>
+    <symbol id="lab" viewBox="0 0 32 32">
+      <rect x="3" y="9" width="26" height="20" fill="#283f5b"/>
+      <rect x="1" y="7" width="30" height="4" fill="#4a9eae"/>
+      <path d="M6 3h20v4H6z" fill="#455b77"/>
+      <rect x="6" y="14" width="8" height="9" fill="#152b44" stroke="#48d6df" stroke-width="2"/>
+      <path d="M8 20h4v2H8zM8 16h2v2H8z" fill="#9ae7e4"/>
+      <rect x="19" y="14" width="7" height="6" fill="#202c48" stroke="#d95db9" stroke-width="2"/>
+      <path d="M21 16h3v2h-3z" fill="#f6ca74"/>
+      <rect x="14" y="21" width="5" height="8" fill="#856147"/>
+      <rect x="5" y="26" width="22" height="3" fill="#1b2c44"/>
+    </symbol>
+    <symbol id="bed" viewBox="0 0 32 32">
+      <rect x="3" y="8" width="26" height="21" fill="#36435b" stroke="#192437" stroke-width="2"/>
+      <rect x="5" y="10" width="22" height="17" fill="#43738a"/>
+      <rect x="6" y="11" width="8" height="6" fill="#dec99f"/>
+      <path d="M15 10h11v16H15z" fill="#5db5c4"/>
+      <path d="M16 14h9M16 19h9M16 24h9" stroke="#80d0d5" stroke-width="2"/>
+      <rect x="2" y="7" width="28" height="3" fill="#a58a69"/>
+      <rect x="5" y="28" width="3" height="3" fill="#614d43"/>
+      <rect x="24" y="28" width="3" height="3" fill="#614d43"/>
+    </symbol>
+    <symbol id="sofa" viewBox="0 0 32 32">
+      <rect x="3" y="13" width="26" height="13" fill="#704d80" stroke="#26334b" stroke-width="2"/>
+      <rect x="5" y="9" width="22" height="13" fill="#a65c9d"/>
+      <rect x="7" y="11" width="8" height="8" fill="#d879bd"/>
+      <rect x="17" y="11" width="8" height="8" fill="#bd6aab"/>
+      <rect x="1" y="14" width="5" height="10" fill="#88568f"/>
+      <rect x="26" y="14" width="5" height="10" fill="#88568f"/>
+      <rect x="6" y="25" width="3" height="4" fill="#4a3b4e"/>
+      <rect x="23" y="25" width="3" height="4" fill="#4a3b4e"/>
+    </symbol>
+    <symbol id="desk" viewBox="0 0 32 32">
+      <rect x="4" y="16" width="24" height="9" fill="#705746"/>
+      <rect x="3" y="13" width="26" height="4" fill="#b18a57"/>
+      <rect x="7" y="25" width="3" height="6" fill="#56443c"/>
+      <rect x="23" y="25" width="3" height="6" fill="#56443c"/>
+      <rect x="11" y="5" width="11" height="8" fill="#202c46" stroke="#4cc7d8" stroke-width="2"/>
+      <path d="M13 10h3V8h3" fill="none" stroke="#86e4dc" stroke-width="1"/>
+      <rect x="14" y="18" width="5" height="3" fill="#f2c56b"/>
+    </symbol>
+    <symbol id="plant" viewBox="0 0 32 32">
+      <rect x="8" y="23" width="16" height="8" fill="#55404d"/>
+      <rect x="10" y="21" width="12" height="3" fill="#ac7656"/>
+      <path d="M15 22V10h3v12zM12 16l-6-5 2-3 7 6zM18 15l6-8 3 2-7 9z" fill="#569b67"/>
+      <rect x="8" y="7" width="5" height="4" fill="#86c46d"/>
+      <rect x="21" y="4" width="5" height="4" fill="#8bd075"/>
+      <rect x="15" y="8" width="5" height="4" fill="#a6d873"/>
+    </symbol>
+    <symbol id="terminal" viewBox="0 0 32 32">
+      <rect x="5" y="3" width="22" height="20" fill="#34435d" stroke="#1d293e" stroke-width="2"/>
+      <rect x="8" y="6" width="16" height="12" fill="#102741"/>
+      <path d="M10 15h3v-4h3v2h2V9h3" fill="none" stroke="#54d3de" stroke-width="2"/>
+      <rect x="13" y="23" width="6" height="5" fill="#8b684b"/>
+      <rect x="9" y="28" width="14" height="2" fill="#5d4a47"/>
+      <rect x="23" y="8" width="2" height="3" fill="#e85ab5"/>
+    </symbol>
+    <symbol id="car" viewBox="0 0 32 32">
+      <path d="M5 18 8 11h16l4 7v9H4v-9z" fill="#263d5b" stroke="#151f32" stroke-width="2"/>
+      <path d="M10 13h12l3 5H7z" fill="#39a4c0"/>
+      <path d="M8 20h16v5H8z" fill="#7960a3"/>
+      <rect x="6" y="20" width="3" height="3" fill="#ffe17b"/>
+      <rect x="23" y="20" width="3" height="3" fill="#ff668c"/>
+      <rect x="8" y="26" width="5" height="3" fill="#141b2a"/>
+      <rect x="20" y="26" width="5" height="3" fill="#141b2a"/>
+      <rect x="11" y="14" width="4" height="3" fill="#a6e5e3"/>
+      <rect x="17" y="14" width="4" height="3" fill="#a6e5e3"/>
+    </symbol>
+    <symbol id="tram" viewBox="0 0 32 32">
+      <rect x="4" y="5" width="24" height="23" fill="#344a68" stroke="#172338" stroke-width="2"/>
+      <rect x="7" y="8" width="18" height="10" fill="#3ba9bf"/>
+      <path d="M9 10h5v6H9zM16 10h6v6h-6z" fill="#b7e5df"/>
+      <rect x="8" y="20" width="16" height="3" fill="#edb65e"/>
+      <rect x="7" y="25" width="5" height="3" fill="#111a2b"/>
+      <rect x="20" y="25" width="5" height="3" fill="#111a2b"/>
+      <path d="M14 2h4v3h-4zM15 0h2v2h-2z" fill="#e45db8"/>
+    </symbol>
+    <symbol id="bike" viewBox="0 0 32 32">
+      <circle cx="7" cy="24" r="5" fill="none" stroke="#4dd0d9" stroke-width="2"/>
+      <circle cx="25" cy="24" r="5" fill="none" stroke="#4dd0d9" stroke-width="2"/>
+      <path d="m7 24 7-10 5 10H7l6-7h8l4 7m-13-10h-4" fill="none" stroke="#cf5db4" stroke-width="2"/>
+      <rect x="13" y="11" width="6" height="3" fill="#f2c76f"/>
+    </symbol>
+    <symbol id="drone" viewBox="0 0 32 32">
+      <rect x="12" y="12" width="8" height="9" fill="#3c5873" stroke="#19263c" stroke-width="2"/>
+      <rect x="14" y="14" width="4" height="3" fill="#65d9df"/>
+      <path d="M12 14 5 9M20 14l7-5M12 19l-7 5M20 19l7 5" stroke="#738397" stroke-width="2"/>
+      <rect x="2" y="6" width="8" height="3" fill="#d15eb3"/>
+      <rect x="22" y="6" width="8" height="3" fill="#d15eb3"/>
+      <rect x="2" y="24" width="8" height="3" fill="#59cad4"/>
+      <rect x="22" y="24" width="8" height="3" fill="#59cad4"/>
+    </symbol>
+    <symbol id="person-a" viewBox="0 0 32 32">
+      <path d="M11 8h11v9H11z" fill="#d5a185"/>
+      <path d="M9 8V5h14v5h-3V8zM10 11h3v2h-3zM20 11h3v2h-3z" fill="#594a7e"/>
+      <path d="M8 17h16v9H8z" fill="#4aa5a7"/>
+      <path d="M10 26h5v5h-5zM18 26h5v5h-5z" fill="#343a50"/>
+      <rect x="4" y="18" width="4" height="8" fill="#d5a185"/>
+      <rect x="24" y="18" width="4" height="8" fill="#d5a185"/>
+      <rect x="14" y="17" width="4" height="5" fill="#f5c46e"/>
+    </symbol>
+    <symbol id="person-b" viewBox="0 0 32 32">
+      <path d="M11 8h11v9H11z" fill="#8c5f4e"/>
+      <path d="M9 9 10 4h13l2 6-4-2-2 2-4-2-4 3z" fill="#e1ae5e"/>
+      <path d="M8 17h16v9H8z" fill="#8a5f9e"/>
+      <path d="M10 26h5v5h-5zM18 26h5v5h-5z" fill="#37455d"/>
+      <rect x="4" y="18" width="4" height="8" fill="#8c5f4e"/>
+      <rect x="24" y="18" width="4" height="8" fill="#8c5f4e"/>
+      <rect x="13" y="19" width="6" height="3" fill="#69d2db"/>
+    </symbol>
+    <symbol id="robot" viewBox="0 0 32 32">
+      <rect x="7" y="10" width="18" height="14" fill="#677991" stroke="#26354a" stroke-width="2"/>
+      <rect x="10" y="13" width="12" height="7" fill="#1b2e49"/>
+      <rect x="12" y="15" width="3" height="3" fill="#64d8df"/>
+      <rect x="18" y="15" width="3" height="3" fill="#ed68be"/>
+      <path d="M14 7h4v3h-4zM15 4h2v3h-2z" fill="#d6b66e"/>
+      <rect x="4" y="14" width="3" height="7" fill="#b38358"/>
+      <rect x="25" y="14" width="3" height="7" fill="#b38358"/>
+      <rect x="10" y="24" width="4" height="5" fill="#4e5e76"/>
+      <rect x="18" y="24" width="4" height="5" fill="#4e5e76"/>
+    </symbol>
+    <symbol id="crystal" viewBox="0 0 32 32">
+      <path d="M16 2 27 12 20 29h-8L5 12z" fill="#278ba7" stroke="#72e1e2" stroke-width="2"/>
+      <path d="m16 2 2 12-6 15-7-17z" fill="#51c9d9"/>
+      <path d="m16 2 11 10-9 2z" fill="#b5ecda"/>
+      <path d="m12 29 6-15 9-2-7 17z" fill="#6a5ca5"/>
+      <rect x="17" y="8" width="3" height="3" fill="#f2ce79"/>
+    </symbol>
+    <symbol id="tablet" viewBox="0 0 32 32">
+      <rect x="5" y="3" width="22" height="26" fill="#5a6178" stroke="#222e43" stroke-width="2"/>
+      <rect x="8" y="6" width="16" height="18" fill="#142741"/>
+      <path d="M10 20h4v-5h4v2h5" fill="none" stroke="#50d0dc" stroke-width="2"/>
+      <rect x="14" y="26" width="4" height="1" fill="#e5bc70"/>
+      <rect x="21" y="8" width="2" height="2" fill="#e764ba"/>
+    </symbol>
+  </defs>
+
+  <rect width="640" height="256" fill="#0c1323"/>
+  <rect width="640" height="256" fill="url(#grid)"/>
+  <g fill="#9aa9c3" font-family="monospace" font-size="8" text-anchor="middle">
+    <text x="32" y="62">GRAMA</text><text x="96" y="62">PEDRA</text>
+    <text x="160" y="62">AREIA</text><text x="224" y="62">AGUA</text>
+    <text x="288" y="62">RUA</text><text x="352" y="62">PONTE</text>
+    <text x="416" y="62">SERRA</text><text x="480" y="62">CASA</text>
+    <text x="544" y="62">LOJA</text><text x="608" y="62">LAB</text>
+    <text x="32" y="126">CAMA</text><text x="96" y="126">SOFA</text>
+    <text x="160" y="126">MESA</text><text x="224" y="126">PLANTA</text>
+    <text x="288" y="126">TERMINAL</text><text x="352" y="126">CARRO</text>
+    <text x="416" y="126">VLT</text><text x="480" y="126">BICICLETA</text>
+    <text x="544" y="126">DRONE</text><text x="608" y="126">MORADORA</text>
+    <text x="32" y="190">MORADOR</text><text x="96" y="190">ROBO</text>
+    <text x="160" y="190">CRISTAL</text><text x="224" y="190">TABLET</text>
+  </g>
+  <g width="32" height="32">
+    <use href="#grass" x="16" y="8" width="32" height="32"/>
+    <use href="#stone" x="80" y="8" width="32" height="32"/>
+    <use href="#shore" x="144" y="8" width="32" height="32"/>
+    <use href="#water" x="208" y="8" width="32" height="32"/>
+    <use href="#road" x="272" y="8" width="32" height="32"/>
+    <use href="#bridge" x="336" y="8" width="32" height="32"/>
+    <use href="#mountain" x="400" y="8" width="32" height="32"/>
+    <use href="#house" x="464" y="8" width="32" height="32"/>
+    <use href="#shop" x="528" y="8" width="32" height="32"/>
+    <use href="#lab" x="592" y="8" width="32" height="32"/>
+    <use href="#bed" x="16" y="72" width="32" height="32"/>
+    <use href="#sofa" x="80" y="72" width="32" height="32"/>
+    <use href="#desk" x="144" y="72" width="32" height="32"/>
+    <use href="#plant" x="208" y="72" width="32" height="32"/>
+    <use href="#terminal" x="272" y="72" width="32" height="32"/>
+    <use href="#car" x="336" y="72" width="32" height="32"/>
+    <use href="#tram" x="400" y="72" width="32" height="32"/>
+    <use href="#bike" x="464" y="72" width="32" height="32"/>
+    <use href="#drone" x="528" y="72" width="32" height="32"/>
+    <use href="#person-a" x="592" y="72" width="32" height="32"/>
+    <use href="#person-b" x="16" y="136" width="32" height="32"/>
+    <use href="#robot" x="80" y="136" width="32" height="32"/>
+    <use href="#crystal" x="144" y="136" width="32" height="32"/>
+    <use href="#tablet" x="208" y="136" width="32" height="32"/>
+  </g>
+  <g fill="#64738e" font-family="monospace" font-size="8">
+    <text x="12" y="216">ATLAS ORIGINAL NEOLANDIA · ESCALA 2× · PIXEL GRID 32×32</text>
+    <text x="12" y="232">Terreno, fachadas, interiores, transporte, personagens e itens originais</text>
+  </g>
+</svg>

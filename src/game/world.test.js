@@ -1,9 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import { CITIES, getPeriodFromHour, isInsideWorld, isRoadTile } from './world';
+import { CITY_MAPS } from './cityMaps';
+import { CITY_LAYOUTS } from './cityLayouts';
 import { createCollisionChecker, manhattanDistance } from './collision';
 import { createRecurringMissions, localDateKey, weekKey } from './questEvents';
 import { advanceVehicle, getSignalState } from './traffic';
 import { buildNpcReaction, summarizeRealProgress } from './socialReactions';
+import { canUnlockTravel } from './travel';
 
 describe('NeoLifeCity world systems', () => {
   it('classifica horários do ciclo diário', () => {
@@ -33,6 +36,41 @@ describe('NeoLifeCity world systems', () => {
     expect(CITIES).toHaveLength(7);
     expect(new Set(CITIES.map((city) => city.id)).size).toBe(7);
     expect(CITIES.find((city) => city.id === 'neolife')?.routes).toContain('fortaleza');
+  });
+
+  it('define mapas físicos distintos e portas acessíveis em cada cidade', () => {
+    const signatures = CITIES.map(({ id }) =>
+      Array.from({ length: CITY_MAPS[id].height }, (_, y) =>
+        Array.from({ length: CITY_MAPS[id].width }, (_, x) =>
+          CITY_MAPS[id].getTile(x, y),
+        ).join(','),
+      ).join(';'),
+    );
+    expect(new Set(signatures).size).toBe(CITIES.length);
+
+    CITIES.forEach(({ id }) => {
+      CITY_LAYOUTS[id].forEach((building) => {
+        expect(CITY_MAPS[id].isWaterTile(building.door.x, building.door.y)).toBe(false);
+      });
+    });
+  });
+
+  it('bloqueia água e mantém pontes navegáveis', () => {
+    const coast = createCollisionChecker({
+      water: CITY_MAPS.fortaleza.isWaterTile,
+    });
+    const islandBridge = createCollisionChecker({
+      water: CITY_MAPS.litoral.isWaterTile,
+    });
+    expect(coast(0, 0)).toBe(false);
+    expect(islandBridge(0, 6)).toBe(true);
+    expect(CITY_MAPS.litoral.getTile(0, 6)).toBe('bridge');
+  });
+
+  it('permite a primeira viagem por uma rota conectada', () => {
+    expect(canUnlockTravel({}, 'neolife', 'fortaleza')).toBe(true);
+    expect(canUnlockTravel({ visitedCities: ['fortaleza'] }, 'fortaleza', 'porto')).toBe(true);
+    expect(canUnlockTravel({}, '', 'porto')).toBe(false);
   });
 
   it('gera missões diárias e semanais com datas estáveis', () => {

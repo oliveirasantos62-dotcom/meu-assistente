@@ -116,6 +116,108 @@
   animation:neoWaterTiles 2.2s linear infinite;
 }
 
+.neo-world-tile.tile-ground{
+  background:
+    linear-gradient(90deg,rgba(225,233,174,.07) 0 2px,transparent 2px 16px),
+    linear-gradient(0deg,rgba(12,34,32,.08) 0 2px,transparent 2px 16px),
+    linear-gradient(135deg,#416e4c,#345b43);
+  background-size:16px 16px,16px 16px,100% 100%;
+}
+.neo-world-tile.tile-forest{
+  background:
+    radial-gradient(ellipse at 30% 34%,#83a958 0 10%,transparent 11%),
+    radial-gradient(ellipse at 66% 64%,#587d47 0 18%,transparent 19%),
+    linear-gradient(135deg,#31583f,#294b3b);
+}
+.neo-world-tile.tile-shore{
+  background:
+    linear-gradient(135deg,rgba(255,230,167,.18) 0 10%,transparent 10% 27%,rgba(255,230,167,.12) 27% 32%,transparent 32%),
+    linear-gradient(135deg,#a59462,#756c4c);
+}
+.neo-world-tile.tile-mountain{
+  background:
+    linear-gradient(135deg,transparent 0 26%,#6d7181 27% 43%,transparent 44%),
+    linear-gradient(45deg,transparent 0 40%,#4c546c 41% 65%,transparent 66%),
+    linear-gradient(135deg,#38475d,#28374d);
+}
+.neo-world-tile.tile-plaza{
+  background:
+    linear-gradient(90deg,rgba(207,200,176,.14) 0 2px,transparent 2px 16px),
+    linear-gradient(0deg,rgba(207,200,176,.12) 0 2px,transparent 2px 16px),
+    linear-gradient(135deg,#596174,#424c61);
+  background-size:16px 16px,16px 16px,100% 100%;
+}
+.neo-world-tile.tile-industry{
+  background:
+    repeating-linear-gradient(0deg,transparent 0 9px,rgba(246,199,97,.18) 9px 11px,transparent 11px 16px),
+    linear-gradient(135deg,#56505a,#393d4a);
+}
+.neo-world-tile.tile-bridge{
+  background:
+    repeating-linear-gradient(90deg,#7a6850 0 5px,#534b43 5px 9px),
+    linear-gradient(180deg,#766d5c,#4e4b46);
+  box-shadow:inset 0 4px #a38a64,inset 0 -4px #342f35;
+}
+
+.neo-world-landmark{
+  position:absolute;left:50%;top:50%;z-index:2;width:30px;height:34px;
+  transform:translate(-50%,-68%);pointer-events:none;
+  filter:drop-shadow(0 3px 2px rgba(8,12,24,.75));
+}
+.neo-world-landmark i,.neo-world-landmark b{
+  position:absolute;display:block;
+}
+.landmark-garden i{
+  left:9px;top:3px;width:13px;height:17px;
+  background:#91c96e;box-shadow:-7px 5px #5d9c5e,7px 6px #7bbd68,0 13px #477b52;
+}
+.landmark-garden b{
+  left:13px;top:17px;width:6px;height:14px;background:#806447;
+}
+.landmark-lighthouse i{
+  left:8px;top:2px;width:14px;height:26px;
+  background:linear-gradient(180deg,#d9d4c0 0 27%,#d363a9 27% 42%,#c9c6b6 42% 70%,#dcaa5b 70%);
+  border:2px solid #3c465c;
+}
+.landmark-lighthouse b{
+  left:5px;top:0;width:20px;height:5px;background:#f6cb73;
+  box-shadow:0 0 8px #f6cb73;
+}
+.landmark-observatory i{
+  left:4px;top:8px;width:24px;height:16px;background:#667693;
+  border:2px solid #313d59;
+}
+.landmark-observatory b{
+  left:9px;top:1px;width:14px;height:11px;background:#ad8cd3;
+  border:2px solid #313d59;border-radius:8px 8px 0 0;
+  box-shadow:inset 0 -4px #405d7a;
+}
+.landmark-buoy i{
+  left:11px;top:8px;width:8px;height:23px;background:#53cbd5;
+  border:2px solid #263d56;box-shadow:0 -4px #f0c46b;
+}
+.landmark-buoy b{
+  left:6px;top:28px;width:18px;height:5px;background:#8fc8c9;
+  box-shadow:0 3px 0 #347185;
+}
+.landmark-crane i{
+  left:4px;top:7px;width:23px;height:5px;background:#e6b95e;
+  box-shadow:0 0 0 2px #4d4b52,4px 5px 0 -1px #e6b95e;
+}
+.landmark-crane b{
+  left:8px;top:10px;width:4px;height:21px;background:#6c7687;
+  box-shadow:12px 0 #6c7687,-3px 20px 10px -7px #c5a35b;
+}
+.landmark-lagoon i{
+  left:1px;top:7px;width:28px;height:19px;background:#348ba0;
+  border:3px solid #d5c078;border-radius:45%;
+  box-shadow:inset 0 0 0 3px #54c9d2;
+}
+.landmark-lagoon b{
+  left:9px;top:12px;width:9px;height:4px;background:#e6e1aa;
+  box-shadow:6px 6px #80ca76,-4px 8px #a8d1d1;
+}
+
 @keyframes neoWaterTiles{
   to{background-position:11px 11px,0 0}
 }
