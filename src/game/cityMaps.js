@@ -44,6 +44,13 @@ function createMap(definition) {
     width: WORLD_WIDTH,
     height: WORLD_HEIGHT,
     spawn: Object.freeze(definition.spawn),
+    harbor: definition.harbor
+      ? Object.freeze({
+          name: definition.harbor.name,
+          ship: Object.freeze({ ...definition.harbor.ship }),
+          dock: Object.freeze({ ...definition.harbor.dock }),
+        })
+      : null,
     roads,
     landmarks: Object.freeze(landmarks),
     isRoadTile: (x, y) => roads.has(keyOf(x, y)),
@@ -80,6 +87,11 @@ const definitions = {
   },
   fortaleza: {
     spawn: { x: 10, y: 6 },
+    harbor: {
+      name: 'Balsa Maré Azul',
+      ship: { x: 0, y: 1, width: 2, height: 3, orientation: 'vertical' },
+      dock: { x: 2, y: 5 },
+    },
     roads: [
       [[0, 6], [19, 6]], [[9, 4], [9, 11]], [[3, 4], [3, 6]],
       [[3, 8], [15, 8]], [[5, 8], [5, 10]], [[15, 8], [15, 10]],
@@ -125,6 +137,11 @@ const definitions = {
   },
   litoral: {
     spawn: { x: 10, y: 6 },
+    harbor: {
+      name: 'Ferry Aurora',
+      ship: { x: 0, y: 3, width: 2, height: 3, orientation: 'vertical' },
+      dock: { x: 2, y: 5 },
+    },
     roads: [
       [[0, 6], [17, 6]], [[9, 0], [9, 11]], [[3, 4], [3, 6]],
       [[14, 3], [14, 6]], [[14, 6], [15, 6]], [[15, 6], [15, 10]],
@@ -140,6 +157,11 @@ const definitions = {
   },
   porto: {
     spawn: { x: 10, y: 6 },
+    harbor: {
+      name: 'Cargueiro Solar',
+      ship: { x: 17, y: 0, width: 3, height: 2, orientation: 'horizontal' },
+      dock: { x: 16, y: 4 },
+    },
     roads: [
       [[0, 6], [19, 6]], [[9, 0], [9, 11]], [[3, 4], [3, 6]],
       [[5, 6], [5, 10]], [[10, 8], [15, 8]], [[15, 8], [15, 10]],
@@ -155,6 +177,11 @@ const definitions = {
   },
   ilhada: {
     spawn: { x: 10, y: 6 },
+    harbor: {
+      name: 'Balsa das Ilhas',
+      ship: { x: 0, y: 4, width: 2, height: 4, orientation: 'vertical' },
+      dock: { x: 2, y: 6 },
+    },
     roads: [
       [[2, 6], [17, 6]], [[9, 4], [9, 6]], [[10, 6], [10, 10]],
       [[3, 4], [3, 6]], [[15, 3], [15, 6]], [[15, 6], [15, 10]],

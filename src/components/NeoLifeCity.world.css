@@ -381,3 +381,165 @@
 .neo-city-theme-sun-islands{background:
   radial-gradient(circle at 65% 70%,rgba(239,155,105,.20),transparent 18%),
   linear-gradient(135deg,#31504f,#183a48 58%,#3a3156)}
+
+.neo-mini-map-wrap{
+  position:absolute;z-index:40;top:10px;right:10px;width:clamp(164px,22vw,226px);
+  filter:drop-shadow(0 5px 9px rgba(0,0,0,.62));
+}
+.neo-route-map{
+  position:relative;overflow:hidden;isolation:isolate;
+  border:2px solid #6ec2c9;border-radius:5px;
+  background:#10233a;box-shadow:inset 0 0 0 1px rgba(255,240,166,.38);
+  image-rendering:pixelated;
+}
+.neo-route-map.compact{width:100%;aspect-ratio:5/3}
+.neo-route-map.expanded{width:100%;min-height:230px;max-height:340px;aspect-ratio:5/3}
+.neo-route-map svg{position:absolute;inset:0;width:100%;height:100%}
+.neo-region-ocean{fill:#103e5a}
+.neo-region-grid-line{fill:none;stroke:rgba(143,216,218,.15);stroke-width:1}
+.neo-region-depth{fill:none;stroke:rgba(110,194,201,.24);stroke-width:2}
+.neo-region-island{stroke:#d2c68b;stroke-width:2;filter:drop-shadow(0 2px 2px rgba(0,0,0,.42))}
+.neo-region-island.theme-magenta-cyber{fill:#375d49}
+.neo-region-island.theme-blue-coast{fill:#527c5c}
+.neo-region-island.theme-green-tech{fill:#4c8155}
+.neo-region-island.theme-violet-academy{fill:#716b55}
+.neo-region-island.theme-cyan-orbit{fill:#487d76}
+.neo-region-island.theme-gold-port{fill:#8a7853}
+.neo-region-island.theme-sun-islands{fill:#56816c}
+.neo-region-streets{fill:none;stroke:#e7d59b;stroke-width:3;stroke-linecap:square;opacity:.72}
+.neo-region-district{fill:#f5c451;stroke:#513f4c;stroke-width:1}
+.neo-region-route{fill:none;stroke-width:2.5;stroke-linecap:round;opacity:.54}
+.neo-region-route.land{stroke:#f5c451;stroke-dasharray:6 4}
+.neo-region-route.sea{stroke:#72dded;stroke-dasharray:2 4}
+.neo-region-route.active{opacity:1;stroke-width:3.5;filter:drop-shadow(0 0 3px #8af3ed)}
+.neo-region-pin{
+  position:absolute;z-index:2;display:flex;flex-direction:column;align-items:center;gap:2px;
+  padding:0;border:0;background:transparent;color:#fff8e3;cursor:pointer;
+  transform:translate(-50%,-50%);text-shadow:0 1px 3px #07111b;
+}
+.neo-region-pin i{
+  display:block;width:9px;height:9px;border:2px solid #fff0a6;border-radius:50%;
+  background:#f52ba8;box-shadow:0 0 8px #f52ba8;
+}
+.neo-region-pin.theme-blue-coast i{background:#56bde8;box-shadow:0 0 8px #56bde8}
+.neo-region-pin.theme-green-tech i{background:#72d875;box-shadow:0 0 8px #72d875}
+.neo-region-pin.theme-violet-academy i{background:#b58bea;box-shadow:0 0 8px #b58bea}
+.neo-region-pin.theme-cyan-orbit i{background:#58e1e6;box-shadow:0 0 8px #58e1e6}
+.neo-region-pin.theme-gold-port i{background:#f5c451;box-shadow:0 0 8px #f5c451}
+.neo-region-pin.theme-sun-islands i{background:#ef9b69;box-shadow:0 0 8px #ef9b69}
+.neo-region-pin span{
+  padding:1px 3px;border:1px solid rgba(255,240,166,.5);border-radius:2px;
+  background:rgba(12,24,38,.85);font:800 7px/1.2 monospace;white-space:nowrap;
+}
+.neo-region-pin.active i{width:12px;height:12px;background:#fff0a6;box-shadow:0 0 12px #fff0a6}
+.neo-region-pin:disabled{opacity:.55;cursor:not-allowed}
+.neo-region-pin:not(:disabled):hover span,.neo-region-pin.active span{border-color:#fff0a6;color:#fff0a6}
+.neo-route-map.compact .neo-region-pin span{font-size:7px}
+.neo-route-map.expanded .neo-region-pin i{width:13px;height:13px}
+.neo-route-map.expanded .neo-region-pin span{padding:3px 5px;font-size:9px}
+
+.neo-world-map .neo-building-visual.has-pixel-art{
+  overflow:visible;border:0;border-radius:0;background:transparent;box-shadow:none;
+}
+.neo-world-map .neo-building-pixel-art{
+  position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);
+  image-rendering:pixelated;filter:drop-shadow(0 4px 3px rgba(0,0,0,.54));
+}
+.neo-world-map .neo-building-visual.has-pixel-art .neo-building-roof,
+.neo-world-map .neo-building-visual.has-pixel-art .neo-rooftop-antenna,
+.neo-world-map .neo-building-visual.has-pixel-art .neo-building-windows,
+.neo-world-map .neo-building-visual.has-pixel-art .neo-building-door,
+.neo-world-map .neo-building-visual.has-pixel-art .neo-building-base{display:none}
+.neo-world-map .neo-building-visual.has-pixel-art .neo-building-sign{
+  z-index:6;top:-8px;right:2px;min-width:0;height:12px;padding:0 3px;
+  border:1px solid #fff0a6;border-radius:2px;background:#172936;color:#fff0a6;
+  font:900 6px/1 monospace;box-shadow:0 0 8px rgba(110,194,201,.72);
+}
+.neo-world-map.neo-city-theme-blue-coast .neo-building-pixel-art{filter:hue-rotate(15deg) saturate(1.05) drop-shadow(0 4px 3px rgba(0,0,0,.54))}
+.neo-world-map.neo-city-theme-green-tech .neo-building-pixel-art{filter:hue-rotate(38deg) saturate(1.12) drop-shadow(0 4px 3px rgba(0,0,0,.54))}
+.neo-world-map.neo-city-theme-violet-academy .neo-building-pixel-art{filter:hue-rotate(60deg) saturate(.94) drop-shadow(0 4px 3px rgba(0,0,0,.54))}
+.neo-world-map.neo-city-theme-cyan-orbit .neo-building-pixel-art{filter:hue-rotate(165deg) saturate(1.08) drop-shadow(0 4px 3px rgba(0,0,0,.54))}
+.neo-world-map.neo-city-theme-gold-port .neo-building-pixel-art{filter:hue-rotate(325deg) saturate(1.12) drop-shadow(0 4px 3px rgba(0,0,0,.54))}
+.neo-world-map.neo-city-theme-sun-islands .neo-building-pixel-art{filter:hue-rotate(295deg) saturate(1.04) drop-shadow(0 4px 3px rgba(0,0,0,.54))}
+.neo-world-map .neo-vehicle-car{width:42px;height:20px;border-radius:10px 11px 5px 5px}
+.neo-world-map .neo-car-cabin{left:10px;top:-6px;width:21px;height:10px}
+.neo-world-map .neo-car-wheel{bottom:-5px;width:8px;height:8px}
+.neo-world-map .neo-car-wheel.wheel-left{left:5px}
+.neo-world-map .neo-car-wheel.wheel-right{right:5px}
+.neo-world-map .neo-vehicle-car.neo-vehicle-taxi{width:42px;height:20px}
+.neo-world-map .neo-vehicle-car.neo-vehicle-bus{width:66px;height:27px;border-radius:7px 10px 5px 5px}
+.neo-world-map .neo-vehicle-car.neo-vehicle-bus .neo-bus-windows{left:6px;top:4px;width:52px;height:10px}
+.neo-world-map .neo-vehicle-car.neo-vehicle-truck{width:58px;height:24px}
+.neo-world-map .neo-vehicle-car.neo-vehicle-truck .neo-truck-cargo{left:-20px;top:-3px;width:34px;height:26px}
+.neo-world-map .neo-vehicle-car.neo-vehicle-emergency{width:46px;height:21px}
+.neo-world-map .neo-vehicle-car.neo-vehicle-van{width:48px;height:22px}
+.neo-world-map .neo-vehicle-car.neo-vehicle-van .neo-van-cargo{left:-12px;top:-3px;width:19px;height:24px}
+.neo-world-map .neo-vlt-car{width:40px;height:20px;border-radius:5px}
+.neo-world-map .neo-vlt-window{width:8px;height:7px}
+.neo-world-map .neo-vehicle-bike{width:30px;height:23px}
+.neo-world-map .neo-bike-wheel{width:9px;height:9px}
+.neo-world-map .neo-bike-frame{left:7px;bottom:6px;width:16px;height:10px}
+.neo-world-map .neo-bike-rider{left:12px;top:1px;width:7px;height:8px}
+.neo-resident-initial{
+  display:grid;width:44px;height:54px;place-items:center;
+  border:3px solid #172b3b;background:linear-gradient(180deg,#7ec2bb,#344f71);
+  color:#fff0a6;font:900 20px/1 monospace;text-shadow:2px 2px #172b3b;
+  box-shadow:inset 0 0 0 2px rgba(255,240,166,.4),0 3px 4px rgba(0,0,0,.5);
+}
+.neo-relation-initial{
+  display:inline-grid;width:14px;height:14px;place-items:center;
+  border:1px solid #fff0a6;background:#233d4a;color:#fff0a6;
+  font:900 8px/1 monospace;vertical-align:middle;
+}
+
+.neo-city-life .neo-harbor-vessel{
+  position:absolute;z-index:5;display:block;padding:0;border:0;background:transparent;
+  pointer-events:auto;cursor:pointer;filter:drop-shadow(0 4px 3px rgba(0,0,0,.55));
+  image-rendering:pixelated;
+}
+.neo-vessel-hull{
+  position:absolute;inset:2px;display:block;overflow:hidden;
+  border:3px solid #172b3b;background:linear-gradient(180deg,#b8d5c7 0 12%,#58869a 13% 79%,#263c54 80%);
+  clip-path:polygon(11% 0,89% 0,100% 11%,100% 88%,88% 100%,12% 100%,0 88%,0 11%);
+  box-shadow:inset 0 0 0 3px #f5c451,0 0 0 1px #e4e6b7;
+}
+.neo-vessel-deck{
+  position:absolute;inset:10% 12%;
+  border:2px solid #d5cf9e;
+  background:
+    repeating-linear-gradient(90deg,rgba(52,82,91,.58) 0 3px,transparent 3px 9px),
+    linear-gradient(180deg,#8fb8b2,#486d77);
+}
+.neo-vessel-cabin{
+  position:absolute;left:27%;top:18%;width:46%;height:25%;display:flex;align-items:center;justify-content:space-evenly;
+  border:2px solid #243b4b;background:#526d7a;box-shadow:inset 0 3px #b6d4d0;
+}
+.neo-vessel-cabin b{width:17%;height:40%;border:1px solid #d9e8d6;background:#4fc2c7;box-shadow:0 0 5px #6ec2c9}
+.neo-vessel-rail{
+  position:absolute;left:12%;right:12%;top:49%;height:3px;
+  border-top:2px solid #e8d991;border-bottom:1px solid #5f7381;
+}
+.neo-vessel-cargo{
+  position:absolute;left:18%;right:18%;bottom:15%;height:23%;
+  border:2px solid #263d4c;background:repeating-linear-gradient(90deg,#bd8058 0 17%,#744d4c 17% 20%,#c09358 20% 39%);
+  box-shadow:inset 0 3px rgba(255,229,157,.35);
+}
+.neo-vessel-hull strong{
+  position:absolute;left:50%;bottom:2px;max-width:90%;overflow:hidden;
+  padding:1px 4px;transform:translateX(-50%);
+  border:1px solid #fff0a6;background:rgba(13,31,43,.9);color:#fff0a6;
+  font:900 7px/1.2 monospace;white-space:nowrap;text-overflow:ellipsis;
+}
+.neo-city-life .neo-harbor-vessel.vertical .neo-vessel-cargo{left:18%;right:18%;bottom:13%;height:25%}
+.neo-city-life .neo-harbor-vessel.horizontal .neo-vessel-cabin{left:12%;top:25%;width:28%;height:46%}
+.neo-city-life .neo-harbor-vessel.horizontal .neo-vessel-rail{left:45%;right:12%;top:30%;height:42%;border:0;border-left:2px solid #e8d991}
+.neo-city-life .neo-harbor-vessel.horizontal .neo-vessel-cargo{left:47%;right:18%;bottom:20%;height:58%}
+.neo-city-life .neo-harbor-vessel.vessel-porto .neo-vessel-cargo{background:repeating-linear-gradient(90deg,#c58c50 0 17%,#604958 17% 20%,#61968d 20% 39%)}
+.neo-city-life .neo-harbor-vessel.boarded .neo-vessel-hull{box-shadow:inset 0 0 0 3px #fff0a6,0 0 12px #fff0a6}
+.neo-city-life .neo-harbor-vessel:hover .neo-vessel-hull{filter:brightness(1.18)}
+
+@media (max-width: 760px){
+  .neo-mini-map-wrap{top:7px;right:7px;width:clamp(142px,34vw,186px)}
+  .neo-route-map.expanded{min-height:190px}
+  .neo-route-map.expanded .neo-region-pin span{font-size:7px}
+}

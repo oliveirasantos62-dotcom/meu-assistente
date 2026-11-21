@@ -8,6 +8,7 @@ export const CITY_PROFILES = Object.freeze([
     economy: 'Centro econômico central',
     climate: 'Noite tropical elétrica',
     routes: ['fortaleza', 'nova', 'serra'],
+    mapPosition: { x: 50, y: 47 },
   },
   {
     id: 'fortaleza',
@@ -18,6 +19,7 @@ export const CITY_PROFILES = Object.freeze([
     economy: 'Exportações e artesanato',
     climate: 'Brisa marítima',
     routes: ['neolife', 'porto', 'ilhada'],
+    mapPosition: { x: 19, y: 37 },
   },
   {
     id: 'nova',
@@ -28,6 +30,7 @@ export const CITY_PROFILES = Object.freeze([
     economy: 'Startups e patentes',
     climate: 'Céu limpo',
     routes: ['neolife', 'serra'],
+    mapPosition: { x: 38, y: 16 },
   },
   {
     id: 'serra',
@@ -38,6 +41,7 @@ export const CITY_PROFILES = Object.freeze([
     economy: 'Conhecimento e dados',
     climate: 'Névoa fria',
     routes: ['nova', 'neolife', 'litoral'],
+    mapPosition: { x: 64, y: 20 },
   },
   {
     id: 'litoral',
@@ -48,6 +52,7 @@ export const CITY_PROFILES = Object.freeze([
     economy: 'Tecnologias espaciais',
     climate: 'Aurora oceânica',
     routes: ['serra', 'neolife'],
+    mapPosition: { x: 83, y: 44 },
   },
   {
     id: 'porto',
@@ -58,6 +63,7 @@ export const CITY_PROFILES = Object.freeze([
     economy: 'Carga e manufatura',
     climate: 'Nevoeiro industrial',
     routes: ['fortaleza', 'ilhada'],
+    mapPosition: { x: 24, y: 72 },
   },
   {
     id: 'ilhada',
@@ -68,5 +74,6 @@ export const CITY_PROFILES = Object.freeze([
     economy: 'Hospitalidade sustentável',
     climate: 'Sol e monções',
     routes: ['porto', 'fortaleza'],
+    mapPosition: { x: 68, y: 76 },
   },
 ]);

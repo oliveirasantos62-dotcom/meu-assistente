@@ -7,6 +7,8 @@ import { createRecurringMissions, localDateKey, weekKey } from './questEvents';
 import { advanceVehicle, getSignalState } from './traffic';
 import { buildNpcReaction, summarizeRealProgress } from './socialReactions';
 import { canUnlockTravel } from './travel';
+import { createCityResidents } from './cityNPCs';
+import { getNpcDialogue, getNpcRoutine } from './npcRoutines';
 
 describe('NeoLifeCity world systems', () => {
   it('classifica horários do ciclo diário', () => {
@@ -36,6 +38,12 @@ describe('NeoLifeCity world systems', () => {
     expect(CITIES).toHaveLength(7);
     expect(new Set(CITIES.map((city) => city.id)).size).toBe(7);
     expect(CITIES.find((city) => city.id === 'neolife')?.routes).toContain('fortaleza');
+    CITIES.forEach((city) => {
+      expect(city.mapPosition.x).toBeGreaterThanOrEqual(0);
+      expect(city.mapPosition.x).toBeLessThanOrEqual(100);
+      expect(city.mapPosition.y).toBeGreaterThanOrEqual(0);
+      expect(city.mapPosition.y).toBeLessThanOrEqual(100);
+    });
   });
 
   it('define mapas físicos distintos e portas acessíveis em cada cidade', () => {
@@ -53,6 +61,52 @@ describe('NeoLifeCity world systems', () => {
         expect(CITY_MAPS[id].isWaterTile(building.door.x, building.door.y)).toBe(false);
       });
     });
+  });
+
+  it('mantém barcos em água e cais em tiles acessíveis', () => {
+    const harborCities = CITIES.filter(({ id }) => CITY_MAPS[id].harbor);
+    expect(harborCities).toHaveLength(4);
+    harborCities.forEach(({ id }) => {
+      const { ship, dock } = CITY_MAPS[id].harbor;
+      for (let y = ship.y; y < ship.y + ship.height; y += 1) {
+        for (let x = ship.x; x < ship.x + ship.width; x += 1) {
+          expect(CITY_MAPS[id].isWaterTile(x, y)).toBe(true);
+        }
+      }
+      expect(CITY_MAPS[id].isWaterTile(dock.x, dock.y)).toBe(false);
+    });
+  });
+
+  it('cria moradores regionais com rotinas seguras e falas contextuais', () => {
+    CITIES.filter(({ id }) => id !== 'neolife').forEach(({ id }) => {
+      const residents = createCityResidents(id, CITY_LAYOUTS[id], CITY_MAPS[id]);
+      expect(residents.length).toBeGreaterThan(0);
+      residents.forEach((resident) => {
+        expect(resident.spriteRow).toBeGreaterThanOrEqual(5);
+        expect(resident.roamPoints.length).toBeGreaterThan(0);
+        Object.values(resident.schedule).forEach((stop) => {
+          expect(CITY_MAPS[id].isWaterTile(stop.x, stop.y)).toBe(false);
+          expect(
+            CITY_LAYOUTS[id].some(
+              (building) =>
+                stop.x >= building.x &&
+                stop.x < building.x + building.w &&
+                stop.y >= building.y &&
+                stop.y < building.y + building.h,
+            ),
+          ).toBe(false);
+        });
+      });
+    });
+
+    const marina = createCityResidents(
+      'fortaleza',
+      CITY_LAYOUTS.fortaleza,
+      CITY_MAPS.fortaleza,
+    )[0];
+    expect(getNpcRoutine(marina, 'afternoon', 1, 'rain').activity).toBe('working');
+    expect(getNpcRoutine(marina, 'afternoon', 6, 'clear').activity).toBe('chatting');
+    expect(getNpcDialogue(marina, { weatherId: 'rain' })).toBe(marina.weatherDialogue);
   });
 
   it('bloqueia água e mantém pontes navegáveis', () => {

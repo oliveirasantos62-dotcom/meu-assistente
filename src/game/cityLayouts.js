@@ -1,9 +1,43 @@
+const BUILDING_VISUALS = {
+  'player-home': {
+    architecture: 'residence',
+    spriteTile: { x: 0, y: 128 },
+    interiorArt: '/assets/pixel-art/interiors/residence.png',
+  },
+  'central-hub': {
+    architecture: 'civic',
+    spriteTile: { x: 0, y: 64 },
+    interiorArt: '/assets/pixel-art/interiors/civic.png',
+  },
+  university: {
+    architecture: 'academy',
+    spriteTile: { x: 96, y: 0 },
+    interiorArt: '/assets/pixel-art/interiors/library.png',
+  },
+  greenhouse: {
+    architecture: 'greenhouse',
+    spriteTile: { x: 192, y: 0 },
+    interiorArt: '/assets/pixel-art/interiors/greenhouse.png',
+  },
+  'innovation-lab': {
+    architecture: 'laboratory',
+    spriteTile: { x: 192, y: 64 },
+    interiorArt: '/assets/pixel-art/interiors/laboratory.png',
+  },
+  'neon-market': {
+    architecture: 'market',
+    spriteTile: { x: 96, y: 64 },
+    interiorArt: '/assets/pixel-art/interiors/market.png',
+  },
+};
+
 const base = (id, name, icon, district, x, y, w, h, door, openHour, closeHour, description, rooms) => ({
   id, name, icon, district, x, y, w, h, door, openHour, closeHour, description, rooms,
+  ...BUILDING_VISUALS[id],
   isHome: id === 'player-home',
 });
 
-export const CITY_LAYOUTS = {
+const CITY_LAYOUT_DEFINITIONS = {
   neolife: [
     base('player-home','Casa NeoLife','⌂','central',1,1,3,2,{x:2,y:3},0,24,'Residência central cyberpunk',['Sala','Estúdio','Varanda']),
     base('central-hub','Prefeitura NeoLife','◇','central',8,4,3,2,{x:9,y:6},0,24,'Centro administrativo',['Prefeitura','Missões','Terminal']),
@@ -49,4 +83,65 @@ export const CITY_LAYOUTS = {
     base('neon-market','Mercado Solar','▤','commerce',14,8,3,2,{x:15,y:10},6,22,'Hospitalidade sustentável',['Alimentos','Artesanato','Dives']),
   ],
 };
+
+const CITY_INTERIOR_VARIANTS = {
+  neolife: {
+    'player-home': 'residence',
+    'central-hub': 'civic',
+    university: 'library',
+    greenhouse: 'greenhouse',
+    'innovation-lab': 'laboratory',
+    'neon-market': 'market',
+  },
+  fortaleza: {
+    'player-home': 'residence',
+    'central-hub': 'cafe',
+    'neon-market': 'market',
+    'innovation-lab': 'workshop',
+  },
+  nova: {
+    'player-home': 'residence',
+    'central-hub': 'garden',
+    'innovation-lab': 'laboratory',
+    university: 'library',
+  },
+  serra: {
+    'player-home': 'residence',
+    'central-hub': 'library',
+    university: 'library',
+    greenhouse: 'garden',
+  },
+  litoral: {
+    'player-home': 'residence',
+    'central-hub': 'cafe',
+    'innovation-lab': 'laboratory',
+    'neon-market': 'diner',
+  },
+  porto: {
+    'player-home': 'residence',
+    'central-hub': 'workshop',
+    'innovation-lab': 'workshop',
+    'neon-market': 'market',
+  },
+  ilhada: {
+    'player-home': 'residence',
+    'central-hub': 'garden',
+    greenhouse: 'greenhouse',
+    'neon-market': 'diner',
+  },
+};
+
+export const CITY_LAYOUTS = Object.fromEntries(
+  Object.entries(CITY_LAYOUT_DEFINITIONS).map(([cityId, buildings]) => [
+    cityId,
+    buildings.map((building) => ({
+      ...building,
+      interiorArt: `/assets/pixel-art/interiors/${
+        CITY_INTERIOR_VARIANTS[cityId]?.[building.id] ||
+        building.interiorArt?.split('/').pop()?.replace('.png', '') ||
+        'civic'
+      }.png`,
+    })),
+  ]),
+);
 

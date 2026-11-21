@@ -3,12 +3,16 @@ import './NeoLifeCity.world.css';
 import { CITIES } from '../game/world';
 import { CITY_MAPS } from '../game/cityMaps';
 import { CITY_LAYOUTS } from '../game/cityLayouts';
-import { CITY_NPCS } from '../game/cityNPCs';
+import { createCityResidents } from '../game/cityNPCs';
 import { CITY_ECONOMIES } from '../game/cityEconomies';
 import { getTravelRoute, canUnlockTravel } from '../game/travel';
 import { getCitySpecialEvent } from '../game/cityEvents';
 import { getPeriodFromHour as getWorldPeriod } from '../game/world';
-import { getNpcRoutine, getNpcDailyStatus } from '../game/npcRoutines';
+import {
+  getNpcDialogue,
+  getNpcRoutine,
+  getNpcDailyStatus,
+} from '../game/npcRoutines';
 import { advanceVehicle, getSignalState } from '../game/traffic';
 import { createRecurringMissions, localDateKey } from '../game/questEvents';
 import { createRegionAmbience } from '../game/ambience';
@@ -89,9 +93,9 @@ const SPRITE_SHEET_LAYOUT = Object.freeze({
     frameWidth: 32,
     frameHeight: 48,
     columns: 4,
-    rows: 5,
+    rows: 12,
     width: 128,
-    height: 240,
+    height: 576,
   }),
   directions: Object.freeze({ down: 0, up: 1, left: 2, right: 3 }),
 });
@@ -101,7 +105,7 @@ const RESIDENTS = [
     id: 'luna',
     name: 'Luna',
     role: 'Estudante de cibernética',
-    avatar: '👩🏻‍🎓',
+    avatar: 'L',
     district: 'academy',
     workBuilding: 'university',
     focus: 'study',
@@ -150,7 +154,7 @@ const RESIDENTS = [
     id: 'kai',
     name: 'Kai',
     role: 'Engenheiro de sistemas',
-    avatar: '🧑🏽‍💻',
+    avatar: 'K',
     district: 'innovation',
     workBuilding: 'innovation-lab',
     focus: 'tasks',
@@ -199,7 +203,7 @@ const RESIDENTS = [
     id: 'maya',
     name: 'Maya',
     role: 'Comerciante do Mercado Neon',
-    avatar: '👩🏽‍🔧',
+    avatar: 'M',
     district: 'commerce',
     workBuilding: 'neon-market',
     focus: 'coins',
@@ -248,7 +252,7 @@ const RESIDENTS = [
     id: 'nox',
     name: 'Nox',
     role: 'Treinador de rotina & botânico',
-    avatar: '🧑🏻‍🚀',
+    avatar: 'I',
     district: 'green',
     workBuilding: 'greenhouse',
     focus: 'habits',
@@ -302,7 +306,7 @@ const RESIDENTS = [
     id: 'iris',
     name: 'Íris',
     role: 'Bibliotecária de dados',
-    avatar: '🧝🏻‍♀️',
+    avatar: 'N',
     district: 'academy',
     workBuilding: 'university',
     focus: 'reading',
@@ -1288,6 +1292,69 @@ function generateResidentsSheet() {
       pants: 'L1',
       prop: 'crystal',
     },
+    {
+      skin: 'P2',
+      hair: 'H2',
+      hairHi: 'H2',
+      coat: 'T3',
+      accent: 'Y3',
+      pants: 'W1',
+      prop: 'compass',
+    },
+    {
+      skin: 'S3',
+      hair: 'W1',
+      hairHi: 'W3',
+      coat: 'W3',
+      accent: 'Y3',
+      pants: 'W2',
+      prop: 'tool',
+    },
+    {
+      skin: 'S2',
+      hair: 'T1',
+      hairHi: 'T3',
+      coat: 'T3',
+      accent: 'L4',
+      pants: 'T1',
+      prop: 'tablet',
+    },
+    {
+      skin: 'S3',
+      hair: 'W2',
+      hairHi: 'Y3',
+      coat: 'L2',
+      accent: 'Y3',
+      pants: 'L1',
+      prop: 'telescope',
+    },
+    {
+      skin: 'P3',
+      hair: 'H1',
+      hairHi: 'H2',
+      coat: 'T4',
+      accent: 'C2',
+      pants: 'T1',
+      prop: 'sample',
+    },
+    {
+      skin: 'P2',
+      hair: 'H2',
+      hairHi: 'W3',
+      coat: 'W3',
+      accent: 'Y3',
+      pants: 'W2',
+      prop: 'clipboard',
+    },
+    {
+      skin: 'S2',
+      hair: 'G2',
+      hairHi: 'G4',
+      coat: 'G3',
+      accent: 'Y4',
+      pants: 'G1',
+      prop: 'leaf',
+    },
   ];
 
   configs.forEach((cfg, row) => {
@@ -1343,6 +1410,32 @@ function generateResidentsSheet() {
         g.rect(ox + 25, oy + 15 + floatY, 3, 4, 'L3');
         g.px(ox + 26, oy + 16 + floatY, 'Y4');
         g.px(ox + 26, oy + 19 + floatY, 'L2');
+      } else if (cfg.prop === 'compass') {
+        g.box(ox + 23, oy + 26 + breath, 5, 5, 'W3');
+        g.px(ox + 25, oy + 27 + breath, 'Y4');
+        g.px(ox + 25, oy + 28 + breath, 'C2');
+      } else if (cfg.prop === 'tool') {
+        g.rect(ox + 25, oy + 25 + breath, 2, 8, 'Y3');
+        g.rect(ox + 23, oy + 25 + breath, 6, 2, 'W2');
+        g.px(ox + 24, oy + 24 + breath, 'Y4');
+        g.px(ox + 27, oy + 24 + breath, 'Y4');
+      } else if (cfg.prop === 'telescope') {
+        g.rect(ox + 24, oy + 25 + breath, 3, 9, 'L3');
+        g.rect(ox + 23, oy + 24 + breath, 5, 2, 'Y3');
+        g.px(ox + 25, oy + 35, 'W3');
+      } else if (cfg.prop === 'sample') {
+        g.box(ox + 23, oy + 26 + breath, 5, 7, 'T2');
+        g.rect(ox + 24, oy + 28 + breath, 3, 3, 'C2');
+        g.px(ox + 25, oy + 29 + breath, 'T5');
+      } else if (cfg.prop === 'clipboard') {
+        g.box(ox + 22, oy + 25 + breath, 6, 8, 'W3');
+        g.rect(ox + 23, oy + 27 + breath, 4, 1, 'Y4');
+        g.rect(ox + 23, oy + 29 + breath, 3, 1, 'T4');
+      } else if (cfg.prop === 'leaf') {
+        g.rect(ox + 25, oy + 28 + breath, 1, 7, 'G1');
+        g.px(ox + 24, oy + 26 + breath, 'G4');
+        g.px(ox + 26, oy + 25 + breath, 'G3');
+        g.px(ox + 27, oy + 27 + breath, 'G4');
       }
     }
   });
@@ -1795,8 +1888,16 @@ function getRelationshipTier(aff) {
 
 function cityWorldStart(data, cityId = 'neolife') {
   const map = CITY_MAPS[cityId] || CITY_MAPS.neolife;
-  const saved = data?.neoCity?.world?.mapStates?.[cityId]?.player ||
-    data?.neoCity?.world?.player;
+  const savedMapState = data?.neoCity?.world?.mapStates?.[cityId];
+  const saved = savedMapState?.player || data?.neoCity?.world?.player;
+  const harborShip = map.harbor?.ship;
+  const savedOnShip =
+    savedMapState?.boatBoarded &&
+    harborShip &&
+    saved?.x >= harborShip.x &&
+    saved.x < harborShip.x + harborShip.width &&
+    saved?.y >= harborShip.y &&
+    saved.y < harborShip.y + harborShip.height;
   if (
     saved &&
     Number.isFinite(saved.x) &&
@@ -1805,11 +1906,141 @@ function cityWorldStart(data, cityId = 'neolife') {
     saved.x < map.width &&
     saved.y >= 0 &&
     saved.y < map.height &&
-    !map.isWaterTile(saved.x, saved.y)
+    (!map.isWaterTile(saved.x, saved.y) || savedOnShip)
   ) {
     return { x: saved.x, y: saved.y };
   }
   return { ...map.spawn };
+}
+
+const REGION_MAP_SIZE = Object.freeze({ width: 600, height: 360 });
+const COASTAL_CITY_IDS = new Set(['fortaleza', 'porto', 'ilhada', 'litoral']);
+
+const CITY_ROUTE_EDGES = Object.freeze(
+  CITIES.reduce((edges, city) => {
+    city.routes.forEach((destinationId) => {
+      const key = [city.id, destinationId].sort().join(':');
+      if (!edges.some((edge) => edge.key === key)) {
+        edges.push({ key, from: city.id, to: destinationId });
+      }
+    });
+    return edges;
+  }, []),
+);
+
+function getRegionMapPoint(city) {
+  return {
+    x: (city.mapPosition.x / 100) * REGION_MAP_SIZE.width,
+    y: (city.mapPosition.y / 100) * REGION_MAP_SIZE.height,
+  };
+}
+
+function CityRouteMap({ activeCityId, onSelectCity, size = 'compact' }) {
+  const activeCity = CITIES.find((city) => city.id === activeCityId) || CITIES[0];
+  const expanded = size === 'expanded';
+  const gridPatternId = `neo-region-grid-${size}`;
+
+  return (
+    <div
+      className={`neo-route-map ${expanded ? 'expanded' : 'compact'}`}
+      role='group'
+      aria-label='Mapa interativo das sete cidades'
+    >
+      <svg
+        viewBox={`0 0 ${REGION_MAP_SIZE.width} ${REGION_MAP_SIZE.height}`}
+        preserveAspectRatio='none'
+        role='img'
+        aria-label='Rotas terrestres e marítimas entre as cidades'
+      >
+        <defs>
+          <pattern id={gridPatternId} width='24' height='24' patternUnits='userSpaceOnUse'>
+            <path d='M 24 0 L 0 0 0 24' className='neo-region-grid-line' />
+          </pattern>
+        </defs>
+        <rect width='100%' height='100%' className='neo-region-ocean' />
+        <rect width='100%' height='100%' fill={`url(#${gridPatternId})`} />
+        <path
+          d='M-10 118 C70 80 96 138 152 119 S247 66 302 111 S401 145 461 91 S552 65 625 94 M-8 275 C74 230 114 295 177 268 S287 223 348 272 S467 320 615 247'
+          className='neo-region-depth'
+        />
+        {CITIES.map((city, index) => {
+          const point = getRegionMapPoint(city);
+          const sizeFactor = city.id === 'neolife' ? 1.34 : index % 2 === 0 ? 1 : 0.88;
+          return (
+            <g key={`island-${city.id}`}>
+              <ellipse
+                cx={point.x}
+                cy={point.y}
+                rx={45 * sizeFactor}
+                ry={28 * sizeFactor}
+                className={`neo-region-island theme-${city.theme}`}
+                transform={`rotate(${(index * 19) % 35 - 17} ${point.x} ${point.y})`}
+              />
+              <path
+                d={`M${point.x - 26} ${point.y} h52 M${point.x} ${point.y - 14} v28`}
+                className='neo-region-streets'
+              />
+              <circle cx={point.x - 23} cy={point.y + 10} r='2.5' className='neo-region-district' />
+              <circle cx={point.x + 24} cy={point.y - 9} r='2.5' className='neo-region-district' />
+            </g>
+          );
+        })}
+        {CITY_ROUTE_EDGES.map((edge) => {
+          const fromCity = CITIES.find((city) => city.id === edge.from);
+          const toCity = CITIES.find((city) => city.id === edge.to);
+          if (!fromCity || !toCity) return null;
+          const from = getRegionMapPoint(fromCity);
+          const to = getRegionMapPoint(toCity);
+          const bend = from.x < to.x ? -17 : 17;
+          const routeMode =
+            COASTAL_CITY_IDS.has(fromCity.id) ||
+            COASTAL_CITY_IDS.has(toCity.id)
+              ? 'navio'
+              : 'VLT';
+          const active =
+            fromCity.id === activeCityId || toCity.id === activeCityId;
+          return (
+            <path
+              key={edge.key}
+              d={`M${from.x} ${from.y} Q${(from.x + to.x) / 2} ${(from.y + to.y) / 2 + bend} ${to.x} ${to.y}`}
+              className={`neo-region-route ${routeMode === 'navio' ? 'sea' : 'land'} ${active ? 'active' : ''}`}
+            />
+          );
+        })}
+      </svg>
+      {CITIES.map((city) => {
+        const connected =
+          city.id === activeCityId ||
+          city.routes.includes(activeCityId) ||
+          activeCity.routes.includes(city.id);
+        const point = city.mapPosition;
+        const tag =
+          city.mapTag ||
+          city.name
+            .split(/\s+/)
+            .slice(0, 2)
+            .map((word) => word[0])
+            .join('')
+            .toUpperCase();
+        return (
+          <button
+            key={`map-city-${city.id}`}
+            type='button'
+            className={`neo-region-pin theme-${city.theme} ${city.id === activeCityId ? 'active' : ''}`}
+            style={{ left: `${point.x}%`, top: `${point.y}%` }}
+            title={`${city.name} · ${city.focus}`}
+            aria-label={`Selecionar ${city.name}${connected ? '' : ' — fora da rota atual'}`}
+            aria-current={city.id === activeCityId ? 'location' : undefined}
+            disabled={!connected}
+            onClick={() => onSelectCity(city.id)}
+          >
+            <i aria-hidden='true' />
+            <span>{expanded ? city.name : tag}</span>
+          </button>
+        );
+      })}
+    </div>
+  );
 }
 
 /* ============================================================================
@@ -1830,7 +2061,13 @@ export default function NeoLifeCity({ data = {}, save, onNavigate }) {
     CITIES.find((city) => city.id === activeCityId) || CITIES[0];
   const activeMap = CITY_MAPS[activeCityId] || CITY_MAPS.neolife;
   const activeBuildings = CITY_LAYOUTS[activeCityId] || CITY_LAYOUTS.neolife;
-  const activeCityNPCs = CITY_NPCS[activeCityId] || CITY_NPCS.neolife;
+  const activeResidents = useMemo(
+    () =>
+      activeCityId === 'neolife'
+        ? RESIDENTS
+        : createCityResidents(activeCityId, activeBuildings, activeMap),
+    [activeCityId, activeBuildings, activeMap],
+  );
   const activeEconomy = CITY_ECONOMIES[activeCityId] || CITY_ECONOMIES.neolife;
   const activeCityEventData = getCitySpecialEvent(activeCityId);
   const ambienceRef = useRef(null);
@@ -1852,6 +2089,12 @@ export default function NeoLifeCity({ data = {}, save, onNavigate }) {
   const [player, setPlayer] = useState(() =>
     cityWorldStart(data, data?.neoCity?.world?.cityId || 'neolife'),
   );
+  const [boatBoarded, setBoatBoarded] = useState(() => {
+    const savedWorld = data?.neoCity?.world || {};
+    const savedCityId = savedWorld.cityId || 'neolife';
+    const savedMapState = savedWorld.mapStates?.[savedCityId];
+    return Boolean(savedMapState?.boatBoarded && CITY_MAPS[savedCityId]?.harbor);
+  });
   const worldViewportRef = useRef(null);
   const [worldZoom, setWorldZoom] = useState(1.15);
   const [cameraOffset, setCameraOffset] = useState({ x: 0, y: 0 });
@@ -1892,8 +2135,12 @@ export default function NeoLifeCity({ data = {}, save, onNavigate }) {
   // 4. NPCs ANDANDO LIVREMENTE PELAS RUAS E CALÇADAS + ATIVIDADES
   const [npcState, setNpcState] = useState(() => {
     const init = {};
-    RESIDENTS.forEach((r) => {
-      const start = r.schedule[getPeriodFromHour(new Date().getHours())];
+    activeResidents.forEach((r) => {
+      const start = getNpcRoutine(
+        r,
+        getPeriodFromHour(new Date().getHours()),
+        new Date().getDay(),
+      );
       init[r.id] = {
         x: start.x,
         y: start.y,
@@ -1906,6 +2153,31 @@ export default function NeoLifeCity({ data = {}, save, onNavigate }) {
   });
 
   const [citizens, setCitizens] = useState(INITIAL_CITIZENS);
+
+  useEffect(() => {
+    setNpcState((previous) => {
+      const next = {};
+      activeResidents.forEach((resident) => {
+        const saved = previous[resident.id];
+        const start =
+          saved ||
+          getNpcRoutine(
+            resident,
+            currentPeriod,
+            new Date().getDay(),
+            weatherId,
+          );
+        next[resident.id] = {
+          x: start.x,
+          y: start.y,
+          activity: start.activity || 'strolling',
+          waypointIdx: start.waypointIdx || 0,
+          chatPartner: start.chatPartner || null,
+        };
+      });
+      return next;
+    });
+  }, [activeResidents, activeCityId, currentPeriod, weatherId]);
 
   // 5. VEÍCULOS: CARROS, BICICLETAS, DRONES E TRANSPORTE PÚBLICO (VLT)
   const [vehicles, setVehicles] = useState([
@@ -2469,17 +2741,17 @@ export default function NeoLifeCity({ data = {}, save, onNavigate }) {
     const npcMoveTimer = window.setInterval(() => {
       setNpcState((prev) => {
         const next = { ...prev };
-        RESIDENTS.forEach((res, idx) => {
+        const dayIndex = new Date().getDay();
+        activeResidents.forEach((res, idx) => {
           const cur = prev[res.id] || {
-            x: res.schedule[currentPeriod].x,
-            y: res.schedule[currentPeriod].y,
+            ...getNpcRoutine(res, currentPeriod, dayIndex, weatherId),
             activity: 'strolling',
             waypointIdx: 0,
             chatPartner: null,
           };
 
-          const sched = getNpcRoutine(res, currentPeriod, new Date().getDay());
-          const dailyStatus = getNpcDailyStatus(currentHour);
+          const sched = getNpcRoutine(res, currentPeriod, dayIndex, weatherId);
+          const dailyStatus = getNpcDailyStatus(currentHour, dayIndex, weatherId);
           const bld = activeBuildings.find((b) => b.id === res.workBuilding);
           const bldOpen = bld ? getBuildingOpenStatus(bld).isOpen : true;
 
@@ -2525,7 +2797,7 @@ export default function NeoLifeCity({ data = {}, save, onNavigate }) {
             }
           }
 
-          const nearbyOther = RESIDENTS.find((other) => {
+          const nearbyOther = activeResidents.find((other) => {
             if (other.id === res.id) return false;
             const oPos = next[other.id] || prev[other.id];
             return oPos && Math.abs(oPos.x - nx) + Math.abs(oPos.y - ny) <= 1;
@@ -2603,11 +2875,13 @@ export default function NeoLifeCity({ data = {}, save, onNavigate }) {
 
     return () => window.clearInterval(npcMoveTimer);
   }, [
+    activeResidents,
     currentPeriod,
     currentHour,
     player.x,
     player.y,
     animTick,
+    weatherId,
     activeCityEvent.extendedMarket,
     activeMap,
     activeBuildings,
@@ -2724,8 +2998,55 @@ export default function NeoLifeCity({ data = {}, save, onNavigate }) {
   );
 
   const isBlocked = (x, y) => {
-    const occupants = RESIDENTS.map((resident) => npcState[resident.id]).filter(Boolean);
+    const harbor = activeMap.harbor;
+    const onDeck =
+      boatBoarded &&
+      harbor &&
+      x >= harbor.ship.x &&
+      x < harbor.ship.x + harbor.ship.width &&
+      y >= harbor.ship.y &&
+      y < harbor.ship.y + harbor.ship.height;
+    const atDock =
+      boatBoarded && harbor && x === harbor.dock.x && y === harbor.dock.y;
+    if (boatBoarded && !onDeck && !atDock) return true;
+    if (onDeck) return false;
+    const occupants = activeResidents
+      .map((resident) => npcState[resident.id])
+      .filter(Boolean);
     return !worldCollisionChecker(x, y, occupants);
+  };
+
+  const toggleHarborBoarding = (fromVessel = false) => {
+    const harbor = activeMap.harbor;
+    if (!harbor) return;
+
+    if (boatBoarded) {
+      setBoatBoarded(false);
+      setPlayer({ ...harbor.dock });
+      setNotice(`Você desembarcou no ${harbor.name}.`);
+      return;
+    }
+
+    const nearDock =
+      Math.abs(harbor.dock.x - player.x) +
+        Math.abs(harbor.dock.y - player.y) <=
+      1;
+    if (!nearDock && !fromVessel) {
+      setNotice(`Aproxime-se do cais para embarcar no ${harbor.name}.`);
+      return;
+    }
+
+    const deckPosition = {
+      x: harbor.ship.x + Math.floor(harbor.ship.width / 2),
+      y: harbor.ship.y + Math.floor(harbor.ship.height / 2),
+    };
+    if (!activeMap.isWaterTile(deckPosition.x, deckPosition.y)) {
+      setNotice(`O convés do ${harbor.name} não está acessível neste momento.`);
+      return;
+    }
+    setBoatBoarded(true);
+    setPlayer(deckPosition);
+    setNotice(`Você embarcou no ${harbor.name}. Use E para desembarcar ou abrir o mapa de rotas.`);
   };
 
   const isInteriorBlocked = (x, y) => {
@@ -2778,7 +3099,7 @@ export default function NeoLifeCity({ data = {}, save, onNavigate }) {
       const isDoor = activeBuildings.some(
         (b) => b.door.x === nx && b.door.y === ny,
       );
-      if (!isBlocked(nx, ny) || isDoor) {
+      if (!isBlocked(nx, ny) || (!boatBoarded && isDoor)) {
         targetX = nx;
         targetY = ny;
       } else {
@@ -2881,6 +3202,23 @@ export default function NeoLifeCity({ data = {}, save, onNavigate }) {
   /* ==========================================================================
      INTERAÇÕES NO MAPA, DIÁLOGOS COM MEMÓRIA E RELACIONAMENTOS
      ========================================================================== */
+  const getResidentDialogueLine = (resident) => {
+    const meaningfulMemory = safeArray(npcMemories[resident.id]).find(
+      (memory) => !memory.text?.startsWith('Conversamos enquanto'),
+    );
+    return getNpcDialogue(resident, {
+      period: currentPeriod,
+      weatherId,
+      dayIndex: new Date().getDay(),
+      activity:
+        ACTIVITY_META[npcState[resident.id]?.activity || 'strolling'].label.toLowerCase(),
+      talkCount: Number(talks[resident.id]) || 0,
+      affinity: Number(affinity[resident.id]) || 0,
+      memory: meaningfulMemory || null,
+      cityName: activeCity.name,
+    });
+  };
+
   const openResidentDialogue = (resident, inWorld = false) => {
     const nextTalks = {
       ...talks,
@@ -3036,6 +3374,20 @@ export default function NeoLifeCity({ data = {}, save, onNavigate }) {
   };
 
   const interactInWorld = () => {
+    if (boatBoarded) {
+      toggleHarborBoarding();
+      return;
+    }
+
+    const harborDock = activeMap.harbor?.dock;
+    if (
+      harborDock &&
+      Math.abs(harborDock.x - player.x) + Math.abs(harborDock.y - player.y) <= 1
+    ) {
+      toggleHarborBoarding();
+      return;
+    }
+
     const nearbyDoor = activeBuildings.find(
       (b) => Math.abs(b.door.x - player.x) + Math.abs(b.door.y - player.y) <= 1,
     );
@@ -3044,7 +3396,7 @@ export default function NeoLifeCity({ data = {}, save, onNavigate }) {
       return;
     }
 
-    const nearbyResident = RESIDENTS.find((r) => {
+    const nearbyResident = activeResidents.find((r) => {
       const pos = npcState[r.id];
       return (
         pos && Math.abs(pos.x - player.x) + Math.abs(pos.y - player.y) <= 1
@@ -3207,13 +3559,14 @@ export default function NeoLifeCity({ data = {}, save, onNavigate }) {
       mapStates[activeCityId] = {
         ...(mapStates[activeCityId] || {}),
         player,
+        boatBoarded,
       };
       persistCity({
         ...city,
         world: { ...world, cityId: activeCityId, player, mapStates },
       });
     }
-  }, [player.x, player.y, activeCityId]);
+  }, [player.x, player.y, activeCityId, boatBoarded]);
 
   useEffect(() => {
     if (insideBuilding || activeTab !== 'explore') return;
@@ -3254,6 +3607,8 @@ export default function NeoLifeCity({ data = {}, save, onNavigate }) {
     mapStates[activeCityId] = {
       ...(mapStates[activeCityId] || {}),
       zoom: worldZoom,
+      player,
+      boatBoarded,
     };
     persistCity({
       ...city,
@@ -3265,7 +3620,7 @@ export default function NeoLifeCity({ data = {}, save, onNavigate }) {
         mapStates,
       },
     });
-  }, [worldZoom, activeCityId]);
+  }, [worldZoom, activeCityId, player, boatBoarded]);
 
   const travelToCity = (cityId) => {
     const destination = CITIES.find((city) => city.id === cityId);
@@ -3284,9 +3639,13 @@ export default function NeoLifeCity({ data = {}, save, onNavigate }) {
       return;
     }
     const route = getTravelRoute(activeCityId, cityId);
+    const travelMinutes = destination.id === activeCityId ? 0 : route.minutes;
     if (destination.id !== activeCityId && coins < route.cost) {
       setNotice(`Passagem indisponível: faltam ${route.cost - coins} moedas.`);
       return;
+    }
+    if (travelMinutes > 0 && timeMode !== 'realtime') {
+      setSimMinutes((minutes) => minutes + travelMinutes);
     }
     const destinationMap = CITY_MAPS[destination.id] || CITY_MAPS.neolife;
     const mapStates =
@@ -3297,13 +3656,28 @@ export default function NeoLifeCity({ data = {}, save, onNavigate }) {
       ...(mapStates[activeCityId] || {}),
       player: { ...player },
       zoom: worldZoom,
+      boatBoarded,
     };
     const savedDestination = mapStates[cityId] || {};
+    const savedBoat = savedDestination.boatBoarded && destinationMap.harbor;
+    const savedBoatPosition =
+      savedBoat &&
+      savedDestination.player &&
+      savedDestination.player.x >= destinationMap.harbor.ship.x &&
+      savedDestination.player.x <
+        destinationMap.harbor.ship.x + destinationMap.harbor.ship.width &&
+      savedDestination.player.y >= destinationMap.harbor.ship.y &&
+      savedDestination.player.y <
+        destinationMap.harbor.ship.y + destinationMap.harbor.ship.height;
     const nextPlayer =
       savedDestination.player &&
       Number.isFinite(savedDestination.player.x) &&
       Number.isFinite(savedDestination.player.y) &&
-      !destinationMap.isWaterTile(savedDestination.player.x, savedDestination.player.y)
+      (!destinationMap.isWaterTile(
+        savedDestination.player.x,
+        savedDestination.player.y,
+      ) ||
+        savedBoatPosition)
         ? savedDestination.player
         : { ...destinationMap.spawn };
     const nextZoom =
@@ -3317,9 +3691,11 @@ export default function NeoLifeCity({ data = {}, save, onNavigate }) {
     setActiveCityId(cityId);
     setShowStateMap(false);
     setPlayer(nextPlayer);
+    setBoatBoarded(Boolean(savedBoatPosition));
     setWorldZoom(nextZoom);
     setWorldBubble(null);
     setCitizenBubble(null);
+    setSelectedResident(null);
     persistCity(
       {
         ...city,
@@ -3335,7 +3711,9 @@ export default function NeoLifeCity({ data = {}, save, onNavigate }) {
       destination.id === activeCityId ? {} : { coins: coins - route.cost },
     );
     setNotice(
-      `Viagem concluída por ${route.mode}: ${destination.name} · ${route.minutes} min · ${route.cost} moedas.`,
+      travelMinutes > 0
+        ? `Viagem concluída por ${route.mode}: ${destination.name} · ${travelMinutes} min · ${route.cost} moedas.`
+        : `Você já está em ${destination.name}.`,
     );
   };
 
@@ -4198,7 +4576,7 @@ export default function NeoLifeCity({ data = {}, save, onNavigate }) {
                   <span>Especialidade: {activeEconomy.speciality || activeEconomy.specialty}</span>
                   <span>Preço regional: ×{activeEconomy.multiplier}</span>
                   <span>Evento: {activeCityEventData.name} · +{activeCityEventData.xp} XP</span>
-                  {activeCityNPCs.map((npc) => (
+                  {activeResidents.map((npc) => (
                     <button key={npc.id} type='button' className='neo-npc-pill'>
                       ◉ {npc.name} · {npc.role}
                     </button>
@@ -4224,7 +4602,7 @@ export default function NeoLifeCity({ data = {}, save, onNavigate }) {
                 </div>
                 <div className='neo-telemetry-group'>
                   <b>👥 Moradores ao Vivo:</b>
-                  {RESIDENTS.map((r) => {
+                  {activeResidents.map((r) => {
                     const st = npcState[r.id];
                     const act = ACTIVITY_META[st?.activity || 'strolling'];
                     return (
@@ -4250,6 +4628,11 @@ export default function NeoLifeCity({ data = {}, save, onNavigate }) {
                     </div>
                     <button type='button' onClick={() => setShowStateMap(false)}>×</button>
                   </div>
+                  <CityRouteMap
+                    activeCityId={activeCityId}
+                    onSelectCity={travelToCity}
+                    size='expanded'
+                  />
                   <div className='neo-state-cities'>
                     {CITIES.map((city) => {
                       const canTravel =
@@ -4296,6 +4679,12 @@ export default function NeoLifeCity({ data = {}, save, onNavigate }) {
                   );
                 }}
               >
+                <div className='neo-mini-map-wrap'>
+                  <CityRouteMap
+                    activeCityId={activeCityId}
+                    onSelectCity={travelToCity}
+                  />
+                </div>
                 <div
                   className='neo-world-camera-plane'
                   style={{
@@ -4314,7 +4703,32 @@ export default function NeoLifeCity({ data = {}, save, onNavigate }) {
                     }}
                   >
                   {/* CAMADA DE TRÂNSITO URBANO: CARROS, BICICLETAS, DRONES E VLT */}
-                  <div className='neo-city-life' aria-hidden='true'>
+                  <div className='neo-city-life'>
+                    {activeMap.harbor && (
+                      <button
+                        type='button'
+                        className={`neo-harbor-vessel ${activeMap.harbor.ship.orientation} ${boatBoarded ? 'boarded' : ''} vessel-${activeCityId}`}
+                        style={{
+                          left: `${activeMap.harbor.ship.x * 50.4}px`,
+                          top: `${activeMap.harbor.ship.y * 47.25}px`,
+                          width: `${activeMap.harbor.ship.width * 50.4}px`,
+                          height: `${activeMap.harbor.ship.height * 47.25}px`,
+                        }}
+                        aria-label={`${boatBoarded ? 'Desembarcar do' : 'Embarcar no'} ${activeMap.harbor.name}`}
+                        title={`${activeMap.harbor.name} · ${boatBoarded ? 'clique para desembarcar' : 'clique para embarcar'}`}
+                        onClick={() => toggleHarborBoarding(true)}
+                      >
+                        <span className='neo-vessel-hull' aria-hidden='true'>
+                          <i className='neo-vessel-deck' />
+                          <i className='neo-vessel-cabin'>
+                            <b /><b /><b />
+                          </i>
+                          <i className='neo-vessel-cargo' />
+                          <i className='neo-vessel-rail' />
+                          <strong>{activeMap.harbor.name}</strong>
+                        </span>
+                      </button>
+                    )}
                     {[
                       [1,1,'oak'],[3,2,'pine'],[6,1,'oak'],[11,1,'pine'],[16,2,'oak'],
                       [18,4,'pine'],[1,8,'oak'],[3,9,'pine'],[6,9,'oak'],[10,11,'pine'],
@@ -4591,7 +5005,7 @@ export default function NeoLifeCity({ data = {}, save, onNavigate }) {
                       (p) => p.x === x && p.y === y,
                     );
 
-                    const residentHere = RESIDENTS.find((r) => {
+                    const residentHere = activeResidents.find((r) => {
                       const pos = npcState[r.id];
                       return pos && pos.x === x && pos.y === y;
                     });
@@ -4634,15 +5048,32 @@ export default function NeoLifeCity({ data = {}, save, onNavigate }) {
                         ) : null}
                         {isBuildingAnchor ? (
                           <div
-                            className={`neo-building-visual building-${building.id} ${bOpenStatus.isOpen ? 'open' : 'closed'}`}
+                            className={`neo-building-visual building-${building.id} ${building.spriteTile && sprites?.buildings ? 'has-pixel-art' : ''} ${bOpenStatus.isOpen ? 'open' : 'closed'}`}
                             aria-hidden='true'
                             style={{
                               width: `${building.w * 50.4}px`,
                               height: `${building.h * 47.25}px`,
                             }}
                           >
+                            {building.spriteTile && sprites?.buildings ? (
+                              <span
+                                className='neo-building-pixel-art'
+                                style={tileSpriteStyle(
+                                  sprites.buildings,
+                                  288,
+                                  192,
+                                  building.spriteTile.x,
+                                  building.spriteTile.y,
+                                  96,
+                                  64,
+                                  1.45,
+                                )}
+                              />
+                            ) : null}
                             <span className='neo-building-roof' />
-                            <span className='neo-building-sign'>{building.icon}</span>
+                            <span className='neo-building-sign'>
+                              {building.name.split(' ')[0].slice(0, 7).toUpperCase()}
+                            </span>
                             <span className='neo-rooftop-antenna'><i /><b /></span>
                             <span className='neo-building-holo'>
                               <i /><b />
@@ -4757,8 +5188,8 @@ export default function NeoLifeCity({ data = {}, save, onNavigate }) {
                               style={{
                                 ...tileSpriteStyle(
                                   sprites?.residents,
-                                  128,
-                                  240,
+                                  SPRITE_SHEET_LAYOUT.residents.width,
+                                  SPRITE_SHEET_LAYOUT.residents.height,
                                   (Math.floor(animTick / 4) % 4) * 32,
                                   residentHere.spriteRow * 48,
                                   32,
@@ -4785,8 +5216,8 @@ export default function NeoLifeCity({ data = {}, save, onNavigate }) {
                               className='neo-resident-sprite neo-authentic-sprite'
                               style={tileSpriteStyle(
                                 sprites?.residents,
-                                128,
-                                240,
+                                SPRITE_SHEET_LAYOUT.residents.width,
+                                SPRITE_SHEET_LAYOUT.residents.height,
                                 (Math.floor(animTick / 4) % 4) * 32,
                                 citizenHere.spriteRow * 48,
                                 32,
@@ -4879,8 +5310,8 @@ export default function NeoLifeCity({ data = {}, save, onNavigate }) {
                       <span
                         style={tileSpriteStyle(
                           sprites.residents,
-                          128,
-                          240,
+                          SPRITE_SHEET_LAYOUT.residents.width,
+                          SPRITE_SHEET_LAYOUT.residents.height,
                           (animTick % 4) * 32,
                           worldBubble.spriteRow * 48,
                           32,
@@ -4927,10 +5358,8 @@ export default function NeoLifeCity({ data = {}, save, onNavigate }) {
 
                     <p>
                       {dialogueStep === 'farewell'
-                        ? `“Guardei nosso encontro na memória! Nos vemos pelas ruas do Vale Neo.”`
-                        : weatherId === 'rain' || weatherId === 'storm'
-                          ? `“Essa ${activeWeather.label.toLowerCase()} está deixando os jardins radiantes! Como posso ajudar você hoje?”`
-                          : `“Oi! Estava ${ACTIVITY_META[npcState[worldBubble.id]?.activity || 'strolling'].label.toLowerCase()} por aqui. O que vamos fazer?”`}
+                        ? `“Foi bom conversar com você. Vou guardar esse encontro aqui em ${activeCity.name}.”`
+                        : `“${getResidentDialogueLine(worldBubble)}”`}
                     </p>
                     <div className='neo-branch-choices'>
                       <button
@@ -5111,7 +5540,10 @@ export default function NeoLifeCity({ data = {}, save, onNavigate }) {
                   {!insideBuilding.isHome && (
                     <img
                       className='neo-interior-art'
-                      src='/assets/pixel-art/neon-community-interior.svg'
+                      src={
+                        insideBuilding.interiorArt ||
+                        '/assets/pixel-art/neon-community-interior.svg'
+                      }
                       alt=''
                       aria-hidden='true'
                     />
@@ -5345,7 +5777,7 @@ export default function NeoLifeCity({ data = {}, save, onNavigate }) {
           </section>
 
           <section className='neo-resident-grid'>
-            {RESIDENTS.map((resident) => {
+            {activeResidents.map((resident) => {
               const aff = Number(affinity[resident.id]) || 0;
               const hearts = Math.min(5, Math.floor(aff / 20));
               const curNpc = npcState[resident.id];
@@ -5359,8 +5791,8 @@ export default function NeoLifeCity({ data = {}, save, onNavigate }) {
                       <span
                         style={tileSpriteStyle(
                           sprites.residents,
-                          128,
-                          240,
+                          SPRITE_SHEET_LAYOUT.residents.width,
+                          SPRITE_SHEET_LAYOUT.residents.height,
                           (animTick % 4) * 32,
                           resident.spriteRow * 48,
                           32,
@@ -5369,7 +5801,9 @@ export default function NeoLifeCity({ data = {}, save, onNavigate }) {
                         )}
                       />
                     ) : (
-                      resident.avatar
+                      <span className='neo-resident-initial'>
+                        {resident.avatar || resident.name.charAt(0)}
+                      </span>
                     )}
                   </div>
                   <div>
@@ -5422,8 +5856,8 @@ export default function NeoLifeCity({ data = {}, save, onNavigate }) {
                   <span
                     style={tileSpriteStyle(
                       sprites.residents,
-                      128,
-                      240,
+                      SPRITE_SHEET_LAYOUT.residents.width,
+                      SPRITE_SHEET_LAYOUT.residents.height,
                       (animTick % 4) * 32,
                       selectedResident.spriteRow * 48,
                       32,
@@ -5447,8 +5881,8 @@ export default function NeoLifeCity({ data = {}, save, onNavigate }) {
 
               <p>
                 {dialogueStep === 'farewell'
-                  ? `“Registrei esse momento no meu diário! Quando quiser, me encontre caminhando pelas ruas do Vale Neo.”`
-                  : `“Seu progresso real está transformando nossa vizinhança (${cityEvolution.name}). O que gostaria de fazer agora?”`}
+                  ? `“Foi bom conversar com você. Vou guardar esse encontro aqui em ${activeCity.name}.”`
+                  : `“${getResidentDialogueLine(selectedResident)}”`}
               </p>
 
               <div className='neo-branch-choices'>
@@ -5537,10 +5971,11 @@ export default function NeoLifeCity({ data = {}, save, onNavigate }) {
                 <h4>🤝 Relacionamentos na Cidade</h4>
                 <div className='neo-col-chips'>
                   {selectedResident.relations.map((rel) => {
-                    const other = RESIDENTS.find((r) => r.id === rel.targetId);
+                    const other = activeResidents.find((r) => r.id === rel.targetId);
                     return (
                       <span key={rel.targetId} className='found'>
-                        {other?.avatar} {other?.name}: {rel.label} ({rel.bond}%)
+                        <span className='neo-relation-initial'>{other?.name?.[0]}</span>{' '}
+                        {other?.name}: {rel.label} ({rel.bond}%)
                       </span>
                     );
                   })}
