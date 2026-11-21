@@ -5,7 +5,7 @@ export function getSignalState(totalTicks, index = 0) {
 }
 
 export function advanceVehicle(vehicle) {
-  if (vehicle.type === 'drone' || vehicle.type === 'aircar') {
+  if (vehicle.type === 'drone' || vehicle.type === 'aircar' || vehicle.type === 'helicopter') {
     return { ...vehicle, phase: (vehicle.phase + 2.5) % 100 };
   }
   if (vehicle.lane === 'east' || vehicle.lane === 'bike-east') {

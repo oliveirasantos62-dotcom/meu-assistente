@@ -1,6 +1,11 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import './NeoLifeCity.world.css';
 import { CITIES } from '../game/world';
+import { CITY_LAYOUTS } from '../game/cityLayouts';
+import { CITY_NPCS } from '../game/cityNPCs';
+import { CITY_ECONOMIES } from '../game/cityEconomies';
+import { getTravelRoute, canUnlockTravel } from '../game/travel';
+import { getCitySpecialEvent } from '../game/cityEvents';
 import { getPeriodFromHour as getWorldPeriod } from '../game/world';
 import { getNpcRoutine, getNpcDailyStatus } from '../game/npcRoutines';
 import { advanceVehicle, getSignalState } from '../game/traffic';
@@ -1806,6 +1811,10 @@ export default function NeoLifeCity({ data = {}, save, onNavigate }) {
   const [showStateMap, setShowStateMap] = useState(false);
   const activeCity =
     CITIES.find((city) => city.id === activeCityId) || CITIES[0];
+  const activeBuildings = CITY_LAYOUTS[activeCityId] || CITY_LAYOUTS.neolife;
+  const activeCityNPCs = CITY_NPCS[activeCityId] || CITY_NPCS.neolife;
+  const activeEconomy = CITY_ECONOMIES[activeCityId] || CITY_ECONOMIES.neolife;
+  const activeCityEventData = getCitySpecialEvent(activeCityId);
   const ambienceRef = useRef(null);
   const [ambienceEnabled, setAmbienceEnabled] = useState(false);
 
@@ -1937,6 +1946,14 @@ export default function NeoLifeCity({ data = {}, save, onNavigate }) {
       color: '#ef6a68',
     },
     {
+      id: 'van-1',
+      type: 'van',
+      lane: 'west',
+      pos: 16,
+      speed: 1.05,
+      color: '#79aebb',
+    },
+    {
       id: 'bike-1',
       type: 'bike',
       lane: 'bike-east',
@@ -1955,6 +1972,7 @@ export default function NeoLifeCity({ data = {}, save, onNavigate }) {
     { id: 'drone-1', type: 'drone', route: 0, phase: 0 },
     { id: 'drone-2', type: 'drone', route: 1, phase: 45 },
     { id: 'aircar-1', type: 'aircar', route: 0, phase: 28 },
+    { id: 'helicopter-1', type: 'helicopter', route: 1, phase: 68 },
   ]);
 
   const [transitState, setTransitState] = useState({
@@ -2417,7 +2435,7 @@ export default function NeoLifeCity({ data = {}, save, onNavigate }) {
   const isSidewalkOrStreet = (x, y) => {
     if (x < 0 || x > 19 || y < 0 || y > 11) return false;
     if (isWaterTile(x, y)) return false;
-    const hitBuilding = WORLD_BUILDINGS.some(
+    const hitBuilding = activeBuildings.some(
       (b) => x >= b.x && x < b.x + b.w && y >= b.y && y < b.y + b.h,
     );
     if (hitBuilding) return false;
@@ -2444,7 +2462,7 @@ export default function NeoLifeCity({ data = {}, save, onNavigate }) {
 
           const sched = getNpcRoutine(res, currentPeriod, new Date().getDay());
           const dailyStatus = getNpcDailyStatus(currentHour);
-          const bld = WORLD_BUILDINGS.find((b) => b.id === res.workBuilding);
+          const bld = activeBuildings.find((b) => b.id === res.workBuilding);
           const bldOpen = bld ? getBuildingOpenStatus(bld).isOpen : true;
 
           const points = res.roamPoints || [sched];
@@ -2678,7 +2696,7 @@ export default function NeoLifeCity({ data = {}, save, onNavigate }) {
   const worldCollisionChecker = useMemo(
     () =>
       createCollisionChecker({
-        buildings: WORLD_BUILDINGS,
+        buildings: activeBuildings,
         props: WORLD_PROPS,
         water: isWaterTile,
       }),
@@ -2737,7 +2755,7 @@ export default function NeoLifeCity({ data = {}, save, onNavigate }) {
     for (let s = 1; s <= stepMultiplier; s++) {
       const nx = Math.max(0, Math.min(19, player.x + dx * s));
       const ny = Math.max(0, Math.min(11, player.y + dy * s));
-      const isDoor = WORLD_BUILDINGS.some(
+      const isDoor = activeBuildings.some(
         (b) => b.door.x === nx && b.door.y === ny,
       );
       if (!isBlocked(nx, ny) || isDoor) {
@@ -2998,7 +3016,7 @@ export default function NeoLifeCity({ data = {}, save, onNavigate }) {
   };
 
   const interactInWorld = () => {
-    const nearbyDoor = WORLD_BUILDINGS.find(
+    const nearbyDoor = activeBuildings.find(
       (b) => Math.abs(b.door.x - player.x) + Math.abs(b.door.y - player.y) <= 1,
     );
     if (nearbyDoor) {
@@ -3205,6 +3223,11 @@ export default function NeoLifeCity({ data = {}, save, onNavigate }) {
   const travelToCity = (cityId) => {
     const destination = CITIES.find((city) => city.id === cityId);
     if (!destination) return;
+    const world = city.world && typeof city.world === 'object' ? city.world : {};
+    if (!canUnlockTravel(world, activeCityId, cityId)) {
+      setNotice('Esta viagem ainda está bloqueada. Visite outra cidade conectada primeiro.');
+      return;
+    }
     const canTravel =
       destination.id === activeCityId ||
       activeCity.routes.includes(destination.id) ||
@@ -3213,24 +3236,33 @@ export default function NeoLifeCity({ data = {}, save, onNavigate }) {
       setNotice('Esta cidade ainda não está conectada a uma rota disponível.');
       return;
     }
-    const world = city.world && typeof city.world === 'object' ? city.world : {};
+    const route = getTravelRoute(activeCityId, cityId);
+    if (destination.id !== activeCityId && coins < route.cost) {
+      setNotice(`Passagem indisponível: faltam ${route.cost - coins} moedas.`);
+      return;
+    }
     const visitedCities = Array.from(new Set([...safeArray(world.visitedCities), cityId]));
     setActiveCityId(cityId);
     setShowStateMap(false);
     setPlayer({ x: 8, y: 6 });
     setWorldBubble(null);
     setCitizenBubble(null);
-    persistCity({
-      ...city,
-      world: {
-        ...world,
-        cityId,
-        visitedCities,
-        player: { x: 8, y: 6 },
-        zoom: worldZoom,
+    persistCity(
+      {
+        ...city,
+        world: {
+          ...world,
+          cityId,
+          visitedCities,
+          player: { x: 8, y: 6 },
+          zoom: worldZoom,
+        },
       },
-    });
-    setNotice(`Bem-vindo a ${destination.name} — ${destination.subtitle}.`);
+      destination.id === activeCityId ? {} : { coins: coins - route.cost },
+    );
+    setNotice(
+      `Viagem concluída por ${route.mode}: ${destination.name} · ${route.minutes} min · ${route.cost} moedas.`,
+    );
   };
 
   const enterBuilding = (building) => {
@@ -3482,6 +3514,16 @@ export default function NeoLifeCity({ data = {}, save, onNavigate }) {
     }, today);
     return [
       ...base,
+      {
+        id: `city-event-${activeCityId}`,
+        type: `Especial · ${activeCity.name}`,
+        title: activeCityEventData.name,
+        desc: `${activeCityEventData.reward}. Visite esta cidade para registrar o evento.`,
+        progress: safeArray(city.world?.visitedCities).includes(activeCityId) ? 1 : 0,
+        target: 1,
+        rewardCoins: 30,
+        rewardXp: activeCityEventData.xp,
+      },
       ...recurring.map((mission) => ({
         id: mission.id,
         type: mission.scope === 'daily' ? 'Diária' : 'Semanal',
@@ -3493,7 +3535,7 @@ export default function NeoLifeCity({ data = {}, save, onNavigate }) {
         rewardXp: mission.reward.xp,
       })),
     ];
-  }, [stats, talks, affinity, homeLayouts, collections, sessions, npcMemories, today]);
+  }, [stats, talks, affinity, homeLayouts, collections, sessions, npcMemories, today, activeCityId, activeCity.name, activeCityEventData.name, activeCityEventData.reward, activeCityEventData.xp, city.world]);
 
   const claimQuest = (quest) => {
     if (claimedQuests.includes(quest.id) || quest.progress < quest.target)
@@ -3585,7 +3627,7 @@ export default function NeoLifeCity({ data = {}, save, onNavigate }) {
   /* ==========================================================================
      LOJA, INVENTÁRIO E EQUIPAMENTOS
      ========================================================================== */
-  const marketBuilding = WORLD_BUILDINGS.find((b) => b.id === 'neon-market');
+  const marketBuilding = activeBuildings.find((b) => b.id === 'neon-market');
   const marketOpenStatus = getBuildingOpenStatus(marketBuilding);
 
   const buyItem = (item) => {
@@ -3595,9 +3637,10 @@ export default function NeoLifeCity({ data = {}, save, onNavigate }) {
       );
       return;
     }
-    if (coins < item.price) {
+    const regionalPrice = Math.ceil(item.price * activeEconomy.multiplier);
+    if (coins < regionalPrice) {
       setNotice(
-        `Faltam ${item.price - coins} moedas para comprar ${item.name}.`,
+        `Faltam ${regionalPrice - coins} moedas para comprar ${item.name} em ${activeCity.name}.`,
       );
       return;
     }
@@ -3610,7 +3653,7 @@ export default function NeoLifeCity({ data = {}, save, onNavigate }) {
         inventory: [...inventory, item.id],
         collections: { ...collections, items: nextItemsCol },
       },
-      { coins: coins - item.price },
+      { coins: coins - regionalPrice },
     );
     setNotice(`${item.name} foi adicionado ao seu inventário!`);
   };
@@ -3793,6 +3836,21 @@ export default function NeoLifeCity({ data = {}, save, onNavigate }) {
         </div>
 
         <div className='neo-hero-right'>
+          <div className='neo-character-hud'>
+            <div className='neo-character-avatar'>
+              <span className='neo-cyber-head mini'>
+                <i className='neo-cyber-hair' />
+                <i className='neo-cyber-visor' />
+              </span>
+            </div>
+            <div className='neo-character-stats'>
+              <b>Explorador {cityEvolution.tier === 4 ? 'Elite' : 'Neo'}</b>
+              <span>Lv. {Math.max(1, Math.floor(xp / 100) + 1)}</span>
+              <div><i style={{ width: '100%' }} /> <small>Vida 100/100</small></div>
+              <div className='energy'><i style={{ width: `${Math.max(20, 100 - (animTick % 31))}%` }} /> <small>Energia</small></div>
+              <em>{xp} / {(cityEvolution.nextThreshold * 10).toLocaleString('pt-BR')} XP</em>
+            </div>
+          </div>
           <div className='neo-wallet'>
             <span>CARTEIRA & EVOLUÇÃO DA CIDADE</span>
             <strong>
@@ -4041,7 +4099,7 @@ export default function NeoLifeCity({ data = {}, save, onNavigate }) {
                   </button>
                   <button
                     type='button'
-                    onClick={() => enterBuilding(WORLD_BUILDINGS[0])}
+                    onClick={() => enterBuilding(activeBuildings[0])}
                   >
                     🏡 Minha Casa
                   </button>
@@ -4060,9 +4118,21 @@ export default function NeoLifeCity({ data = {}, save, onNavigate }) {
 
               {/* FAIXA DE STATUS DE LOJAS E ATIVIDADE DOS MORADORES */}
               <div className='neo-city-telemetry'>
+                <div className='neo-telemetry-group neo-city-economy'>
+                  <b>🌆 {activeCity.name}:</b>
+                  <span>{activeCity.climate}</span>
+                  <span>Especialidade: {activeEconomy.speciality || activeEconomy.specialty}</span>
+                  <span>Preço regional: ×{activeEconomy.multiplier}</span>
+                  <span>Evento: {activeCityEventData.name} · +{activeCityEventData.xp} XP</span>
+                  {activeCityNPCs.map((npc) => (
+                    <button key={npc.id} type='button' className='neo-npc-pill'>
+                      ◉ {npc.name} · {npc.role}
+                    </button>
+                  ))}
+                </div>
                 <div className='neo-telemetry-group'>
                   <b>🏪 Horário das Lojas:</b>
-                  {WORLD_BUILDINGS.filter((b) => !b.isHome).map((b) => {
+                  {activeBuildings.filter((b) => !b.isHome).map((b) => {
                     const st = getBuildingOpenStatus(b);
                     return (
                       <button
@@ -4111,6 +4181,7 @@ export default function NeoLifeCity({ data = {}, save, onNavigate }) {
                       const canTravel =
                         activeCity.routes.includes(city.id) ||
                         city.routes.includes(activeCity.id);
+                      const route = getTravelRoute(activeCityId, city.id);
                       return (
                         <button
                           key={city.id}
@@ -4127,7 +4198,13 @@ export default function NeoLifeCity({ data = {}, save, onNavigate }) {
                             <b>{city.name}</b>
                             <p>{city.focus}</p>
                           </div>
-                          <em>{city.id === activeCityId ? 'AQUI' : canTravel ? 'VIAJAR' : 'FORA DA ROTA'}</em>
+                          <em>
+                            {city.id === activeCityId
+                              ? 'AQUI'
+                              : canTravel
+                                ? `${route.mode.toUpperCase()} · ${route.cost} 🪙 · ${route.minutes}m`
+                                : 'FORA DA ROTA'}
+                          </em>
                         </button>
                       );
                     })}
@@ -4164,6 +4241,29 @@ export default function NeoLifeCity({ data = {}, save, onNavigate }) {
                   >
                   {/* CAMADA DE TRÂNSITO URBANO: CARROS, BICICLETAS, DRONES E VLT */}
                   <div className='neo-city-life' aria-hidden='true'>
+                    {[
+                      [1,1,'oak'],[3,2,'pine'],[6,1,'oak'],[11,1,'pine'],[16,2,'oak'],
+                      [18,4,'pine'],[1,8,'oak'],[3,9,'pine'],[6,9,'oak'],[10,11,'pine'],
+                      [12,9,'oak'],[16,11,'pine'],[18,8,'oak'],[14,6,'pine'],
+                    ].map(([x,y,type]) => (
+                      <span
+                        key={`world-tree-${x}-${y}`}
+                        className={`neo-world-tree ${type}`}
+                        style={{ left:`${(x+.5)*50.4}px`, top:`${(y+.5)*47.25}px` }}
+                      >
+                        <i /><b />
+                      </span>
+                    ))}
+                    {[
+                      [2,5],[3,5],[4,5],[6,5],[7,5],[13,5],[14,5],[15,5],
+                      [2,8],[3,8],[4,8],[6,8],[7,8],[13,8],[14,8],[16,8],[17,8],
+                    ].map(([x,y]) => (
+                      <span
+                        key={`world-fence-${x}-${y}`}
+                        className='neo-world-fence'
+                        style={{ left:`${x*50.4+12}px`, top:`${y*47.25+18}px` }}
+                      />
+                    ))}
                     {[
                       [0, 0, 'rooftop-a'], [2, 1, 'rooftop-b'], [5, 0, 'rooftop-c'],
                       [10, 1, 'rooftop-d'], [15, 0, 'rooftop-e'], [18, 1, 'rooftop-f'],
@@ -4245,7 +4345,7 @@ export default function NeoLifeCity({ data = {}, save, onNavigate }) {
                     </div>
 
                     {vehicles.map((v) => {
-                      if (['car', 'taxi', 'bus', 'truck', 'emergency'].includes(v.type)) {
+                      if (['car', 'taxi', 'bus', 'truck', 'emergency', 'van'].includes(v.type)) {
                         const topPx =
                           v.lane === 'east' ? 7 * 47.25 + 14 : 6 * 47.25 + 26;
                         return (
@@ -4266,6 +4366,7 @@ export default function NeoLifeCity({ data = {}, save, onNavigate }) {
                             {v.type === 'bus' ? <span className='neo-bus-windows' /> : null}
                             {v.type === 'truck' ? <span className='neo-truck-cargo' /> : null}
                             {v.type === 'emergency' ? <span className='neo-emergency-bar' /> : null}
+                            {v.type === 'van' ? <span className='neo-van-cargo' /> : null}
                           </div>
                         );
                       }
@@ -4305,6 +4406,24 @@ export default function NeoLifeCity({ data = {}, save, onNavigate }) {
                             <span className='neo-aircar-wing wing-left' />
                             <span className='neo-aircar-wing wing-right' />
                             <span className='neo-aircar-glow' />
+                          </div>
+                        );
+                      }
+                      if (v.type === 'helicopter') {
+                        const rad = (v.phase / 100) * Math.PI * 2 + v.route;
+                        return (
+                          <div
+                            key={v.id}
+                            className='neo-city-helicopter'
+                            style={{
+                              left: `${520 + Math.cos(rad) * 180}px`,
+                              top: `${110 + Math.sin(rad) * 58}px`,
+                            }}
+                          >
+                            <span className='neo-heli-body' />
+                            <span className='neo-heli-tail' />
+                            <span className='neo-heli-main' />
+                            <span className='neo-heli-tail-rotor' />
                           </div>
                         );
                       }
@@ -4378,7 +4497,7 @@ export default function NeoLifeCity({ data = {}, save, onNavigate }) {
                     const x = index % 20;
                     const y = Math.floor(index / 20);
 
-                    const building = WORLD_BUILDINGS.find(
+                    const building = activeBuildings.find(
                       (b) =>
                         x >= b.x && x < b.x + b.w && y >= b.y && y < b.y + b.h,
                     );
@@ -4388,7 +4507,7 @@ export default function NeoLifeCity({ data = {}, save, onNavigate }) {
                       ? getBuildingOpenStatus(building)
                       : null;
 
-                    const door = WORLD_BUILDINGS.find(
+                    const door = activeBuildings.find(
                       (b) => b.door.x === x && b.door.y === y,
                     );
                     const prop = WORLD_PROPS.find(
@@ -4555,9 +4674,8 @@ export default function NeoLifeCity({ data = {}, save, onNavigate }) {
                               }
                             </span>
                             <span
-                              className='neo-resident-sprite neo-authentic-sprite'
+                              className={`neo-resident-sprite neo-pixel-resident resident-${residentHere.id}`}
                               style={{
-                                backgroundImage: `url('/assets/characters/runtime/${residentHere.id}.png')`,
                                 backgroundPosition: `${((Math.floor(animTick / 4) + 1) % 4) * 33.333}% 0`,
                               }}
                             />
@@ -5517,6 +5635,7 @@ export default function NeoLifeCity({ data = {}, save, onNavigate }) {
             {STORE_ITEMS.map((item) => {
               const ownedQty = inventory.filter((id) => id === item.id).length;
               const isUniqueEquip = Boolean(item.equipSlot) && ownedQty > 0;
+              const regionalPrice = Math.ceil(item.price * activeEconomy.multiplier);
               return (
                 <article className='neo-shop-item' key={item.id}>
                   <div className='neo-item-art'>
@@ -5527,14 +5646,14 @@ export default function NeoLifeCity({ data = {}, save, onNavigate }) {
                   <p>{item.description}</p>
                   <div>
                     <b>
-                      🪙 {item.price}{' '}
+                      🪙 {regionalPrice}{' '}
                       {ownedQty > 0 ? `(Possui: ${ownedQty})` : ''}
                     </b>
                     <button
                       disabled={
                         !marketOpenStatus.isOpen ||
                         isUniqueEquip ||
-                        coins < item.price
+                        coins < regionalPrice
                       }
                       onClick={() => buyItem(item)}
                     >
@@ -5542,7 +5661,7 @@ export default function NeoLifeCity({ data = {}, save, onNavigate }) {
                         ? '🔒 Fechado'
                         : isUniqueEquip
                           ? '✓ Adquirido'
-                          : coins < item.price
+                          : coins < regionalPrice
                             ? 'Moedas insuficientes'
                             : 'Comprar'}
                     </button>
@@ -5625,7 +5744,7 @@ export default function NeoLifeCity({ data = {}, save, onNavigate }) {
                           className='neo-equip-btn'
                           onClick={() => {
                             setActiveTab('explore');
-                            enterBuilding(WORLD_BUILDINGS[0]);
+                            enterBuilding(activeBuildings[0]);
                             setDecorateMode(true);
                             setSelectedFurnItem(item.id);
                           }}
@@ -6007,10 +6126,10 @@ export default function NeoLifeCity({ data = {}, save, onNavigate }) {
             <article className='neo-col-box'>
               <h3>
                 🏛️ Locais Descobertos ({safeArray(collections.locations).length}
-                /{WORLD_BUILDINGS.length})
+                /{activeBuildings.length})
               </h3>
               <div className='neo-col-chips'>
-                {WORLD_BUILDINGS.map((b) => {
+                {activeBuildings.map((b) => {
                   const found = safeArray(collections.locations).includes(b.id);
                   return (
                     <span key={b.id} className={found ? 'found' : 'missing'}>
@@ -6730,6 +6849,42 @@ const styles = `
   position:absolute;left:17px;bottom:-1px;width:12px;height:3px;border-radius:50%;
   background:#f5c451;box-shadow:0 0 9px #f5c451;
 }
+.neo-vehicle-van{
+  width:36px;height:16px;border-radius:5px 5px 3px 3px;
+  background:linear-gradient(180deg,#82bec7 0 64%,#3a6973 65%);
+}
+.neo-van-cargo{
+  position:absolute;left:-9px;top:-2px;width:13px;height:18px;border-radius:3px;
+  border:1.5px solid #26384a;background:repeating-linear-gradient(90deg,#b6c7c7 0 3px,#6e8a94 3px 6px);
+  box-shadow:0 3px 5px rgba(0,0,0,.48);
+}
+.neo-city-helicopter{
+  position:absolute;width:52px;height:24px;z-index:7;
+  filter:drop-shadow(0 5px 7px rgba(110,194,201,.58));
+  transition:left .26s linear,top .26s linear;
+}
+.neo-heli-body{
+  position:absolute;left:12px;top:7px;width:28px;height:13px;border-radius:12px 8px 8px 5px;
+  border:1.5px solid #b6ebed;background:linear-gradient(135deg,#5e7e9f,#1b2e47);
+  box-shadow:0 0 8px #6ec2c9;
+}
+.neo-heli-tail{
+  position:absolute;left:37px;top:9px;width:14px;height:5px;
+  border-top:2px solid #c7b3eb;border-right:2px solid #c7b3eb;
+  transform:skewX(25deg);
+}
+.neo-heli-main{
+  position:absolute;left:-1px;top:2px;width:50px;height:3px;border-radius:50%;
+  background:#c7b3eb;box-shadow:0 0 6px #c7b3eb;
+  animation:neoRotor 0.12s linear infinite;
+}
+.neo-heli-tail-rotor{
+  position:absolute;right:-2px;top:6px;width:6px;height:13px;
+  border-left:1px solid #6ec2c9;border-right:1px solid #6ec2c9;
+  animation:neoTailRotor 0.18s linear infinite;
+}
+@keyframes neoRotor{50%{transform:scaleX(.35);opacity:.72}}
+@keyframes neoTailRotor{to{transform:rotate(180deg)}}
 .neo-vehicle-car.west{transform:scaleX(-1)}
 .neo-vehicle-car.west .neo-car-cabin{transform:scaleX(-1)}
 
