@@ -446,6 +446,26 @@ const ACTIVITY_META = {
   resting: { icon: '☕', label: 'Descansando', color: '#c7b3eb' },
 };
 
+const INTERIOR_LOOT_CATALOG = {
+  'scrap-metal': {
+    id: 'scrap-metal', name: 'Sucata tecnológica', category: 'Materiais',
+    type: 'Componente', icon: '🔩', description: 'Peças reaproveitáveis encontradas nos bastidores da cidade.',
+  },
+  'data-chip': {
+    id: 'data-chip', name: 'Chip de dados', category: 'Materiais',
+    type: 'Tecnologia', icon: '💾', description: 'Fragmento de dados que pode ser usado em futuras melhorias.',
+  },
+  'energy-cell': {
+    id: 'energy-cell', name: 'Célula de energia', category: 'Materiais',
+    type: 'Energia', icon: '🔋', description: 'Uma pequena bateria de alta densidade energética.',
+  },
+};
+const INTERIOR_LOOT_SPAWNS = [
+  { id: 'scrap-metal', x: 2, y: 3 },
+  { id: 'data-chip', x: 7, y: 3 },
+  { id: 'energy-cell', x: 5, y: 1 },
+];
+
 const WORLD_BUILDINGS = [
   {
     id: 'player-home',
@@ -2488,6 +2508,7 @@ export default function NeoLifeCity({ data = {}, save, onNavigate }) {
           items: [],
         };
   const collectedForage = safeArray(city.world?.collectedForage);
+  const collectedInteriorLoot = safeArray(city.world?.collectedInteriorLoot);
   const activeForageNodes = useMemo(
     () =>
       createForageNodes(
@@ -3201,6 +3222,37 @@ export default function NeoLifeCity({ data = {}, save, onNavigate }) {
     setNotice(`Você embarcou no ${harbor.name}. Use E para desembarcar ou abrir o mapa de rotas.`);
   };
 
+  const getInteriorLootAt = (x, y) => {
+    if (!insideBuilding || insideBuilding.isHome) return null;
+    return INTERIOR_LOOT_SPAWNS.find((node) =>
+      node.x === x && node.y === y &&
+      !collectedInteriorLoot.includes(`${insideBuilding.id}:${node.id}`),
+    ) || null;
+  };
+
+  const getInteriorResidents = () => {
+    if (!insideBuilding || insideBuilding.isHome) return [];
+    return activeResidents
+      .filter((resident) =>
+        resident.workBuilding === insideBuilding.id ||
+        resident.district === insideBuilding.district,
+      )
+      .slice(0, 2);
+  };
+
+  const collectInteriorLoot = (node) => {
+    if (!insideBuilding || !node) return;
+    const lootKey = `${insideBuilding.id}:${node.id}`;
+    if (collectedInteriorLoot.includes(lootKey)) return;
+    const nextCollected = [...collectedInteriorLoot, lootKey];
+    persistCity({
+      ...city,
+      inventory: [...inventory, node.id],
+      world: { ...(city.world || {}), collectedInteriorLoot: nextCollected },
+    });
+    setNotice(`${INTERIOR_LOOT_CATALOG[node.id]?.icon || '📦'} ${INTERIOR_LOOT_CATALOG[node.id]?.name || 'Item'} coletado e guardado na mochila!`);
+  };
+
   const isInteriorBlocked = (x, y) => {
     if (x < 1 || x > 8 || y < 1 || y > 4) {
       if (x === 5 && y === 5) return false;
@@ -3209,6 +3261,10 @@ export default function NeoLifeCity({ data = {}, save, onNavigate }) {
     if (!insideBuilding?.isHome) {
       if (y === 2 && [1, 4, 8].includes(x)) return true;
       if ((x === 1 && y === 1) || (x === 8 && y === 1)) return true;
+      if (getInteriorResidents().some((_, index) =>
+        (index === 0 && x === 2 && y === 1) ||
+        (index === 1 && x === 7 && y === 1)
+      )) return true;
     } else {
       const roomItems = safeArray(homeLayouts[homeRoomIndex]);
       if (roomItems.some((item) => item.x === x && item.y === y)) return true;
@@ -3712,6 +3768,24 @@ export default function NeoLifeCity({ data = {}, save, onNavigate }) {
         if (Math.abs(interiorPlayer.x - 5) <= 1 && interiorPlayer.y >= 4) {
           leaveBuilding();
         } else if (!insideBuilding.isHome) {
+          const nearbyLoot = INTERIOR_LOOT_SPAWNS.find((node) =>
+            !collectedInteriorLoot.includes(`${insideBuilding.id}:${node.id}`) &&
+            Math.abs(node.x - interiorPlayer.x) + Math.abs(node.y - interiorPlayer.y) <= 1,
+          );
+          let handledInteriorInteraction = Boolean(nearbyLoot);
+          if (nearbyLoot) {
+            collectInteriorLoot(nearbyLoot);
+          } else {
+            const residentsInside = getInteriorResidents();
+            const nearbyResident = residentsInside.find((resident, index) => {
+              const pos = index === 0 ? { x: 2, y: 1 } : { x: 7, y: 1 };
+              return Math.abs(pos.x - interiorPlayer.x) + Math.abs(pos.y - interiorPlayer.y) <= 1;
+            });
+            if (nearbyResident) {
+              handledInteriorInteraction = true;
+              setNotice(`${nearbyResident.name}: ${nearbyResident.quote || 'A cidade fica mais interessante quando você explora cada canto.'}`);
+            }
+          }
           const stations = [
             { x: 1, y: 2, index: 0 },
             { x: 4, y: 2, index: 1 },
@@ -3723,7 +3797,7 @@ export default function NeoLifeCity({ data = {}, save, onNavigate }) {
                 Math.abs(st.y - interiorPlayer.y) <=
               1,
           );
-          if (hit) {
+          if (hit && !handledInteriorInteraction) {
             setNotice(
               `Estação ${insideBuilding.rooms[hit.index]} ativada! Use o painel abaixo para registrar progresso real.`,
             );
@@ -4427,6 +4501,8 @@ export default function NeoLifeCity({ data = {}, save, onNavigate }) {
       if (storeMatch) return { ...storeMatch, qty };
       const forageMatch = FORAGE_CATALOG[id];
       if (forageMatch) return { ...forageMatch, qty };
+      const interiorLoot = INTERIOR_LOOT_CATALOG[id];
+      if (interiorLoot) return { ...interiorLoot, qty };
       if (id.startsWith('harvest-')) {
         const sp = SEED_SPECIES.find((s) => `harvest-${s.id}` === id);
         return {
@@ -5834,6 +5910,15 @@ export default function NeoLifeCity({ data = {}, save, onNavigate }) {
                       !insideBuilding.isHome && y === 2 && [1, 4, 8].includes(x)
                         ? insideBuilding.rooms[stationIndex]
                         : null;
+                    const lootNode = !insideBuilding.isHome
+                      ? getInteriorLootAt(x, y)
+                      : null;
+                    const residentIndex = !insideBuilding.isHome
+                      ? (x === 2 && y === 1 ? 0 : x === 7 && y === 1 ? 1 : -1)
+                      : -1;
+                    const interiorResident = residentIndex >= 0
+                      ? getInteriorResidents()[residentIndex]
+                      : null;
 
                     const floorCol = isWall ? 6 : isRug ? 7 : 5;
 
@@ -5885,6 +5970,31 @@ export default function NeoLifeCity({ data = {}, save, onNavigate }) {
                           />
                         ) : null}
 
+                        {lootNode ? (
+                          <button
+                            type='button'
+                            className='neo-interior-loot'
+                            title={`Pegar ${INTERIOR_LOOT_CATALOG[lootNode.id]?.name || 'item'}`}
+                            aria-label={`Pegar ${INTERIOR_LOOT_CATALOG[lootNode.id]?.name || 'item'}`}
+                            onClick={() => collectInteriorLoot(lootNode)}
+                          >
+                            {INTERIOR_LOOT_CATALOG[lootNode.id]?.icon || '📦'}
+                            <small>PEGAR</small>
+                          </button>
+                        ) : null}
+
+                        {interiorResident ? (
+                          <button
+                            type='button'
+                            className='neo-interior-npc'
+                            title={`Conversar com ${interiorResident.name}`}
+                            onClick={() => setNotice(`${interiorResident.name}: ${interiorResident.quote || 'Olá! Bom te ver por aqui.'}`)}
+                          >
+                            <span>{interiorResident.avatar || '👤'}</span>
+                            <small>{interiorResident.name}</small>
+                          </button>
+                        ) : null}
+
                         {station ? (
                           <button
                             type='button'
@@ -5932,6 +6042,17 @@ export default function NeoLifeCity({ data = {}, save, onNavigate }) {
                     );
                   })}
                 </div>
+
+                {!insideBuilding.isHome && (
+                  <div className='neo-interior-lootbar'>
+                    <div>
+                      <b>Exploração do local</b>
+                      <small>Use WASD/setas para andar e E perto de itens ou moradores</small>
+                    </div>
+                    <span>🎒 {inventoryEntries.reduce((sum, item) => sum + item.qty, 0)} itens na mochila</span>
+                    <button type='button' onClick={() => setActiveTab('inventory')}>Abrir inventário</button>
+                  </div>
+                )}
 
                 {insideBuilding.isHome ? (
                   <div className='neo-deco-dock'>
@@ -6480,6 +6601,7 @@ export default function NeoLifeCity({ data = {}, save, onNavigate }) {
                 'Roupas',
                 'Equipamentos',
                 'Companheiros',
+                'Materiais',
                 'Colheitas & Pesca',
               ].map((cat) => (
                 <button

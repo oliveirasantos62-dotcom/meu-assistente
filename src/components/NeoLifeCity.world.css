@@ -784,3 +784,35 @@
   box-shadow:0 2px 7px rgba(0,0,0,.45)!important;
   transform:translate(-50%,-50%)!important;
 }
+
+
+/* Interiores vivos: coleta de recursos, moradores e acesso rápido à mochila */
+.neo-interior-loot{
+  position:relative;z-index:8;width:100%;height:100%;border:0;background:transparent;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:1px;cursor:pointer;font-size:19px;filter:drop-shadow(0 2px 4px rgba(0,0,0,.65));
+  animation:neoLootPulse 2s ease-in-out infinite;
+}
+.neo-interior-loot small{font-size:7px;font-weight:1000;letter-spacing:.7px;color:#fff0a6;
+  background:rgba(9,11,25,.82);padding:2px 4px;border-radius:4px}
+@keyframes neoLootPulse{0%,100%{transform:translateY(0);filter:drop-shadow(0 2px 3px rgba(0,0,0,.6))}50%{transform:translateY(-3px);filter:drop-shadow(0 0 7px rgba(110,194,201,.85))}}
+.neo-interior-npc{
+  position:relative;z-index:8;width:100%;height:100%;border:0;background:transparent;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0;
+  cursor:pointer;color:#fff;text-shadow:0 1px 4px #000;
+}
+.neo-interior-npc span{font-size:21px;line-height:1.1;animation:neoNpcIdle 2.8s ease-in-out infinite}
+.neo-interior-npc small{font-size:7px;font-weight:900;background:rgba(9,11,25,.82);padding:2px 4px;border-radius:4px}
+@keyframes neoNpcIdle{0%,100%{transform:translateY(0)}50%{transform:translateY(-2px)}}
+.neo-interior-lootbar{
+  display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;
+  padding:12px 14px;border:1px solid rgba(110,194,201,.24);border-radius:12px;
+  background:linear-gradient(110deg,rgba(12,25,39,.94),rgba(22,27,48,.94));
+}
+.neo-interior-lootbar>div{display:flex;flex-direction:column;gap:3px}
+.neo-interior-lootbar b{font-size:12px;color:#e8f7f5}
+.neo-interior-lootbar small{font-size:10px;color:#9db9c2}
+.neo-interior-lootbar>span{font-size:11px;color:#f5c451;font-weight:800}
+.neo-interior-lootbar button{border:1px solid rgba(110,194,201,.4);border-radius:8px;padding:8px 11px;
+  color:#b6ebed;background:rgba(35,99,115,.25);font-size:10px;font-weight:900;cursor:pointer}
+.neo-interior-lootbar button:hover{background:rgba(35,99,115,.5);border-color:#b6ebed}
