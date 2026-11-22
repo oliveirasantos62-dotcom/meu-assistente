@@ -46,8 +46,6 @@ import Processos from './components/Processos';
 import { getReferenceData } from './utils/moduleReferences';
 import { isTaskCancelled } from './utils/taskStatus';
 import { useLanguage } from './context/LanguageContext.jsx';
-import FuturisticTools from './components/FuturisticTools.jsx';
-import NeoLifeCity from './components/NeoLifeCity';
 
 export default function App() {
   const { t, language } = useLanguage();
@@ -930,7 +928,6 @@ export default function App() {
       {/* CONTEÚDO */}
 
       <main className='main-content'>
-        <FuturisticTools data={data} save={save} activeSection={activeSection} />
         {/* HEADER */}
 
         <header className='main-header'>
@@ -960,10 +957,6 @@ export default function App() {
             </button>
           </div>
         </header>
-
-        {activeSection === 'neoCity' && (
-          <NeoLifeCity data={data} save={save} onNavigate={setActiveSection} />
-        )}
 
         {/* =====================================================
             PAINEL PRINCIPAL
