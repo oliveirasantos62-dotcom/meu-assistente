@@ -61,6 +61,22 @@ export function createCityResidents(cityId, buildings, map) {
   const homeBuilding = buildings.find((building) => building.isHome);
   const homeDoor = homeBuilding?.door || map.spawn;
   const socialPoint = map.spawn;
+  const isSafe = (point) =>
+    Number.isInteger(point?.x) && Number.isInteger(point?.y) &&
+    point.x >= 0 && point.y >= 0 && point.x < map.width && point.y < map.height &&
+    !map.isWaterTile(point.x, point.y) && !isBuildingTile(point, buildings);
+  const findNearbySafe = (origin, seed = 0) => {
+    const offsets = [
+      [2, 0], [0, 2], [-2, 0], [0, -2], [3, 1], [-3, 1], [1, -3], [-1, 3],
+      [4, 0], [0, 4], [-4, 0], [0, -4], [3, -2], [-3, -2], [2, 3], [-2, 3],
+    ];
+    for (let i = 0; i < offsets.length; i += 1) {
+      const [dx, dy] = offsets[(i + seed) % offsets.length];
+      const candidate = { x: origin.x + dx, y: origin.y + dy };
+      if (isSafe(candidate)) return candidate;
+    }
+    return { ...origin };
+  };
 
   return (CITY_NPCS[cityId] || []).map((npc, index) => {
     const workBuilding =
@@ -69,44 +85,50 @@ export function createCityResidents(cityId, buildings, map) {
     const home = getSafeLocation(npc.home, homeDoor, buildings, map);
     const work = getSafeLocation(npc.work, workBuilding?.door || socialPoint, buildings, map);
     const plaza = getSafeLocation(socialPoint, homeDoor, buildings, map);
-    const roamPoints = [home, work, plaza].filter(
-      (point, pointIndex, points) =>
-        points.findIndex((other) => other.x === point.x && other.y === point.y) === pointIndex,
+    const hobbyOrigin = npc.focus === 'nature' || npc.focus === 'environment'
+      ? findNearbySafe(plaza, index + 2)
+      : npc.focus === 'commerce' || npc.focus === 'tournaments'
+        ? findNearbySafe(work, index + 4)
+        : findNearbySafe(plaza, index + 6);
+    const optionalStop = findNearbySafe(work, index + 8);
+    const unique = (points) => points.filter(
+      (point, pointIndex, all) => all.findIndex((other) => other.x === point.x && other.y === point.y) === pointIndex,
     );
+    const roamPoints = unique([home, work, plaza, hobbyOrigin, optionalStop]);
     const schedule = {
-      morning: { ...home, activity: 'strolling', label: 'Saindo de casa' },
-      afternoon: {
-        ...work,
-        activity: 'working',
-        label: workBuilding?.name || 'Local de trabalho',
-      },
-      sunset: { ...plaza, activity: 'chatting', label: 'Praça da cidade' },
-      night: { ...home, activity: 'resting', label: 'Voltando para casa' },
+      morning: { ...work, activity: 'commuting', label: `Indo para ${workBuilding?.name || 'o trabalho'}` },
+      afternoon: { ...work, activity: 'working', label: workBuilding?.name || 'Local de trabalho' },
+      sunset: { ...hobbyOrigin, activity: npc.focus === 'nature' ? 'gardening' : 'relaxing', label: npc.hobbyLabel || 'Cuidando dos próprios interesses' },
+      night: { ...home, activity: 'resting', label: 'Em casa, encerrando o dia' },
     };
-
     return {
       ...npc,
       avatar: npc.name.charAt(0).toUpperCase(),
       district: workBuilding?.district || 'central',
       workBuilding: workBuilding?.id || null,
+      home,
+      work,
+      plaza,
       spriteRow: npc.spriteRow ?? index,
       relations: npc.relations || [],
       storyChapters: npc.storyChapters || [],
+      routineSeed: index + cityId.length,
+      hobbyPoint: hobbyOrigin,
+      hobbyActivity: npc.focus === 'nature' || npc.focus === 'environment' ? 'gardening' : 'relaxing',
+      hobbyLabel: npc.focus === 'nature' || npc.focus === 'environment' ? 'Cuidando do jardim' : `Se dedicando a ${npc.interest || 'um interesse pessoal'}`,
+      optionalStop,
+      optionalStopLabel: npc.focus === 'commerce' ? 'Conferindo entregas e estoques' : 'Resolvendo uma tarefa pessoal',
       roamPoints,
       schedule,
       weekendSchedule: {
         morning: { ...plaza, activity: 'strolling', label: 'Passeio de fim de semana' },
-        afternoon: { ...plaza, activity: 'chatting', label: 'Encontro comunitário' },
-        sunset: { ...plaza, activity: 'chatting', label: 'Praça ao entardecer' },
+        afternoon: { ...hobbyOrigin, activity: 'relaxing', label: npc.hobbyLabel || 'Tempo livre' },
+        sunset: { ...plaza, activity: 'chatting', label: 'Encontro comunitário' },
         night: { ...home, activity: 'resting', label: 'Descansando em casa' },
       },
       weatherSchedule: {
-        morning: { ...home, activity: 'resting', label: 'Aguardando o tempo melhorar' },
-        afternoon: {
-          ...work,
-          activity: 'working',
-          label: `Abrigo · ${workBuilding?.name || 'trabalho'}`,
-        },
+        morning: { ...work, activity: 'commuting', label: 'Indo para um local protegido' },
+        afternoon: { ...work, activity: 'working', label: `Abrigo · ${workBuilding?.name || 'trabalho'}` },
         sunset: { ...home, activity: 'resting', label: 'Voltando para um local coberto' },
         night: { ...home, activity: 'resting', label: 'Em casa por causa do clima' },
       },

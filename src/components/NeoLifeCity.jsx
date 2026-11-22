@@ -12,6 +12,8 @@ import {
   getNpcDialogue,
   getNpcRoutine,
   getNpcDailyStatus,
+  getNpcPathStep,
+  getNpcMood,
 } from '../game/npcRoutines';
 import { advanceVehicle, getSignalState } from '../game/traffic';
 import { createRecurringMissions, localDateKey } from '../game/questEvents';
@@ -444,6 +446,11 @@ const ACTIVITY_META = {
   chatting: { icon: '💬', label: 'Conversando', color: '#f5c451' },
   strolling: { icon: '🚶', label: 'Passeando', color: '#6ec2c9' },
   resting: { icon: '☕', label: 'Descansando', color: '#c7b3eb' },
+  commuting: { icon: '🚲', label: 'A caminho', color: '#6ec2c9' },
+  preparing: { icon: '🌤️', label: 'Se preparando', color: '#d6bd83' },
+  gardening: { icon: '🌱', label: 'Cuidando do jardim', color: '#7ec272' },
+  relaxing: { icon: '🎧', label: 'No tempo livre', color: '#c7b3eb' },
+  errand: { icon: '📦', label: 'Resolvendo algo', color: '#f5c451' },
 };
 
 const INTERIOR_LOOT_CATALOG = {
@@ -2300,6 +2307,11 @@ export default function NeoLifeCity({ data = {}, save, onNavigate }) {
         activity: start.activity || 'strolling',
         waypointIdx: 0,
         chatPartner: null,
+        energy: 82,
+        recovering: false,
+        social: 48,
+        mood: 'focused',
+        goal: start.label || 'Seguindo a rotina',
       };
     });
     return init;
@@ -2326,6 +2338,11 @@ export default function NeoLifeCity({ data = {}, save, onNavigate }) {
           activity: start.activity || 'strolling',
           waypointIdx: start.waypointIdx || 0,
           chatPartner: start.chatPartner || null,
+          energy: Number.isFinite(saved?.energy) ? saved.energy : 82,
+          recovering: Boolean(saved?.recovering),
+          social: Number.isFinite(saved?.social) ? saved.social : 48,
+          mood: saved?.mood || 'focused',
+          goal: saved?.goal || start.label || 'Seguindo a rotina',
         };
       });
       return next;
@@ -2463,6 +2480,8 @@ export default function NeoLifeCity({ data = {}, save, onNavigate }) {
   const storedAffinity =
     city.affinity && typeof city.affinity === 'object' ? city.affinity : {};
   const affinity = { ...storedAffinity, ...(lifeSync.affinity || {}) };
+  const affinityRef = useRef(affinity);
+  affinityRef.current = affinity;
   const npcMemories =
     city.npcMemories && typeof city.npcMemories === 'object'
       ? city.npcMemories
@@ -2909,142 +2928,120 @@ export default function NeoLifeCity({ data = {}, save, onNavigate }) {
     return true;
   };
 
-  // Movimentação autônoma dos NPCs residentes e cidadãos pelas ruas e calçadas
+  // Rotinas pessoais, navegação por caminhos válidos e necessidades dos moradores.
   useEffect(() => {
     const npcMoveTimer = window.setInterval(() => {
       setNpcState((prev) => {
         const next = { ...prev };
         const dayIndex = new Date().getDay();
-        activeResidents.forEach((res, idx) => {
-          const cur = prev[res.id] || {
-            ...getNpcRoutine(res, currentPeriod, dayIndex, weatherId),
-            activity: 'strolling',
+        activeResidents.forEach((resident, index) => {
+          const cur = prev[resident.id] || {
+            ...getNpcRoutine(resident, currentPeriod, dayIndex, weatherId, currentHour),
+            energy: 82,
+            social: 48,
             waypointIdx: 0,
-            chatPartner: null,
           };
-
-          const sched = getNpcRoutine(res, currentPeriod, dayIndex, weatherId);
+          const schedule = getNpcRoutine(
+            resident, currentPeriod, dayIndex, weatherId, currentHour,
+          );
           const dailyStatus = getNpcDailyStatus(currentHour, dayIndex, weatherId);
-          const bld = activeBuildings.find((b) => b.id === res.workBuilding);
-          const bldOpen = bld ? getBuildingOpenStatus(bld).isOpen : true;
+          const workBuilding = activeBuildings.find((building) => building.id === resident.workBuilding);
+          const buildingOpen = workBuilding ? getBuildingOpenStatus(workBuilding).isOpen : true;
+          const isWorkingPeriod = schedule.activity === 'working' || schedule.activity === 'commuting';
+          const recoveryPoint = resident.home || resident.schedule?.night || schedule;
+          const lowEnergy = Number.isFinite(cur.energy) && cur.energy < 30;
+          const recovering = Boolean(cur.recovering) || lowEnergy;
+          const target = recovering
+            ? recoveryPoint
+            : isWorkingPeriod && !buildingOpen && resident.hobbyPoint
+              ? resident.hobbyPoint
+              : schedule;
+          const otherPositions = activeResidents
+            .filter((other) => other.id !== resident.id)
+            .map((other) => prev[other.id])
+            .filter(Boolean);
+          const isWalkable = (x, y) =>
+            isSidewalkOrStreet(x, y) &&
+            !(x === player.x && y === player.y) &&
+            !otherPositions.some((position) => position.x === x && position.y === y);
 
-          const points = res.roamPoints || [sched];
-          const target =
-            sched.activity === 'working' && bldOpen && (animTick + idx) % 6 < 4
-              ? { x: sched.x, y: sched.y }
-              : points[cur.waypointIdx % points.length];
-
-          let nx = cur.x;
-          let ny = cur.y;
-          let nextWpIdx = cur.waypointIdx;
-
-          if (cur.x === target.x && cur.y === target.y) {
-            nextWpIdx = (cur.waypointIdx + 1) % points.length;
-          } else {
-            const dx = target.x > cur.x ? 1 : target.x < cur.x ? -1 : 0;
-            const dy = target.y > cur.y ? 1 : target.y < cur.y ? -1 : 0;
-            const candidates =
-              dx !== 0 && dy !== 0
-                ? [
-                    { x: cur.x + dx, y: cur.y },
-                    { x: cur.x, y: cur.y + dy },
-                  ]
-                : [
-                    { x: cur.x + dx, y: cur.y + dy },
-                    {
-                      x: cur.x + (dy !== 0 ? 1 : 0),
-                      y: cur.y + (dx !== 0 ? 1 : 0),
-                    },
-                  ];
-
-            const validMove = candidates.find(
-              (c) =>
-                isSidewalkOrStreet(c.x, c.y) &&
-                !(c.x === player.x && c.y === player.y),
-            );
-            if (validMove) {
-              nx = validMove.x;
-              ny = validMove.y;
-            } else {
-              nextWpIdx = (cur.waypointIdx + 1) % points.length;
-            }
+          let position = { x: cur.x, y: cur.y };
+          const atDestination = position.x === target.x && position.y === target.y;
+          if (!atDestination) {
+            const step = getNpcPathStep(position, target, isWalkable);
+            if (step) position = step;
           }
 
           const nearbyOther = activeResidents.find((other) => {
-            if (other.id === res.id) return false;
-            const oPos = next[other.id] || prev[other.id];
-            return oPos && Math.abs(oPos.x - nx) + Math.abs(oPos.y - ny) <= 1;
+            if (other.id === resident.id) return false;
+            const otherPosition = next[other.id] || prev[other.id];
+            return otherPosition &&
+              Math.abs(otherPosition.x - position.x) + Math.abs(otherPosition.y - position.y) <= 1;
           });
-
-          const nearBench = WORLD_PROPS.some(
-            (p) =>
-              p.type === 'bench' &&
-              Math.abs(p.x - nx) + Math.abs(p.y - ny) <= 1,
+          const nearBench = WORLD_PROPS.some((prop) =>
+            prop.type === 'bench' &&
+            Math.abs(prop.x - position.x) + Math.abs(prop.y - position.y) <= 1,
           );
+          const affinityValue = Number(affinityRef.current[resident.id]) || 0;
+          const energy = Math.max(0, Math.min(100,
+            (Number.isFinite(cur.energy) ? cur.energy : 82) + (recovering || schedule.activity === 'resting' || currentPeriod === 'night' ? 2.4 : -0.55),
+          ));
+          const social = Math.max(0, Math.min(100,
+            (Number.isFinite(cur.social) ? cur.social : 48) + (nearbyOther ? 1.8 : -0.12),
+          ));
 
-          let activity = 'strolling';
-          if (nearbyOther) {
-            activity = 'chatting';
-          } else if (
-            sched.activity === 'working' &&
-            bldOpen &&
-            Math.abs(nx - sched.x) + Math.abs(ny - sched.y) <= 1
-          ) {
-            activity = 'working';
-          } else if (
-            (currentPeriod === 'night' || nearBench) &&
-            nx === target.x &&
-            ny === target.y
-          ) {
-            activity = 'resting';
-          } else if (dailyStatus.activity !== 'strolling') {
-            activity = dailyStatus.activity;
-          }
+          let activity = schedule.activity || 'strolling';
+          if (nearbyOther && currentPeriod !== 'night') activity = 'chatting';
+          else if (nearBench && (energy < 55 || currentPeriod === 'sunset')) activity = 'resting';
+          else if (atDestination && schedule.activity === 'commuting') activity = 'working';
+          else if (atDestination && schedule.activity === 'working' && !buildingOpen) activity = 'strolling';
+          else if (recovering && atDestination) activity = 'resting';
+          else if (dailyStatus.activity === 'resting' && currentPeriod === 'night') activity = 'resting';
+          else if (!atDestination) activity = 'strolling';
 
-          next[res.id] = {
-            x: nx,
-            y: ny,
+          const mood = getNpcMood(resident, {
+            weatherId, hour: currentHour, affinity: affinityValue, energy, social,
+          });
+          next[resident.id] = {
+            ...cur,
+            x: position.x,
+            y: position.y,
             activity,
-            waypointIdx: nextWpIdx,
+            waypointIdx: cur.waypointIdx || 0,
             chatPartner: nearbyOther ? nearbyOther.name : null,
+            energy,
+            recovering: recovering && energy < 65,
+            social,
+            mood: mood.mood,
+            goal: atDestination ? (schedule.label || 'No destino') : (schedule.label || 'A caminho'),
+            lastRoutinePeriod: currentPeriod,
           };
         });
         return next;
       });
 
-      setCitizens((prev) =>
-        prev.map((cit, i) => {
-          const target = cit.waypoints[cit.wpIndex % cit.waypoints.length];
-          if (cit.x === target.x && cit.y === target.y) {
-            const nextIdx = (cit.wpIndex + 1) % cit.waypoints.length;
-            const actPool = ['strolling', 'resting', 'working', 'chatting'];
-            return {
-              ...cit,
-              wpIndex: nextIdx,
-              activity:
-                currentPeriod === 'night'
-                  ? 'resting'
-                  : actPool[(nextIdx + i) % actPool.length],
-            };
-          }
-          const dx = target.x > cit.x ? 1 : target.x < cit.x ? -1 : 0;
-          const dy = target.y > cit.y ? 1 : target.y < cit.y ? -1 : 0;
-          const step =
-            dx !== 0 && isSidewalkOrStreet(cit.x + dx, cit.y)
-              ? { x: cit.x + dx, y: cit.y }
-              : dy !== 0 && isSidewalkOrStreet(cit.x, cit.y + dy)
-                ? { x: cit.x, y: cit.y + dy }
-                : { x: cit.x, y: cit.y };
-          if (step.x === player.x && step.y === player.y) return cit;
+      // Cidadãos secundários continuam circulando, mas respeitam ruas, obstáculos e jogador.
+      setCitizens((previous) => previous.map((citizen, index) => {
+        const waypoints = citizen.waypoints || [];
+        if (!waypoints.length) return citizen;
+        const target = waypoints[citizen.wpIndex % waypoints.length];
+        if (citizen.x === target.x && citizen.y === target.y) {
+          const nextIndex = (citizen.wpIndex + 1) % waypoints.length;
           return {
-            ...cit,
-            x: step.x,
-            y: step.y,
-            activity: currentPeriod === 'night' ? 'resting' : 'strolling',
+            ...citizen,
+            wpIndex: nextIndex,
+            activity: currentPeriod === 'night' ? 'resting' : ['strolling', 'working', 'chatting'][((nextIndex + index) % 3)],
           };
-        }),
-      );
-    }, 1150);
+        }
+        const step = getNpcPathStep(
+          { x: citizen.x, y: citizen.y },
+          target,
+          (x, y) => isSidewalkOrStreet(x, y) && !(x === player.x && y === player.y),
+          180,
+        );
+        return step ? { ...citizen, x: step.x, y: step.y, activity: currentPeriod === 'night' ? 'resting' : 'strolling' } : citizen;
+      }));
+    }, 1050);
 
     return () => window.clearInterval(npcMoveTimer);
   }, [
@@ -3053,9 +3050,7 @@ export default function NeoLifeCity({ data = {}, save, onNavigate }) {
     currentHour,
     player.x,
     player.y,
-    animTick,
     weatherId,
-    activeCityEvent.extendedMarket,
     activeMap,
     activeBuildings,
   ]);
@@ -3453,6 +3448,8 @@ export default function NeoLifeCity({ data = {}, save, onNavigate }) {
       affinity: Number(affinity[resident.id]) || 0,
       memory: meaningfulMemory || null,
       cityName: activeCity.name,
+      mood: npcState[resident.id]?.mood || 'focused',
+      goal: npcState[resident.id]?.goal || '',
     });
   };
 
@@ -5748,6 +5745,9 @@ export default function NeoLifeCity({ data = {}, save, onNavigate }) {
                       </b>
                     </div>
 
+                    <div className='neo-memory-callout'>
+                      {`🧭 ${npcState[worldBubble.id]?.goal || 'Seguindo sua rotina'} · ${({ cautious: 'Cauteloso', cozy: 'Aconchegado', tired: 'Cansado', quiet: 'Reservado', happy: 'Contente', relaxed: 'Descontraído', curious: 'Curioso', focused: 'Concentrado' }[npcState[worldBubble.id]?.mood] || 'Concentrado')}`}
+                    </div>
                     {safeArray(npcMemories[worldBubble.id])[0] && (
                       <div className='neo-memory-callout'>
                         🧠 Memória recente:{' '}
@@ -6280,6 +6280,9 @@ export default function NeoLifeCity({ data = {}, save, onNavigate }) {
                     </span>
                     <h3>{resident.name}</h3>
                     <p>{resident.role}</p>
+                    <small>
+                      🧭 {curNpc?.goal || 'Seguindo a rotina'} · {({ cautious: 'Cauteloso', cozy: 'Aconchegado', tired: 'Cansado', quiet: 'Reservado', happy: 'Contente', relaxed: 'Descontraído', curious: 'Curioso', focused: 'Concentrado' }[curNpc?.mood] || 'Concentrado')} · ⚡ {Math.round(curNpc?.energy ?? 80)}%
+                    </small>
                     <small>
                       🤝 Vínculos:{' '}
                       {resident.relations

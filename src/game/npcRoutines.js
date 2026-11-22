@@ -3,30 +3,84 @@ export function getNpcRoutine(
   period,
   dayIndex = new Date().getDay(),
   weatherId = 'clear',
+  hour = null,
 ) {
   const isWeekend = dayIndex === 0 || dayIndex === 6;
   const isWetWeather = weatherId === 'rain' || weatherId === 'storm';
-  const base = isWetWeather
-    ? resident.weatherSchedule?.[period] || resident.schedule?.[period]
+  const scheduleSet = isWetWeather
+    ? resident.weatherSchedule || resident.schedule
     : isWeekend
-      ? resident.weekendSchedule?.[period] || resident.schedule?.[period]
-      : resident.schedule?.[period];
+      ? resident.weekendSchedule || resident.schedule
+      : resident.schedule;
+  let base = scheduleSet?.[period] || resident.schedule?.[period];
 
   if (!base) {
-    return { x: 8, y: 6, activity: 'strolling', label: 'Praça Central' };
+    return { x: 8, y: 6, activity: 'strolling', label: 'Explorando o distrito' };
   }
 
-  const offset = dayIndex % 3;
-  if (period === 'afternoon' && resident.id === 'luna') {
-    return { ...base, x: base.x + (offset === 0 ? 1 : 0), activity: 'working' };
+  // Moradores do núcleo principal também ganham passeios diferentes no fim de semana.
+  const periodIndex = ['morning', 'afternoon', 'sunset', 'night'].indexOf(period);
+  if (isWeekend && !resident.weekendSchedule && resident.roamPoints?.length) {
+    const pointIndex = (dayIndex + (resident.spriteRow || 0) + Math.max(0, periodIndex)) % resident.roamPoints.length;
+    const weekendPoint = resident.roamPoints[pointIndex];
+    base = {
+      ...base,
+      ...weekendPoint,
+      activity: period === 'night' ? 'resting' : period === 'sunset' ? 'chatting' : 'strolling',
+      label: period === 'night' ? 'Descansando' : 'Passeio de fim de semana',
+    };
   }
-  if (period === 'night' && resident.id === 'nox') {
-    return { ...base, x: Math.max(1, base.x - offset), activity: 'resting' };
+
+  // Pequenas variações por dia fazem a rotina parecer pessoal, sem teletransportar NPCs.
+  const variation = (dayIndex + (resident.routineSeed || resident.spriteRow || 0)) % 4;
+  const result = { ...base };
+  if (period === 'morning' && hour !== null && hour < 8 && resident.home) {
+    return { ...result, ...resident.home, activity: 'preparing', label: 'Se preparando para sair' };
   }
-  if (period === 'sunset' && offset === 2 && !resident.weekendSchedule?.sunset) {
-    return { ...base, x: base.x + 1, activity: 'chatting' };
+  if (period === 'afternoon' && variation === 1 && resident.optionalStop) {
+    return { ...result, ...resident.optionalStop, activity: 'errand', label: resident.optionalStopLabel || 'Resolvendo algo pelo distrito' };
   }
-  return base;
+  if (period === 'sunset' && variation === 2 && resident.hobbyPoint) {
+    return { ...result, ...resident.hobbyPoint, activity: resident.hobbyActivity || 'relaxing', label: resident.hobbyLabel || 'Tempo para si' };
+  }
+  return result;
+}
+
+/** Encontra o próximo tile de um caminho válido usando busca em largura. */
+export function getNpcPathStep(start, target, isWalkable, maxVisited = 650) {
+  if (!start || !target || (start.x === target.x && start.y === target.y)) return null;
+  const key = (point) => `${point.x},${point.y}`;
+  const queue = [{ ...start, first: null }];
+  const visited = new Set([key(start)]);
+  const directions = [
+    { x: 1, y: 0 }, { x: -1, y: 0 }, { x: 0, y: 1 }, { x: 0, y: -1 },
+  ];
+  let cursor = 0;
+  while (cursor < queue.length && visited.size <= maxVisited) {
+    const current = queue[cursor++];
+    for (const direction of directions) {
+      const next = { x: current.x + direction.x, y: current.y + direction.y };
+      const nextKey = key(next);
+      if (visited.has(nextKey) || !isWalkable(next.x, next.y)) continue;
+      const first = current.first || next;
+      if (next.x === target.x && next.y === target.y) return first;
+      visited.add(nextKey);
+      queue.push({ ...next, first });
+    }
+  }
+  return null;
+}
+
+export function getNpcMood(resident, context = {}) {
+  const { weatherId = 'clear', hour = 12, affinity = 0, energy = 70, social = 50 } = context;
+  if (weatherId === 'storm') return { mood: 'cautious', label: 'Cauteloso' };
+  if (weatherId === 'rain') return { mood: 'cozy', label: 'Aconchegado' };
+  if (energy < 20) return { mood: 'tired', label: 'Cansado' };
+  if (social < 20) return { mood: 'quiet', label: 'Mais reservado' };
+  if (affinity >= 70) return { mood: 'happy', label: 'Contente em ver você' };
+  if (hour >= 18 && hour < 21) return { mood: 'relaxed', label: 'Descontraído' };
+  if (resident.personality?.includes('curiosa')) return { mood: 'curious', label: 'Curioso' };
+  return { mood: 'focused', label: 'Concentrado' };
 }
 
 export function getNpcDailyStatus(hour, dayIndex = new Date().getDay(), weatherId = 'clear') {
@@ -53,6 +107,8 @@ export function getNpcDialogue(resident, context = {}) {
     weatherId = 'clear',
     dayIndex = new Date().getDay(),
     activity = 'strolling',
+    mood = 'focused',
+    goal = '',
     talkCount = 0,
     affinity = 0,
     memory = null,
@@ -74,9 +130,20 @@ export function getNpcDialogue(resident, context = {}) {
   const greeting =
     line ||
     `${resident.name} comenta sobre ${resident.interest || 'a vida na cidade'} enquanto está ${activity}.`;
+  const moodLines = {
+    cautious: 'Hoje estou mais atento ao que acontece ao redor.',
+    cozy: 'Com esse clima, prefiro um ritmo mais tranquilo.',
+    tired: 'O dia foi longo; vou precisar descansar um pouco.',
+    quiet: 'Estou precisando de um momento mais reservado.',
+    happy: 'Estou de bom humor. É sempre bom encontrar alguém conhecido.',
+    relaxed: 'Finalmente consegui um tempo para respirar.',
+    curious: 'Tem alguma coisa nova acontecendo por aqui. Quero investigar.',
+  };
+  const stateLine = moodLines[mood] || '';
+  const goalLine = goal && activity !== 'resting' ? `Agora estou: ${goal.toLowerCase()}.` : '';
   const friendship =
     affinity >= 55
       ? 'Que bom ter você por perto; já conhecemos bem os ritmos um do outro.'
       : '';
-  return [greeting, friendship].filter(Boolean).join(' ');
+  return [greeting, stateLine, goalLine, friendship].filter(Boolean).join(' ');
 }
