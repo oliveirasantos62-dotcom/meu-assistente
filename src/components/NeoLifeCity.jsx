@@ -3765,7 +3765,18 @@ export default function NeoLifeCity({ data = {}, save, onNavigate }) {
       if (key === 'e' && !insideBuilding) {
         interactInWorld();
       } else if (key === 'e' && insideBuilding) {
-        if (Math.abs(interiorPlayer.x - 5) <= 1 && interiorPlayer.y >= 4) {
+        if (insideBuilding.isHome) {
+          const nearbyFurniture = safeArray(homeLayouts[homeRoomIndex]).find((item) =>
+            Math.abs(item.x - interiorPlayer.x) + Math.abs(item.y - interiorPlayer.y) <= 1,
+          );
+          if (nearbyFurniture) {
+            interactWithHomeFurniture(nearbyFurniture);
+          } else if (Math.abs(interiorPlayer.x - 5) <= 1 && interiorPlayer.y >= 4) {
+            leaveBuilding();
+          } else {
+            setNotice('Explore o cômodo e aproxime-se dos móveis para interagir com eles.');
+          }
+        } else if (Math.abs(interiorPlayer.x - 5) <= 1 && interiorPlayer.y >= 4) {
           leaveBuilding();
         } else if (!insideBuilding.isHome) {
           const nearbyLoot = INTERIOR_LOOT_SPAWNS.find((node) =>
@@ -4040,6 +4051,32 @@ export default function NeoLifeCity({ data = {}, save, onNavigate }) {
   /* ==========================================================================
      POSICIONAMENTO DE MÓVEIS EM GRADE NA CASA DO JOGADOR
      ========================================================================== */
+  const interactWithHomeFurniture = (roomFurniture) => {
+    if (!roomFurniture) return;
+    const meta = STORE_ITEMS.find((item) => item.id === roomFurniture.itemId);
+    const actions = {
+      'wood-sofa': () => {
+        setSimMinutes((minutes) => (minutes + 10) % 1440);
+        setNotice('Você descansou um pouco no sofá. A cidade continua seguindo seu ritmo.');
+      },
+      'cozy-bed': () => {
+        setSimMinutes(7 * 60);
+        setNotice('Você descansou na sua cama. Um novo dia começa no Vale Neo!');
+      },
+      'study-desk': () => {
+        setQuickInput('25');
+        setNotice('Terminal pessoal ligado. Registre uma sessão de foco no painel Estudos do Meu Assistente.');
+      },
+      'holo-plant': () => {
+        setNotice('Você cuidou da planta holográfica. Suas folhas bio-luminescentes brilham mais forte.');
+      },
+      'neon-sign': () => {
+        setNotice('A iluminação ambiente foi ajustada para criar um clima mais aconchegante.');
+      },
+    };
+    (actions[roomFurniture.itemId] || (() => setNotice(`${meta?.name || 'Móvel'}: você observou os detalhes deste objeto.`)))();
+  };
+
   const handleHomeTileClick = (x, y) => {
     if (!decorateMode) return;
     if (x < 1 || x > 8 || y < 1 || y > 4) return;
@@ -5869,7 +5906,14 @@ export default function NeoLifeCity({ data = {}, save, onNavigate }) {
               )}
 
               <div className='neo-interior-room'>
-                <div className={`neo-interior-map interior-map-${insideBuilding.id} ${insideBuilding.isHome ? '' : 'has-pixel-art'}`}>
+                <div className={`neo-interior-map interior-map-${insideBuilding.id} ${insideBuilding.isHome ? `is-player-home home-room-${homeRoomIndex}` : 'has-pixel-art'}`}>
+                  {insideBuilding.isHome && (
+                    <div className={`neo-home-ambience home-ambience-${homeRoomIndex}`} aria-hidden='true'>
+                      <span className='home-window'><i /><i /></span>
+                      <span className='home-wall-art' />
+                      <span className='home-wall-shelf'><i /><i /><i /></span>
+                    </div>
+                  )}
                   {!insideBuilding.isHome && (
                     <img
                       className='neo-interior-art'
@@ -5949,9 +5993,16 @@ export default function NeoLifeCity({ data = {}, save, onNavigate }) {
                         }}
                       >
                         {furnMeta?.spriteTile && sprites?.terrain ? (
-                          <span
+                          <button
+                            type='button'
                             className='neo-placed-furniture'
-                            title={`${furnMeta.name} (clique no Modo Decoração para guardar)`}
+                            title={decorateMode ? `${furnMeta.name} — clique para guardar` : `${furnMeta.name} — clique ou aproxime-se e pressione E para interagir`}
+                            aria-label={`Interagir com ${furnMeta.name}`}
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              if (decorateMode) handleHomeTileClick(x, y);
+                              else interactWithHomeFurniture(roomFurniture);
+                            }}
                             style={{
                               ...tileSpriteStyle(
                                 sprites.terrain,
@@ -5963,9 +6014,7 @@ export default function NeoLifeCity({ data = {}, save, onNavigate }) {
                                 16,
                                 3,
                               ),
-                              transform: roomFurniture.flip
-                                ? 'scaleX(-1)'
-                                : 'none',
+                              transform: roomFurniture.flip ? 'scaleX(-1)' : 'none',
                             }}
                           />
                         ) : null}
@@ -6042,6 +6091,14 @@ export default function NeoLifeCity({ data = {}, save, onNavigate }) {
                     );
                   })}
                 </div>
+
+                {insideBuilding.isHome && (
+                  <div className='neo-home-interaction-hint'>
+                    <span>⌨️ <b>WASD / Setas</b> para caminhar</span>
+                    <span><b>E</b> perto dos móveis ou clique neles para interagir</span>
+                    <span>🪑 Modo Decoração para mover e recolher móveis</span>
+                  </div>
+                )}
 
                 {!insideBuilding.isHome && (
                   <div className='neo-interior-lootbar'>

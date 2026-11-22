@@ -816,3 +816,83 @@
 .neo-interior-lootbar button{border:1px solid rgba(110,194,201,.4);border-radius:8px;padding:8px 11px;
   color:#b6ebed;background:rgba(35,99,115,.25);font-size:10px;font-weight:900;cursor:pointer}
 .neo-interior-lootbar button:hover{background:rgba(35,99,115,.5);border-color:#b6ebed}
+
+/* CASA DO JOGADOR — interiores com identidade visual própria e objetos acionáveis */
+.neo-interior-map.is-player-home{
+  position:relative;
+  overflow:hidden;
+  border:5px solid #513b35;
+  border-radius:9px;
+  background:#18232d;
+  box-shadow:0 0 0 2px rgba(245,196,81,.22),0 12px 30px rgba(0,0,0,.42),inset 0 0 30px rgba(0,0,0,.35);
+}
+.neo-interior-map.is-player-home .neo-interior-tile{
+  background-image:none!important;
+  background-color:transparent!important;
+  transition:filter .16s ease,background-color .16s ease;
+}
+.neo-interior-map.is-player-home .neo-interior-tile:not(.wall){
+  background-color:rgba(36,48,56,.52)!important;
+  background-image:repeating-linear-gradient(0deg,transparent 0 24px,rgba(255,255,255,.035) 24px 25px),repeating-linear-gradient(90deg,transparent 0 24px,rgba(255,255,255,.035) 24px 25px)!important;
+}
+.neo-interior-map.is-player-home .neo-interior-tile.wall{
+  background-color:#27343d!important;
+  background-image:linear-gradient(180deg,rgba(255,255,255,.09),transparent 35%),repeating-linear-gradient(90deg,rgba(0,0,0,.08) 0 2px,transparent 2px 26px)!important;
+  border-bottom:2px solid rgba(245,196,81,.24);
+  filter:none;
+}
+.neo-interior-map.home-room-0{background:radial-gradient(ellipse at 50% 60%,rgba(219,160,91,.18),transparent 48%),linear-gradient(145deg,#554238,#2d3439 54%,#182b35)}
+.neo-interior-map.home-room-1{background:radial-gradient(ellipse at 60% 55%,rgba(151,125,221,.24),transparent 48%),linear-gradient(145deg,#34334e,#252d42 56%,#172a3c)}
+.neo-interior-map.home-room-2{background:radial-gradient(ellipse at 55% 55%,rgba(91,196,153,.22),transparent 48%),linear-gradient(145deg,#29483e,#263b3b 56%,#182f35)}
+.neo-interior-map.home-room-0 .neo-interior-tile:not(.wall){background-color:rgba(109,75,55,.62)!important;background-image:repeating-linear-gradient(0deg,transparent 0 25px,rgba(255,215,167,.09) 25px 26px),repeating-linear-gradient(90deg,transparent 0 25px,rgba(255,215,167,.08) 25px 26px)!important}
+.neo-interior-map.home-room-1 .neo-interior-tile:not(.wall){background-color:rgba(57,56,86,.64)!important;background-image:repeating-linear-gradient(0deg,transparent 0 25px,rgba(199,179,235,.1) 25px 26px),repeating-linear-gradient(90deg,transparent 0 25px,rgba(199,179,235,.08) 25px 26px)!important}
+.neo-interior-map.home-room-2 .neo-interior-tile:not(.wall){background-color:rgba(42,92,70,.58)!important;background-image:repeating-linear-gradient(0deg,transparent 0 25px,rgba(171,237,185,.1) 25px 26px),repeating-linear-gradient(90deg,transparent 0 25px,rgba(171,237,185,.08) 25px 26px)!important}
+.neo-home-ambience{position:absolute;inset:0;z-index:2;pointer-events:none}
+.neo-home-ambience .home-window{position:absolute;left:21%;top:2%;width:24%;height:12%;border:4px solid #172b3b;border-radius:3px;background:linear-gradient(135deg,#7ed6dc,#2d6680 48%,#1b3449);box-shadow:0 0 18px rgba(110,194,201,.42),inset 0 0 0 2px rgba(255,255,255,.18)}
+.neo-home-ambience .home-window:before{content:"";position:absolute;left:48%;top:0;bottom:0;width:3px;background:#d2c7a0}
+.neo-home-ambience .home-window:after{content:"";position:absolute;left:0;right:0;top:48%;height:3px;background:#d2c7a0}
+.neo-home-ambience .home-window i{position:absolute;bottom:-9px;width:5px;height:8px;background:#513b35}
+.neo-home-ambience .home-window i:first-child{left:20%}.neo-home-ambience .home-window i:last-child{right:20%}
+.neo-home-ambience .home-wall-art{position:absolute;right:13%;top:3%;width:12%;height:10%;border:3px solid #b78b56;border-radius:2px;background:linear-gradient(135deg,#f4ca76 0 20%,#6ec2c9 21% 48%,#293f5a 49%);box-shadow:0 3px 8px #101820}
+.neo-home-ambience .home-wall-shelf{position:absolute;left:5%;top:15%;width:18%;height:5%;border:2px solid #654832;background:#79563e;box-shadow:0 4px 7px rgba(0,0,0,.4)}
+.neo-home-ambience .home-wall-shelf i{position:absolute;bottom:100%;width:13%;height:13px;border-radius:3px 3px 0 0;background:#7ec272;box-shadow:0 0 6px rgba(126,194,114,.4)}
+.neo-home-ambience .home-wall-shelf i:nth-child(1){left:12%;background:#7ec272}.neo-home-ambience .home-wall-shelf i:nth-child(2){left:43%;background:#f5c451}.neo-home-ambience .home-wall-shelf i:nth-child(3){right:10%;background:#c7b3eb}
+.home-ambience-1 .home-window{background:linear-gradient(135deg,#c7b3eb,#5967a0 55%,#252e51);box-shadow:0 0 18px rgba(199,179,235,.4)}
+.home-ambience-1 .home-wall-art{background:linear-gradient(135deg,#f5c451,#8e77c7 50%,#25324c)}
+.home-ambience-2 .home-window{background:linear-gradient(135deg,#b2de8e,#438c73 55%,#1c4943);box-shadow:0 0 18px rgba(126,194,114,.42)}
+.home-ambience-2 .home-wall-art{background:linear-gradient(135deg,#b2de8e,#398c77 50%,#1e4940)}
+.neo-placed-furniture{
+  position:relative;z-index:4;display:block;width:100%;height:100%;padding:0;border:0;border-radius:5px;
+  background-color:transparent!important;background-repeat:no-repeat;cursor:pointer;filter:drop-shadow(0 4px 3px rgba(0,0,0,.5));
+  transition:transform .16s ease,filter .16s ease;
+}
+.neo-placed-furniture:hover{filter:drop-shadow(0 0 7px rgba(245,196,81,.85)) brightness(1.12);outline:2px solid rgba(245,196,81,.72);outline-offset:-3px}
+.neo-home-interaction-hint{display:flex;align-items:center;justify-content:center;gap:10px;flex-wrap:wrap;padding:10px 12px;border:1px solid rgba(110,194,201,.35);border-radius:7px;background:linear-gradient(100deg,rgba(23,42,54,.95),rgba(39,48,66,.95));color:#cbd8d6;font-size:10px}
+.neo-home-interaction-hint span{display:inline-flex;align-items:center;gap:4px}.neo-home-interaction-hint b{color:#f5c451}
+.neo-home-controls button{transition:transform .16s ease,box-shadow .16s ease}.neo-home-controls button:hover{transform:translateY(-2px);box-shadow:0 4px 12px rgba(0,0,0,.28)}
+.neo-deco-dock{background:linear-gradient(135deg,#293d3b,#1c3035);border-color:#a8734d;box-shadow:inset 0 1px rgba(255,255,255,.06),0 8px 20px rgba(0,0,0,.2)}
+@media(max-width:600px){.neo-home-interaction-hint{justify-content:flex-start;gap:7px}.neo-home-interaction-hint span{width:100%}.neo-home-ambience .home-window{left:20%;width:26%}}
+
+/* Fachada residencial: madeira, iluminação quente e detalhes de casa habitada */
+.neo-building-visual.building-player-home:not(.has-pixel-art){
+  border:3px solid #694a3b;
+  border-bottom:8px solid #3a2a27;
+  background:linear-gradient(180deg,#a56f4d 0 16%,#6d4b3c 17% 72%,#3c3434 73%);
+  box-shadow:0 9px 16px rgba(0,0,0,.58),0 0 18px rgba(245,196,81,.16),inset 0 0 16px rgba(255,221,165,.12);
+}
+.neo-building-visual.building-player-home:not(.has-pixel-art) .neo-building-roof{
+  height:20px;border-color:#52382f;
+  background:repeating-linear-gradient(90deg,#9c674b 0 12px,#83543f 12px 15px);
+  box-shadow:0 4px 7px rgba(0,0,0,.42);
+}
+.neo-building-visual.building-player-home:not(.has-pixel-art) .neo-building-sign{
+  top:21px;right:7px;border-color:#f5c451;background:#332a32;color:#ffe3a0;
+  box-shadow:0 0 10px rgba(245,196,81,.5);
+}
+.neo-building-visual.building-player-home:not(.has-pixel-art) .neo-building-windows span{
+  border-color:#6d503d;background:linear-gradient(135deg,#f5d38a,#6ec2c9 60%,#31536a);
+  box-shadow:0 0 10px rgba(245,196,81,.4);
+}
+.neo-building-visual.building-player-home.has-pixel-art .neo-building-pixel-art{
+  filter:drop-shadow(0 0 7px rgba(245,196,81,.24)) drop-shadow(0 5px 4px rgba(0,0,0,.58));
+}
