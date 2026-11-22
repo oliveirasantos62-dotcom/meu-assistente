@@ -1799,6 +1799,73 @@ function generateBuildingsSheet() {
     g.px(ox + 50, oy + 45, 'Y4');
   }
 
+  {
+    const ox = 96;
+    const oy = 128;
+    g.rect(ox + 5, oy + 59, 86, 4, 'rgba(18, 30, 32, 0.4)');
+    g.rect(ox + 12, oy + 53, 72, 7, 'W2');
+    g.rect(ox + 18, oy + 24, 60, 31, 'T2');
+    g.rect(ox + 20, oy + 27, 56, 25, 'Y2');
+    g.rect(ox + 22, oy + 29, 52, 18, 'Y3');
+    g.rect(ox + 16, oy + 23, 64, 4, 'W3');
+    g.rect(ox + 21, oy + 19, 54, 4, 'W2');
+    g.rect(ox + 27, oy + 15, 42, 4, 'W3');
+    g.rect(ox + 34, oy + 11, 28, 4, 'W2');
+    g.rect(ox + 40, oy + 7, 16, 4, 'W3');
+    g.rect(ox + 19, oy + 23, 2, 31, 'W1');
+    g.rect(ox + 77, oy + 23, 2, 31, 'W1');
+    [27, 57].forEach((wx) => {
+      g.box(ox + wx, oy + 31, 12, 12, 'W2');
+      g.rect(ox + wx + 2, oy + 33, 8, 7, 'C2');
+      g.rect(ox + wx + 5, oy + 33, 2, 7, 'T3');
+      g.rect(ox + wx - 2, oy + 30, 2, 14, 'W3');
+      g.rect(ox + wx + 12, oy + 30, 2, 14, 'W3');
+      g.rect(ox + wx - 2, oy + 44, 16, 3, 'G3');
+      g.px(ox + wx + 2, oy + 42, 'G4');
+      g.px(ox + wx + 10, oy + 42, 'G5');
+    });
+    g.box(ox + 42, oy + 37, 13, 18, 'W1');
+    g.rect(ox + 44, oy + 39, 9, 15, 'W3');
+    g.rect(ox + 50, oy + 46, 1, 1, 'Y4');
+    g.rect(ox + 37, oy + 54, 24, 3, 'W2');
+    g.rect(ox + 40, oy + 57, 18, 2, 'R2');
+    g.box(ox + 71, oy + 9, 8, 13, 'T1');
+    g.rect(ox + 73, oy + 11, 4, 8, 'Y4');
+    g.rect(ox + 75, oy + 12, 1, 6, 'Y2');
+  }
+
+  {
+    const ox = 192;
+    const oy = 128;
+    g.rect(ox + 5, oy + 59, 86, 4, 'rgba(18, 30, 32, 0.4)');
+    g.box(ox + 14, oy + 52, 68, 8, 'R2');
+    g.rect(ox + 20, oy + 25, 56, 30, 'W2');
+    g.rect(ox + 23, oy + 28, 50, 24, 'W4');
+    g.rect(ox + 25, oy + 32, 46, 17, 'W3');
+    g.rect(ox + 12, oy + 24, 72, 5, 'G1');
+    g.rect(ox + 18, oy + 19, 60, 5, 'G2');
+    g.rect(ox + 24, oy + 14, 48, 5, 'G1');
+    g.rect(ox + 31, oy + 9, 34, 5, 'G2');
+    g.rect(ox + 38, oy + 5, 20, 4, 'G1');
+    g.rect(ox + 16, oy + 25, 3, 29, 'W1');
+    g.rect(ox + 77, oy + 25, 3, 29, 'W1');
+    [26, 59].forEach((wx) => {
+      g.box(ox + wx, oy + 32, 11, 11, 'W1');
+      g.rect(ox + wx + 2, oy + 34, 7, 7, 'T3');
+      g.rect(ox + wx + 5, oy + 34, 1, 7, 'Y4');
+      g.rect(ox + wx - 2, oy + 31, 2, 13, 'G3');
+      g.rect(ox + wx + 11, oy + 31, 2, 13, 'G3');
+    });
+    g.box(ox + 42, oy + 36, 13, 19, 'W1');
+    g.rect(ox + 44, oy + 38, 9, 16, 'W2');
+    g.px(ox + 50, oy + 46, 'Y4');
+    g.rect(ox + 37, oy + 53, 24, 3, 'W2');
+    g.rect(ox + 41, oy + 56, 16, 3, 'R2');
+    g.box(ox + 66, oy + 7, 11, 13, 'W2');
+    g.rect(ox + 68, oy + 9, 7, 8, 'R3');
+    g.rect(ox + 67, oy + 6, 9, 2, 'W4');
+  }
+
   return g.canvas.toDataURL('image/png');
 }
 
@@ -2241,7 +2308,7 @@ export default function NeoLifeCity({ data = {}, save, onNavigate }) {
     });
   }, [activeResidents, activeCityId, currentPeriod, weatherId]);
 
-  // 5. VEÍCULOS: CARROS, BICICLETAS, DRONES E TRANSPORTE PÚBLICO (VLT)
+  // 5. VEÍCULOS: CARROS, MOTOS, DRONES E TRANSPORTE PÚBLICO (VLT)
   const [vehicles, setVehicles] = useState([
     {
       id: 'car-1',
@@ -2308,20 +2375,20 @@ export default function NeoLifeCity({ data = {}, save, onNavigate }) {
       color: '#79aebb',
     },
     {
-      id: 'bike-1',
-      type: 'bike',
-      lane: 'bike-east',
-      pos: 20,
-      speed: 0.75,
-      color: '#7ec272',
+      id: 'moto-1',
+      type: 'motorcycle',
+      lane: 'moto-east',
+      pos: 12,
+      speed: 1.15,
+      color: '#e47755',
     },
     {
-      id: 'bike-2',
-      type: 'bike',
-      lane: 'bike-west',
-      pos: 72,
-      speed: 0.7,
-      color: '#f5c451',
+      id: 'moto-2',
+      type: 'motorcycle',
+      lane: 'moto-west',
+      pos: 92,
+      speed: 1.05,
+      color: '#64c4c0',
     },
     { id: 'drone-1', type: 'drone', route: 0, phase: 0 },
     { id: 'drone-2', type: 'drone', route: 1, phase: 45 },
@@ -2974,7 +3041,7 @@ export default function NeoLifeCity({ data = {}, save, onNavigate }) {
       setVehicles((prev) =>
         prev.map((v, index) => {
           const atCentralCrossing =
-            (v.lane === 'east' || v.lane === 'bike-east') && v.pos > 40 && v.pos < 48;
+            (v.lane === 'east' || v.lane === 'bike-east' || v.lane === 'moto-east') && v.pos > 40 && v.pos < 48;
           const signal = getSignalState(Math.floor(Date.now() / 2600), index);
           if (atCentralCrossing && signal === 'stop') return v;
           return advanceVehicle(v);
@@ -4712,56 +4779,6 @@ export default function NeoLifeCity({ data = {}, save, onNavigate }) {
                 </div>
               </div>
 
-              {showStateMap && (
-                <div className='neo-state-map' role='dialog' aria-label='Mapa do Estado de NeoLândia'>
-                  <div className='neo-state-map-header'>
-                    <div>
-                      <span>ESTADO DE NEOLÂNDIA</span>
-                      <h3>7 cidades · um mundo vivo</h3>
-                    </div>
-                    <button type='button' onClick={() => setShowStateMap(false)}>×</button>
-                  </div>
-                  <CityRouteMap
-                    activeCityId={activeCityId}
-                    onSelectCity={travelToCity}
-                    size='expanded'
-                  />
-                  <div className='neo-state-cities'>
-                    {CITIES.map((city) => {
-                      const canTravel =
-                        activeCity.routes.includes(city.id) ||
-                        city.routes.includes(activeCity.id);
-                      const route = getTravelRoute(activeCityId, city.id);
-                      return (
-                        <button
-                          key={city.id}
-                          type='button'
-                          className={`neo-state-city theme-${city.theme} ${city.id === activeCityId ? 'active' : ''}`}
-                          disabled={!canTravel && city.id !== activeCityId}
-                          onClick={() => travelToCity(city.id)}
-                        >
-                          <span className='neo-state-city-mark'>
-                            <i /><b />
-                          </span>
-                          <div>
-                            <small>{city.subtitle}</small>
-                            <b>{city.name}</b>
-                            <p>{city.focus}</p>
-                          </div>
-                          <em>
-                            {city.id === activeCityId
-                              ? 'AQUI'
-                              : canTravel
-                                ? `${route.mode.toUpperCase()} · ${route.cost} 🪙 · ${route.minutes}m`
-                                : 'FORA DA ROTA'}
-                          </em>
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
-
               <div
                 className='neo-world-scroll'
                 ref={worldViewportRef}
@@ -4773,11 +4790,74 @@ export default function NeoLifeCity({ data = {}, save, onNavigate }) {
                 }}
               >
                 <div className='neo-mini-map-wrap'>
+                  <button
+                    type='button'
+                    className='neo-mini-map-expand'
+                    onClick={() => setShowStateMap(true)}
+                    aria-label='Abrir mapa completo das sete cidades'
+                  >
+                    <span aria-hidden='true'>⌕</span> MAPA COMPLETO
+                  </button>
                   <CityRouteMap
                     activeCityId={activeCityId}
                     onSelectCity={travelToCity}
                   />
                 </div>
+                {showStateMap && (
+                  <div
+                    className='neo-state-map'
+                    role='dialog'
+                    aria-modal='true'
+                    aria-label='Mapa do Estado de NeoLândia'
+                    onWheel={(event) => event.stopPropagation()}
+                  >
+                    <div className='neo-state-map-header'>
+                      <div>
+                        <span>ESTADO DE NEOLÂNDIA</span>
+                        <h3>7 cidades · rotas e destinos</h3>
+                      </div>
+                      <button type='button' onClick={() => setShowStateMap(false)} aria-label='Fechar mapa'>×</button>
+                    </div>
+                    <CityRouteMap
+                      activeCityId={activeCityId}
+                      onSelectCity={travelToCity}
+                      size='expanded'
+                    />
+                    <div className='neo-state-cities'>
+                      {CITIES.map((city) => {
+                        const canTravel =
+                          activeCity.routes.includes(city.id) ||
+                          city.routes.includes(activeCity.id);
+                        const route = getTravelRoute(activeCityId, city.id);
+                        return (
+                          <button
+                            key={city.id}
+                            type='button'
+                            className={`neo-state-city theme-${city.theme} ${city.id === activeCityId ? 'active' : ''}`}
+                            disabled={!canTravel && city.id !== activeCityId}
+                            onClick={() => travelToCity(city.id)}
+                          >
+                            <span className='neo-state-city-mark'>
+                              <i /><b />
+                            </span>
+                            <div>
+                              <small>{city.subtitle}</small>
+                              <b>{city.name}</b>
+                              <p>{city.focus}</p>
+                            </div>
+                            <em>
+                              {city.id === activeCityId
+                                ? 'AQUI'
+                                : canTravel
+                                  ? `${route.mode.toUpperCase()} · ${route.cost} 🪙 · ${route.minutes}m`
+                                  : 'FORA DA ROTA'}
+                            </em>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
                 <div
                   className='neo-world-camera-plane'
                   style={{
@@ -4951,24 +5031,28 @@ export default function NeoLifeCity({ data = {}, save, onNavigate }) {
                           </div>
                         );
                       }
-                      if (v.type === 'bike') {
-                        const topPx =
-                          v.lane === 'bike-east'
-                            ? 5 * 47.25 + 34
-                            : 8 * 47.25 + 4;
+                      if (v.type === 'motorcycle') {
+                        const topPx = v.lane === 'moto-east' ? 6 * 47.25 + 20 : 7 * 47.25 + 18;
                         return (
                           <div
                             key={v.id}
-                            className={`neo-vehicle-bike ${v.lane}`}
+                            className={`neo-vehicle-moto ${v.lane}`}
                             style={{
                               left: `${v.pos}%`,
                               top: `${topPx}px`,
+                              '--moto-color': v.color,
                             }}
+                            role='img'
+                            aria-label='Moto elétrica em circulação'
                           >
-                            <span className='neo-bike-wheel wheel-front' />
-                            <span className='neo-bike-wheel wheel-back' />
-                            <span className='neo-bike-frame' />
-                            <span className='neo-bike-rider' />
+                            <i className='neo-moto-wheel rear' />
+                            <i className='neo-moto-wheel front' />
+                            <i className='neo-moto-frame' />
+                            <i className='neo-moto-fairing' />
+                            <i className='neo-moto-seat' />
+                            <i className='neo-moto-rider' />
+                            <i className='neo-moto-helmet' />
+                            <i className='neo-moto-lamp' />
                           </div>
                         );
                       }
@@ -4983,9 +5067,13 @@ export default function NeoLifeCity({ data = {}, save, onNavigate }) {
                               top: `${150 + Math.cos(rad) * 70}px`,
                             }}
                           >
+                            <span className='neo-aircar-shadow' />
                             <span className='neo-aircar-body' />
+                            <span className='neo-aircar-canopy' />
                             <span className='neo-aircar-wing wing-left' />
                             <span className='neo-aircar-wing wing-right' />
+                            <span className='neo-aircar-engine engine-left' />
+                            <span className='neo-aircar-engine engine-right' />
                             <span className='neo-aircar-glow' />
                           </div>
                         );
@@ -5002,7 +5090,10 @@ export default function NeoLifeCity({ data = {}, save, onNavigate }) {
                             }}
                           >
                             <span className='neo-heli-body' />
+                            <span className='neo-heli-window' />
                             <span className='neo-heli-tail' />
+                            <span className='neo-heli-skid skid-left' />
+                            <span className='neo-heli-skid skid-right' />
                             <span className='neo-heli-main' />
                             <span className='neo-heli-tail-rotor' />
                           </div>
@@ -5024,6 +5115,9 @@ export default function NeoLifeCity({ data = {}, save, onNavigate }) {
                           style={{ left: `${dx}px`, top: `${dy}px` }}
                         >
                           <span className='neo-drone-core' />
+                          <span className='neo-drone-pod pod-left' />
+                          <span className='neo-drone-pod pod-right' />
+                          <span className='neo-drone-lens' />
                           <span className='neo-drone-arm arm-a' />
                           <span className='neo-drone-arm arm-b' />
                           <span className='neo-drone-light' />
@@ -7169,10 +7263,10 @@ const styles = `
   background:#cf9132;color:#232e26;font-weight:900;cursor:pointer;font-size:10px;
 }
 .neo-state-map{
-  display:flex;flex-direction:column;gap:10px;margin:2px 0 10px;
-  padding:12px;border:2px solid #7e68b8;border-radius:8px;
-  background:linear-gradient(135deg,#19254a,#10182e 68%,#241838);
-  box-shadow:0 8px 18px rgba(8,12,30,.44),inset 0 0 20px rgba(110,194,201,.08);
+  position:absolute;z-index:80;inset:12px;display:flex;flex-direction:column;gap:10px;
+  overflow:auto;padding:14px;border:3px solid #e8cf85;border-radius:6px;
+  background:linear-gradient(180deg,rgba(18,36,47,.98),rgba(10,24,34,.98));
+  box-shadow:0 0 0 3px rgba(13,25,34,.8),0 12px 30px rgba(0,0,0,.7),inset 0 0 24px rgba(110,194,201,.1);
 }
 .neo-state-map-header{display:flex;align-items:flex-start;justify-content:space-between}
 .neo-state-map-header span{font-size:9px;color:#6ec2c9;font-weight:900;letter-spacing:1.4px}
@@ -7218,6 +7312,9 @@ const styles = `
 .neo-state-city div>b{display:block;font-size:12px;color:#fff8e3;margin:2px 0}
 .neo-state-city p{margin:0;font-size:9px;color:#bfcbe0;line-height:1.25}
 .neo-state-city em{align-self:start;font-style:normal;font-size:7px;font-weight:900;color:#b2de8e}
+.neo-state-map .neo-route-map.expanded{flex:none;min-height:180px;max-height:42%;aspect-ratio:5/3}
+.neo-state-map .neo-state-cities{grid-template-columns:repeat(auto-fit,minmax(210px,1fr))}
+.neo-state-map .neo-state-city{min-height:72px}
 
 .neo-city-telemetry{
   display:flex;flex-direction:column;gap:8px;padding:10px 12px;
@@ -7474,24 +7571,42 @@ const styles = `
 }
 @keyframes neoEmergency{50%{filter:brightness(1.8)}}
 .neo-city-aircar{
-  position:absolute;width:46px;height:22px;z-index:6;
-  transition:left .26s linear,top .26s linear;
-  filter:drop-shadow(0 5px 7px rgba(110,194,201,.58));
+  position:absolute;width:66px;height:34px;z-index:6;
+  transition:left .26s linear,top .26s linear;image-rendering:pixelated;
+  filter:drop-shadow(0 6px 2px rgba(7,15,24,.7)) drop-shadow(0 0 8px rgba(110,194,201,.48));
+  animation:neoAircarFloat 1.8s steps(2,end) infinite;
 }
 .neo-aircar-body{
-  position:absolute;left:10px;top:5px;width:26px;height:12px;border-radius:12px 12px 4px 4px;
-  border:1.5px solid #b6ebed;background:linear-gradient(135deg,#536d91,#17283e);
-  box-shadow:0 0 8px #6ec2c9;
+  position:absolute;left:12px;top:9px;width:42px;height:15px;
+  clip-path:polygon(0 52%,17% 36%,35% 18%,70% 17%,100% 48%,78% 84%,24% 85%);
+  border:2px solid #172b3b;background:linear-gradient(180deg,#c0d8c8 0 18%,#5797a2 19% 34%,#354e70 35% 77%,#202d4b 78%);
+  box-shadow:inset 0 0 0 2px #72d8df,0 0 8px #6ec2c9;
 }
 .neo-aircar-wing{
-  position:absolute;top:10px;width:16px;height:4px;border-radius:50%;
-  background:#c7b3eb;box-shadow:0 0 6px #c7b3eb;
+  position:absolute;top:18px;width:22px;height:7px;clip-path:polygon(0 0,100% 24%,78% 100%,18% 76%);
+  background:#a486cf;border:1px solid #282443;box-shadow:0 0 6px #c7b3eb;
 }
-.neo-aircar-wing.wing-left{left:-1px}.neo-aircar-wing.wing-right{right:-1px}
+.neo-aircar-wing.wing-left{left:1px}.neo-aircar-wing.wing-right{right:1px;transform:scaleX(-1)}
+.neo-aircar-canopy{
+  position:absolute;left:26px;top:10px;width:17px;height:8px;
+  clip-path:polygon(20% 0,82% 0,100% 100%,0 100%);
+  border:1px solid #e5f4dc;background:linear-gradient(135deg,#b3eeee,#397c9b 65%,#203757);
+  box-shadow:inset 0 2px rgba(255,255,255,.62);
+}
+.neo-aircar-engine{
+  position:absolute;top:23px;width:9px;height:5px;border:1px solid #172b3b;
+  background:#eccd74;box-shadow:0 2px 5px #f4a95c;
+}
+.neo-aircar-engine.engine-left{left:10px}.neo-aircar-engine.engine-right{right:10px}
+.neo-aircar-shadow{
+  position:absolute;left:18px;bottom:0;width:31px;height:5px;border-radius:50%;
+  background:rgba(15,24,34,.72);filter:blur(2px);
+}
 .neo-aircar-glow{
-  position:absolute;left:17px;bottom:-1px;width:12px;height:3px;border-radius:50%;
-  background:#f5c451;box-shadow:0 0 9px #f5c451;
+  position:absolute;left:25px;bottom:2px;width:17px;height:3px;
+  background:#ffd36b;clip-path:polygon(0 50%,100% 0,100% 100%);box-shadow:0 0 9px #f5c451;
 }
+@keyframes neoAircarFloat{50%{transform:translateY(-2px)}}
 .neo-vehicle-van{
   width:36px;height:16px;border-radius:5px 5px 3px 3px;
   background:linear-gradient(180deg,#82bec7 0 64%,#3a6973 65%);
@@ -7507,18 +7622,30 @@ const styles = `
   transition:left .26s linear,top .26s linear;
 }
 .neo-heli-body{
-  position:absolute;left:12px;top:7px;width:28px;height:13px;border-radius:12px 8px 8px 5px;
-  border:1.5px solid #b6ebed;background:linear-gradient(135deg,#5e7e9f,#1b2e47);
-  box-shadow:0 0 8px #6ec2c9;
+  position:absolute;left:13px;top:8px;width:28px;height:14px;
+  clip-path:polygon(14% 0,77% 0,100% 37%,87% 100%,18% 100%,0 70%);
+  border:2px solid #1b2d3e;background:linear-gradient(180deg,#b5d4cb 0 17%,#5f91a0 18% 39%,#334d6b 40% 84%,#1d3148 85%);
+  box-shadow:inset 0 0 0 2px #6ec2c9,0 0 8px #6ec2c9;
+}
+.neo-heli-window{
+  position:absolute;z-index:1;left:20px;top:10px;width:15px;height:6px;
+  clip-path:polygon(15% 0,85% 0,100% 100%,0 100%);
+  background:linear-gradient(135deg,#d9f4e3,#4fa4b5 72%,#274660);
+  box-shadow:inset 0 1px rgba(255,255,255,.7);
 }
 .neo-heli-tail{
   position:absolute;left:37px;top:9px;width:14px;height:5px;
   border-top:2px solid #c7b3eb;border-right:2px solid #c7b3eb;
   transform:skewX(25deg);
 }
+.neo-heli-skid{
+  position:absolute;top:22px;width:19px;height:3px;border-bottom:2px solid #aeb8c2;
+  border-left:2px solid #aeb8c2;border-right:2px solid #aeb8c2;
+}
+.neo-heli-skid.skid-left{left:12px}.neo-heli-skid.skid-right{right:9px}
 .neo-heli-main{
-  position:absolute;left:-1px;top:2px;width:50px;height:3px;border-radius:50%;
-  background:#c7b3eb;box-shadow:0 0 6px #c7b3eb;
+  position:absolute;left:1px;top:2px;width:50px;height:3px;
+  background:#c7b3eb;box-shadow:0 0 6px #c7b3eb,0 -2px 0 -1px #fff0a6;
   animation:neoRotor 0.12s linear infinite;
 }
 .neo-heli-tail-rotor{
@@ -7531,45 +7658,67 @@ const styles = `
 .neo-vehicle-car.west{transform:scaleX(-1)}
 .neo-vehicle-car.west .neo-car-cabin{transform:scaleX(-1)}
 
-.neo-vehicle-bike{
-  position:absolute;width:24px;height:18px;
-  transition:left .26s linear;
-  filter:drop-shadow(0 2px 2px rgba(0,0,0,.55));
+.neo-vehicle-moto{
+  position:absolute;width:42px;height:27px;z-index:5;transition:left .26s linear;
+  filter:drop-shadow(0 4px 2px rgba(5,12,18,.68));image-rendering:pixelated;
 }
-.neo-bike-wheel{
-  position:absolute;bottom:0;width:7px;height:7px;border-radius:50%;
-  border:1.5px solid #9ed9d7;box-shadow:inset 0 0 0 1px #1b2b36;
+.neo-moto-wheel{
+  position:absolute;top:17px;width:9px;height:9px;border:2px solid #bcc8bd;
+  background:#15202a;box-shadow:inset 0 0 0 2px #33444d;
 }
-.wheel-front{right:0}.wheel-back{left:0}
-.neo-bike-frame{
-  position:absolute;left:5px;bottom:5px;width:13px;height:8px;
-  border-left:2px solid #f5c451;border-bottom:2px solid #f5c451;
-  transform:skewX(-24deg);
+.neo-moto-wheel.rear{left:3px}.neo-moto-wheel.front{right:2px}
+.neo-moto-frame{
+  position:absolute;left:8px;top:13px;width:26px;height:8px;
+  border-bottom:3px solid #343943;border-left:3px solid #343943;transform:skewX(-25deg);
 }
-.neo-bike-rider{
-  position:absolute;left:9px;top:1px;width:6px;height:7px;border-radius:50%;
-  background:#c7b3eb;box-shadow:0 5px 0 -1px #4d5f72;
+.neo-moto-fairing{
+  position:absolute;left:11px;top:8px;width:23px;height:12px;
+  clip-path:polygon(0 25%,26% 0,70% 0,100% 58%,77% 100%,22% 83%);
+  border:2px solid #172533;background:linear-gradient(180deg,#fff0a6 0 15%,var(--moto-color,#d66e4e) 16% 73%,#253b4c 74%);
+  box-shadow:inset 2px 1px rgba(255,255,255,.5);
 }
-.neo-vehicle-bike.bike-east{transform:scaleX(-1)}
+.neo-moto-seat{
+  position:absolute;left:7px;top:8px;width:15px;height:4px;border-top:3px solid #222831;
+}
+.neo-moto-rider{
+  position:absolute;left:17px;top:3px;width:9px;height:9px;
+  background:#5b486d;clip-path:polygon(20% 0,82% 0,100% 100%,0 100%);
+}
+.neo-moto-helmet{
+  position:absolute;left:16px;top:0;width:9px;height:7px;
+  border:2px solid #172533;background:#f2d578;
+  box-shadow:inset -2px -1px #d4875a,0 -1px #fff0a6;
+}
+.neo-moto-lamp{
+  position:absolute;right:1px;top:10px;width:4px;height:3px;background:#fff0a6;
+  box-shadow:2px 1px 5px #f5c451;
+}
+.neo-vehicle-moto.moto-west{transform:scaleX(-1)}
 
 .neo-city-drone-unit{
-  position:absolute;width:30px;height:20px;
+  position:absolute;width:38px;height:25px;z-index:7;
   transition:left .26s linear,top .26s linear;
-  filter:drop-shadow(0 4px 6px rgba(110,194,201,.65));
+  filter:drop-shadow(0 5px 2px rgba(5,12,18,.68)) drop-shadow(0 0 6px rgba(110,194,201,.5));
+  animation:neoDroneBob 1.4s steps(2,end) infinite;
 }
 .neo-drone-core{
-  position:absolute;left:8px;top:7px;width:14px;height:7px;border-radius:50%;
-  border:1px solid #b6ebed;background:#263d55;
-  box-shadow:0 0 8px rgba(110,194,201,.8);
+  position:absolute;left:10px;top:8px;width:18px;height:10px;
+  clip-path:polygon(20% 0,80% 0,100% 40%,80% 100%,20% 100%,0 40%);
+  border:2px solid #172d40;background:linear-gradient(180deg,#c0ded5 0 20%,#428994 21% 46%,#283e5b 47%);
+  box-shadow:inset 0 0 0 2px #6ec2c9,0 0 8px rgba(110,194,201,.8);
 }
+.neo-drone-pod{position:absolute;top:6px;width:5px;height:5px;border:1px solid #26384a;background:#b8d5c7;box-shadow:0 0 4px #6ec2c9}
+.neo-drone-pod.pod-left{left:3px}.neo-drone-pod.pod-right{right:3px}
+.neo-drone-lens{position:absolute;left:17px;top:10px;width:5px;height:4px;border:1px solid #f1e7b5;background:#56c5d3;box-shadow:0 0 5px #6ec2c9}
 .neo-drone-arm{
-  position:absolute;top:9px;width:12px;height:2px;background:#6ec2c9;
+  position:absolute;top:9px;width:14px;height:3px;background:#6ec2c9;border:1px solid #274657;
 }
 .arm-a{left:-1px;transform:rotate(24deg)}.arm-b{right:-1px;transform:rotate(-24deg)}
 .neo-drone-light{
-  position:absolute;left:13px;bottom:0;width:4px;height:2px;border-radius:50%;
-  background:#f5c451;box-shadow:0 0 7px #f5c451;
+  position:absolute;left:17px;bottom:1px;width:5px;height:3px;
+  background:#f5c451;clip-path:polygon(0 0,100% 0,50% 100%);box-shadow:0 0 7px #f5c451;
 }
+@keyframes neoDroneBob{50%{transform:translateY(-2px)}}
 
 .neo-city-glow{
   position:absolute;border-radius:50%;pointer-events:none;

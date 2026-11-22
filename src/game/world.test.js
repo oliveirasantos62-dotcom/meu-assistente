@@ -67,6 +67,13 @@ describe('NeoLifeCity world systems', () => {
         expect(CITY_MAPS[id].isWaterTile(building.door.x, building.door.y)).toBe(false);
       });
     });
+    const homeSprites = new Set(
+      CITIES.map(({ id }) => {
+        const home = CITY_LAYOUTS[id].find((building) => building.isHome);
+        return `${home.spriteTile.x}:${home.spriteTile.y}`;
+      }),
+    );
+    expect(homeSprites.size).toBe(3);
   });
 
   it('distribui itens coletáveis em áreas caminháveis nas sete cidades', () => {
@@ -191,6 +198,22 @@ describe('NeoLifeCity world systems', () => {
   it('movimenta veículos e alterna semáforos', () => {
     const vehicle = { type: 'car', lane: 'east', pos: 12, speed: 2 };
     expect(advanceVehicle(vehicle).pos).toBe(14);
+    expect(
+      advanceVehicle({
+        type: 'motorcycle',
+        lane: 'moto-east',
+        pos: 12,
+        speed: 1.15,
+      }).pos,
+    ).toBeCloseTo(13.15);
+    expect(
+      advanceVehicle({
+        type: 'motorcycle',
+        lane: 'moto-west',
+        pos: 12,
+        speed: 1.05,
+      }).pos,
+    ).toBeCloseTo(10.95);
     expect(getSignalState(0, 0)).toBe('go');
     expect(getSignalState(8, 0)).toBe('stop');
   });

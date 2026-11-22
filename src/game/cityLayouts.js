@@ -131,11 +131,22 @@ const CITY_INTERIOR_VARIANTS = {
   },
 };
 
+const CITY_HOME_SPRITES = {
+  neolife: { x: 0, y: 128 },
+  fortaleza: { x: 96, y: 128 },
+  nova: { x: 192, y: 128 },
+  serra: { x: 192, y: 128 },
+  litoral: { x: 96, y: 128 },
+  porto: { x: 0, y: 128 },
+  ilhada: { x: 96, y: 128 },
+};
+
 export const CITY_LAYOUTS = Object.fromEntries(
   Object.entries(CITY_LAYOUT_DEFINITIONS).map(([cityId, buildings]) => [
     cityId,
     buildings.map((building) => ({
       ...building,
+      ...(building.isHome ? { spriteTile: CITY_HOME_SPRITES[cityId] } : {}),
       interiorArt: `/assets/pixel-art/interiors/${
         CITY_INTERIOR_VARIANTS[cityId]?.[building.id] ||
         building.interiorArt?.split('/').pop()?.replace('.png', '') ||

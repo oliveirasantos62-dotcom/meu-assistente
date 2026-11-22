@@ -8,7 +8,11 @@ export function advanceVehicle(vehicle) {
   if (vehicle.type === 'drone' || vehicle.type === 'aircar' || vehicle.type === 'helicopter') {
     return { ...vehicle, phase: (vehicle.phase + 2.5) % 100 };
   }
-  if (vehicle.lane === 'east' || vehicle.lane === 'bike-east') {
+  if (
+    vehicle.lane === 'east' ||
+    vehicle.lane === 'bike-east' ||
+    vehicle.lane === 'moto-east'
+  ) {
     const nextPos = vehicle.pos + vehicle.speed;
     return { ...vehicle, pos: nextPos > 103 ? -4 : nextPos };
   }
