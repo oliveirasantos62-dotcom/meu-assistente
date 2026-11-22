@@ -9,6 +9,11 @@ import { buildNpcReaction, summarizeRealProgress } from './socialReactions';
 import { canUnlockTravel } from './travel';
 import { createCityResidents } from './cityNPCs';
 import { getNpcDialogue, getNpcRoutine } from './npcRoutines';
+import {
+  collectForageItem,
+  createForageNodes,
+  FORAGE_CATALOG,
+} from './forage';
 
 describe('NeoLifeCity world systems', () => {
   it('classifica horários do ciclo diário', () => {
@@ -37,6 +42,7 @@ describe('NeoLifeCity world systems', () => {
   it('expõe as sete cidades do Estado de NeoLândia', () => {
     expect(CITIES).toHaveLength(7);
     expect(new Set(CITIES.map((city) => city.id)).size).toBe(7);
+    expect(new Set(CITIES.map((city) => city.mapTag)).size).toBe(7);
     expect(CITIES.find((city) => city.id === 'neolife')?.routes).toContain('fortaleza');
     CITIES.forEach((city) => {
       expect(city.mapPosition.x).toBeGreaterThanOrEqual(0);
@@ -61,6 +67,49 @@ describe('NeoLifeCity world systems', () => {
         expect(CITY_MAPS[id].isWaterTile(building.door.x, building.door.y)).toBe(false);
       });
     });
+  });
+
+  it('distribui itens coletáveis em áreas caminháveis nas sete cidades', () => {
+    CITIES.forEach(({ id }) => {
+      const map = CITY_MAPS[id];
+      const buildings = CITY_LAYOUTS[id];
+      const nodes = createForageNodes(id, map, buildings, [{ x: 7, y: 1 }]);
+
+      expect(nodes).toHaveLength(3);
+      nodes.forEach((node) => {
+        expect(FORAGE_CATALOG[node.id]).toBeDefined();
+        expect(map.isRoadTile(node.x, node.y)).toBe(false);
+        expect(map.isWaterTile(node.x, node.y)).toBe(false);
+        expect(
+          buildings.some(
+            (building) =>
+              node.x >= building.x &&
+              node.x < building.x + building.w &&
+              node.y >= building.y &&
+              node.y < building.y + building.h,
+          ),
+        ).toBe(false);
+        expect({ x: node.x, y: node.y }).not.toEqual({ x: 7, y: 1 });
+      });
+    });
+  });
+
+  it('guarda coleta no inventário sem apagar o estado de viagem', () => {
+    const city = {
+      inventory: ['starter-item'],
+      collections: { items: ['known-item'], fish: ['fish-1'] },
+      world: { cityId: 'fortaleza', mapStates: { fortaleza: { x: 4, y: 6 } } },
+    };
+    const node = { id: 'sea-glass', nodeId: 'forage-fortaleza-2-2' };
+    const collected = collectForageItem(city, node);
+
+    expect(collected.inventory).toEqual(['starter-item', 'sea-glass']);
+    expect(collected.collections).toEqual({
+      items: ['known-item', 'sea-glass'],
+      fish: ['fish-1'],
+    });
+    expect(collected.world.mapStates).toEqual(city.world.mapStates);
+    expect(collectForageItem(collected, node)).toBe(collected);
   });
 
   it('mantém barcos em água e cais em tiles acessíveis', () => {

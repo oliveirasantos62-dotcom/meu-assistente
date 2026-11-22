@@ -18,6 +18,11 @@ import { createRecurringMissions, localDateKey } from '../game/questEvents';
 import { createRegionAmbience } from '../game/ambience';
 import { createCollisionChecker } from '../game/collision';
 import { buildNpcReaction, summarizeRealProgress } from '../game/socialReactions';
+import {
+  collectForageItem,
+  createForageNodes,
+  FORAGE_CATALOG,
+} from '../game/forage';
 
 /* ============================================================================
    DADOS DE DOMÍNIO — DISTRITOS, MORADORES, CONSTRUÇÕES, MISSÕES E COLEÇÕES
@@ -1361,23 +1366,28 @@ function generateResidentsSheet() {
     for (let frame = 0; frame < 4; frame++) {
       const ox = frame * 32;
       const oy = row * 48;
+      const walkStep = frame === 1 ? 1 : frame === 3 ? -1 : 0;
       const breath = frame === 1 || frame === 2 ? -1 : 0;
       const floatY = frame === 0 ? 0 : frame === 1 ? -1 : frame === 2 ? -2 : -1;
 
       g.rect(ox + 9, oy + 44, 14, 2, 'rgba(18, 30, 32, 0.38)');
-      g.box(ox + 11, oy + 34, 4, 10, cfg.pants);
-      g.box(ox + 17, oy + 34, 4, 10, cfg.pants);
-      g.rect(ox + 11, oy + 41, 4, 3, 'W2');
-      g.rect(ox + 17, oy + 41, 4, 3, 'W2');
+      g.box(ox + 11 - walkStep, oy + 34, 4, 10, cfg.pants);
+      g.box(ox + 17 + walkStep, oy + 34, 4, 10, cfg.pants);
+      g.rect(ox + 11 - walkStep, oy + 41, 4, 3, 'W2');
+      g.rect(ox + 17 + walkStep, oy + 41, 4, 3, 'W2');
+      g.px(ox + 12 - walkStep, oy + 38, cfg.accent);
+      g.px(ox + 18 + walkStep, oy + 38, cfg.accent);
 
       g.box(ox + 9, oy + 20 + breath, 14, 15, cfg.coat);
       g.rect(ox + 11, oy + 21 + breath, 10, 3, cfg.accent);
       g.rect(ox + 14, oy + 24 + breath, 4, 9, cfg.accent);
+      g.rect(ox + 10, oy + 31 + breath, 3, 2, cfg.coat);
+      g.rect(ox + 19, oy + 31 + breath, 3, 2, cfg.coat);
 
-      g.box(ox + 6, oy + 21 + breath, 3, 11, cfg.coat);
-      g.box(ox + 23, oy + 21 + breath, 3, 11, cfg.coat);
-      g.rect(ox + 6, oy + 30 + breath, 3, 2, cfg.skin);
-      g.rect(ox + 23, oy + 30 + breath, 3, 2, cfg.skin);
+      g.box(ox + 6, oy + 21 + breath + walkStep, 3, 11, cfg.coat);
+      g.box(ox + 23, oy + 21 + breath - walkStep, 3, 11, cfg.coat);
+      g.rect(ox + 6, oy + 30 + breath + walkStep, 3, 2, cfg.skin);
+      g.rect(ox + 23, oy + 30 + breath - walkStep, 3, 2, cfg.skin);
 
       if (row === 0 || row === 4) {
         g.box(ox + 8, oy + 9 + breath, 16, 17, cfg.hair);
@@ -1387,10 +1397,27 @@ function generateResidentsSheet() {
       g.rect(ox + 9, oy + 7 + breath, 14, 5, cfg.hair);
       g.rect(ox + 10, oy + 8 + breath, 12, 2, cfg.hairHi);
 
+      if (row % 4 === 0) {
+        g.rect(ox + 7, oy + 11 + breath, 3, 13, cfg.hair);
+        g.rect(ox + 22, oy + 11 + breath, 3, 12, cfg.hair);
+        g.px(ox + 8, oy + 20 + breath, cfg.hairHi);
+      } else if (row % 4 === 1) {
+        g.rect(ox + 20, oy + 8 + breath, 4, 9, cfg.hair);
+        g.px(ox + 22, oy + 14 + breath, cfg.hairHi);
+      } else if (row % 4 === 2) {
+        g.px(ox + 10, oy + 5 + breath, cfg.hairHi);
+        g.rect(ox + 14, oy + 4 + breath, 4, 3, cfg.hair);
+        g.px(ox + 20, oy + 5 + breath, cfg.hairHi);
+      } else {
+        g.rect(ox + 8, oy + 10 + breath, 16, 2, cfg.accent);
+        g.px(ox + 15, oy + 9 + breath, 'Y4');
+      }
+
       g.rect(ox + 12, oy + 13 + breath, 2, 2, 'O');
       g.rect(ox + 18, oy + 13 + breath, 2, 2, 'O');
       g.px(ox + 12, oy + 13 + breath, 'C2');
       g.px(ox + 18, oy + 13 + breath, 'C2');
+      g.rect(ox + 14, oy + 17 + breath, 4, 1, 'P1');
 
       if (cfg.prop === 'tablet') {
         g.box(ox + 21, oy + 25 + breath, 6, 5, 'T2');
@@ -1634,9 +1661,20 @@ function generateBuildingsSheet() {
     g.box(ox + 8, oy + 24, 80, 30, wallMain);
     g.rect(ox + 8, oy + 24, 5, 30, wallTrim);
     g.rect(ox + 83, oy + 24, 5, 30, wallTrim);
+    g.rect(ox + 13, oy + 26, 70, 1, 'R3');
+    g.rect(ox + 13, oy + 47, 70, 2, wallTrim);
+    [24, 34, 62, 72].forEach((panelX) =>
+      g.rect(ox + panelX, oy + 27, 1, 17, 'rgba(20, 32, 34, 0.24)'),
+    );
+    g.rect(ox + 8, oy + 50, 80, 2, 'W2');
+    g.rect(ox + 10, oy + 51, 76, 1, 'Y3');
     g.box(ox + 4, oy + 10, 88, 16, roofMain);
     g.rect(ox + 6, oy + 11, 84, 4, roofHi);
+    g.rect(ox + 6, oy + 16, 84, 2, 'rgba(18, 30, 32, 0.4)');
+    g.rect(ox + 10, oy + 20, 76, 1, wallTrim);
     g.rect(ox + 4, oy + 24, 88, 2, 'Y3');
+    g.px(ox + 7, oy + 25, 'Y4');
+    g.px(ox + 88, oy + 25, 'Y4');
   };
 
   {
@@ -1915,6 +1953,22 @@ function cityWorldStart(data, cityId = 'neolife') {
 
 const REGION_MAP_SIZE = Object.freeze({ width: 600, height: 360 });
 const COASTAL_CITY_IDS = new Set(['fortaleza', 'porto', 'ilhada', 'litoral']);
+const REGION_ISLAND_SHAPES = Object.freeze({
+  neolife:
+    'M-48 -6 L-37 -21 -19 -18 -9 -27 13 -24 23 -16 42 -13 48 -1 39 12 23 14 12 25 -5 22 -17 16 -34 17 -45 8 Z',
+  fortaleza:
+    'M-47 -4 L-36 -18 -21 -17 -11 -25 5 -19 20 -22 34 -13 45 -9 48 1 36 7 28 17 11 15 -2 23 -18 15 -31 17 -43 8 Z',
+  nova:
+    'M-43 2 L-34 -13 -18 -17 -4 -25 11 -18 26 -20 42 -10 47 -1 35 6 22 17 5 15 -8 24 -23 15 -39 13 Z',
+  serra:
+    'M-47 4 L-40 -9 -31 -7 -23 -23 -12 -15 -3 -28 7 -18 17 -25 25 -11 39 -15 47 -3 39 10 25 14 17 24 2 17 -12 23 -25 13 -39 15 Z',
+  litoral:
+    'M-47 -10 L-34 -18 -22 -12 -8 -20 5 -14 17 -18 31 -10 43 -12 48 -2 37 7 25 7 13 16 1 11 -10 19 -23 10 -36 14 -47 4 Z',
+  porto:
+    'M-46 -5 L-37 -20 -21 -18 -12 -25 3 -18 15 -21 29 -13 43 -12 48 -2 39 11 25 13 13 22 -1 17 -14 22 -25 13 -40 12 Z',
+  ilhada:
+    'M-44 -9 L-31 -18 -18 -14 -9 -21 1 -16 8 -7 -2 -1 -16 1 -26 8 -41 5 Z M8 5 L20 -1 34 3 45 12 39 21 24 19 14 15 Z',
+});
 
 const CITY_ROUTE_EDGES = Object.freeze(
   CITIES.reduce((edges, city) => {
@@ -1965,23 +2019,31 @@ function CityRouteMap({ activeCityId, onSelectCity, size = 'compact' }) {
         />
         {CITIES.map((city, index) => {
           const point = getRegionMapPoint(city);
-          const sizeFactor = city.id === 'neolife' ? 1.34 : index % 2 === 0 ? 1 : 0.88;
           return (
-            <g key={`island-${city.id}`}>
-              <ellipse
-                cx={point.x}
-                cy={point.y}
-                rx={45 * sizeFactor}
-                ry={28 * sizeFactor}
+            <g
+              key={`island-${city.id}`}
+              transform={`translate(${point.x} ${point.y}) rotate(${(index * 19) % 35 - 17})`}
+            >
+              <path
+                d={REGION_ISLAND_SHAPES[city.id]}
                 className={`neo-region-island theme-${city.theme}`}
-                transform={`rotate(${(index * 19) % 35 - 17} ${point.x} ${point.y})`}
               />
               <path
-                d={`M${point.x - 26} ${point.y} h52 M${point.x} ${point.y - 14} v28`}
+                d='M-26 -9 L-12 -15 -2 -11 13 -14 26 -6 21 4 9 5 -1 12 -14 7 -23 8 Z'
+                className='neo-region-island-highlight'
+              />
+              <path
+                d='M-27 0 H27 M0 -13 V13 M-18 -9 L-7 0 M13 0 L23 9'
                 className='neo-region-streets'
               />
-              <circle cx={point.x - 23} cy={point.y + 10} r='2.5' className='neo-region-district' />
-              <circle cx={point.x + 24} cy={point.y - 9} r='2.5' className='neo-region-district' />
+              <g className='neo-region-buildings'>
+                <rect x='-14' y='-8' width='6' height='5' />
+                <rect x='4' y='-9' width='7' height='6' />
+                <rect x='-9' y='3' width='7' height='6' />
+                <rect x='13' y='4' width='6' height='5' />
+              </g>
+              <circle cx='-31' cy='11' r='2.5' className='neo-region-district' />
+              <circle cx='30' cy='-10' r='2.5' className='neo-region-district' />
             </g>
           );
         })}
@@ -2354,6 +2416,18 @@ export default function NeoLifeCity({ data = {}, save, onNavigate }) {
           fish: [],
           items: [],
         };
+  const collectedForage = safeArray(city.world?.collectedForage);
+  const activeForageNodes = useMemo(
+    () =>
+      createForageNodes(
+        activeCityId,
+        activeMap,
+        activeBuildings,
+        WORLD_PROPS,
+        GARDEN_PLOTS,
+      ),
+    [activeCityId, activeMap, activeBuildings],
+  );
 
   const effectiveOutfitColor = useMemo(() => {
     if (equipped.outfit === 'streetwear') return 'lilac';
@@ -2486,6 +2560,13 @@ export default function NeoLifeCity({ data = {}, save, onNavigate }) {
 
   const persistCity = (nextCity, extra = {}) =>
     save?.({ ...data, ...extra, neoCity: nextCity });
+
+  const collectForage = (node) => {
+    const nextCity = collectForageItem(city, node);
+    if (nextCity === city) return;
+    persistCity(nextCity);
+    setNotice(`${node.name} coletado e guardado na mochila.`);
+  };
 
   // Registra memória nos NPCs
   const recordNpcMemory = (currentMemories, residentId, entryText) => {
@@ -3388,6 +3469,16 @@ export default function NeoLifeCity({ data = {}, save, onNavigate }) {
       return;
     }
 
+    const nearbyForage = activeForageNodes.find(
+      (node) =>
+        !collectedForage.includes(node.nodeId) &&
+        Math.abs(node.x - player.x) + Math.abs(node.y - player.y) <= 1,
+    );
+    if (nearbyForage) {
+      collectForage(nearbyForage);
+      return;
+    }
+
     const nearbyDoor = activeBuildings.find(
       (b) => Math.abs(b.door.x - player.x) + Math.abs(b.door.y - player.y) <= 1,
     );
@@ -4218,6 +4309,8 @@ export default function NeoLifeCity({ data = {}, save, onNavigate }) {
     return Object.entries(counts).map(([id, qty]) => {
       const storeMatch = STORE_ITEMS.find((i) => i.id === id);
       if (storeMatch) return { ...storeMatch, qty };
+      const forageMatch = FORAGE_CATALOG[id];
+      if (forageMatch) return { ...forageMatch, qty };
       if (id.startsWith('harvest-')) {
         const sp = SEED_SPECIES.find((s) => `harvest-${s.id}` === id);
         return {
@@ -5004,6 +5097,12 @@ export default function NeoLifeCity({ data = {}, save, onNavigate }) {
                     const plot = GARDEN_PLOTS.find(
                       (p) => p.x === x && p.y === y,
                     );
+                    const forageHere = activeForageNodes.find(
+                      (node) =>
+                        node.x === x &&
+                        node.y === y &&
+                        !collectedForage.includes(node.nodeId),
+                    );
 
                     const residentHere = activeResidents.find((r) => {
                       const pos = npcState[r.id];
@@ -5126,6 +5225,21 @@ export default function NeoLifeCity({ data = {}, save, onNavigate }) {
                             {plotStage === 3 && (
                               <span className='neo-harvest-badge'>✨</span>
                             )}
+                          </button>
+                        ) : null}
+
+                        {forageHere ? (
+                          <button
+                            type='button'
+                            className={`neo-forage-pickup forage-${forageHere.kind}`}
+                            title={`${forageHere.name} · clique para pegar ou pressione E ao lado`}
+                            aria-label={`Pegar ${forageHere.name}`}
+                            onClick={() => collectForage(forageHere)}
+                          >
+                            <span className='neo-forage-pixel-art' aria-hidden='true'>
+                              <i /><b />
+                            </span>
+                            <small>Pegar · E</small>
                           </button>
                         ) : null}
 

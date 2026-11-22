@@ -71,12 +71,12 @@
 
 .neo-world-map{
   background:
-    radial-gradient(ellipse at 18% 22%,rgba(105,194,114,.32) 0 8%,transparent 8.5%),
-    radial-gradient(ellipse at 82% 68%,rgba(105,194,114,.28) 0 10%,transparent 10.5%),
-    linear-gradient(90deg,rgba(80,116,74,.08) 1px,transparent 1px),
-    linear-gradient(0deg,rgba(80,116,74,.08) 1px,transparent 1px),
-    linear-gradient(135deg,#315c3d 0 30%,#4a7548 30% 31%,#315c3d 31% 62%,#3e6944 62%);
-  background-size:100% 100%,100% 100%,32px 32px,32px 32px,100% 100%;
+    radial-gradient(ellipse at 18% 22%,rgba(132,177,91,.38) 0 7%,transparent 7.5%),
+    radial-gradient(ellipse at 82% 68%,rgba(132,177,91,.3) 0 9%,transparent 9.5%),
+    repeating-linear-gradient(90deg,rgba(181,196,116,.08) 0 2px,transparent 2px 16px),
+    repeating-linear-gradient(0deg,rgba(15,42,37,.1) 0 2px,transparent 2px 16px),
+    linear-gradient(135deg,#365f40 0 30%,#4c7649 30% 31%,#31583d 31% 62%,#3b6843 62%);
+  background-size:100% 100%,100% 100%,16px 16px,16px 16px,100% 100%;
   border:4px solid #263d58;
   box-shadow:
     0 0 0 3px #171d3c,
@@ -104,9 +104,10 @@
 
 .neo-world-tile.city-road{
   background:
-    linear-gradient(90deg,transparent 0 46%,rgba(238,205,130,.38) 46% 54%,transparent 54%),
-    linear-gradient(135deg,#38465a,#303a50);
-  box-shadow:inset 0 0 0 1px rgba(12,18,30,.24);
+    linear-gradient(90deg,transparent 0 47%,rgba(230,197,124,.48) 47% 53%,transparent 53%),
+    repeating-linear-gradient(90deg,rgba(119,134,139,.08) 0 2px,transparent 2px 12px),
+    linear-gradient(180deg,#394552 0 8%,#303b4a 8% 92%,#242f3c 92%);
+  box-shadow:inset 0 2px rgba(197,179,128,.34),inset 0 -2px rgba(17,26,34,.5),inset 0 0 0 1px rgba(12,18,30,.24);
 }
 
 .neo-world-tile.city-water{
@@ -118,11 +119,54 @@
 
 .neo-world-tile.tile-ground{
   background:
-    linear-gradient(90deg,rgba(225,233,174,.07) 0 2px,transparent 2px 16px),
-    linear-gradient(0deg,rgba(12,34,32,.08) 0 2px,transparent 2px 16px),
-    linear-gradient(135deg,#416e4c,#345b43);
-  background-size:16px 16px,16px 16px,100% 100%;
+    radial-gradient(ellipse at 23% 29%,rgba(191,204,128,.28) 0 1px,transparent 2px),
+    radial-gradient(ellipse at 76% 74%,rgba(20,54,43,.32) 0 1px,transparent 2px),
+    repeating-linear-gradient(90deg,rgba(207,215,146,.07) 0 2px,transparent 2px 16px),
+    linear-gradient(135deg,#456f4b,#355d43);
+  background-size:17px 19px,23px 21px,16px 16px,100% 100%;
 }
+.neo-world-map .neo-forage-pickup{
+  position:absolute;z-index:6;left:50%;top:48%;display:flex;flex-direction:column;
+  align-items:center;gap:2px;min-width:36px;padding:2px;border:0;
+  background:transparent;cursor:pointer;transform:translate(-50%,-50%);
+  image-rendering:pixelated;filter:drop-shadow(0 2px 2px rgba(8,16,20,.62));
+}
+.neo-forage-pixel-art{
+  position:relative;display:block;width:15px;height:14px;
+  border:2px solid #263a36;background:#f5c451;
+  box-shadow:inset 2px 2px rgba(255,255,255,.44),2px 2px 0 #1c302c;
+  animation:neoForageBob 1.2s steps(2,end) infinite;
+}
+.neo-forage-pixel-art i,.neo-forage-pixel-art b{
+  position:absolute;display:block;
+}
+.neo-forage-pixel-art i{
+  left:3px;top:-5px;width:5px;height:4px;background:#7ec272;
+  box-shadow:4px 1px 0 #53995f;
+}
+.neo-forage-pixel-art b{
+  right:2px;top:2px;width:3px;height:3px;background:#fff0a6;
+}
+.forage-berry .neo-forage-pixel-art{background:#de5a64;border-color:#672e47}
+.forage-flower .neo-forage-pixel-art{background:#e5a9df;border-color:#58365f;clip-path:polygon(25% 0,75% 0,75% 25%,100% 25%,100% 75%,75% 75%,75% 100%,25% 100%,25% 75%,0 75%,0 25%,25% 25%)}
+.forage-shard .neo-forage-pixel-art{background:#72d8df;border-color:#245567;clip-path:polygon(25% 0,75% 0,75% 20%,100% 20%,100% 70%,75% 70%,75% 100%,25% 100%,25% 75%,0 75%,0 25%,25% 25%)}
+.forage-shell .neo-forage-pixel-art{background:#d7c58c;border-color:#64543b}
+.forage-leaf .neo-forage-pixel-art{background:#71ad5e;border-color:#31583a;transform:rotate(-25deg)}
+.forage-gear .neo-forage-pixel-art{background:#c9a960;border-color:#594835;clip-path:polygon(30% 0,70% 0,70% 20%,100% 20%,100% 70%,80% 70%,80% 100%,30% 100%,30% 80%,0 80%,0 30%,20% 30%,20% 0)}
+.forage-scrap .neo-forage-pixel-art{background:#96a9a9;border-color:#3a5257}
+.neo-forage-pickup small{
+  padding:1px 3px;border:1px solid rgba(255,240,166,.55);border-radius:2px;
+  background:rgba(17,31,34,.92);color:#fff0a6;font:900 6px/1 monospace;
+  white-space:nowrap;opacity:.92;
+}
+.neo-forage-pickup:hover,.neo-forage-pickup:focus-visible{
+  z-index:12;outline:1px solid #fff0a6;outline-offset:1px;
+}
+.neo-forage-pickup:hover .neo-forage-pixel-art,
+.neo-forage-pickup:focus-visible .neo-forage-pixel-art{
+  filter:brightness(1.3);box-shadow:0 0 9px rgba(255,240,166,.78),inset 2px 2px rgba(255,255,255,.6);
+}
+@keyframes neoForageBob{50%{transform:translateY(-2px)}}
 .neo-world-tile.tile-forest{
   background:
     radial-gradient(ellipse at 30% 34%,#83a958 0 10%,transparent 11%),
@@ -299,14 +343,15 @@
   box-shadow:inset 0 -5px rgba(31,82,48,.25);
 }
 .neo-world-tree.pine i{
-  left:7px;width:24px;height:34px;border-radius:45% 55% 35% 35%;
-  clip-path:polygon(50% 0,92% 48%,72% 48%,100% 88%,0 88%,28% 48%,8% 48%);
-  background:#3d8151;border:0;
+  left:4px;width:30px;height:34px;border-radius:0;
+  clip-path:polygon(50% 0,66% 17%,89% 19%,76% 40%,100% 54%,80% 66%,94% 91%,7% 91%,21% 66%,0 53%,23% 38%,12% 20%,38% 18%);
+  background:#488954;border:0;
+  box-shadow:inset 5px 5px #71a65b,inset -5px -5px #2c684b,0 0 0 2px #284c3b;
 }
 .neo-world-tree b{
   position:absolute;left:15px;bottom:1px;width:8px;height:15px;
   border:2px solid #4a3929;background:#80613e;
-  box-shadow:2px 0 #5b4630;
+  box-shadow:2px 0 #5b4630,0 -2px #d1c17b;
 }
 .neo-world-fence{
   position:absolute;width:38px;height:9px;z-index:3;
@@ -399,6 +444,8 @@
 .neo-region-grid-line{fill:none;stroke:rgba(143,216,218,.15);stroke-width:1}
 .neo-region-depth{fill:none;stroke:rgba(110,194,201,.24);stroke-width:2}
 .neo-region-island{stroke:#d2c68b;stroke-width:2;filter:drop-shadow(0 2px 2px rgba(0,0,0,.42))}
+.neo-region-island-highlight{fill:rgba(228,216,151,.14);stroke:rgba(237,225,171,.24);stroke-width:1}
+.neo-region-buildings rect{fill:#243c41;stroke:#e7d59b;stroke-width:1}
 .neo-region-island.theme-magenta-cyber{fill:#375d49}
 .neo-region-island.theme-blue-coast{fill:#527c5c}
 .neo-region-island.theme-green-tech{fill:#4c8155}
@@ -461,19 +508,75 @@
 .neo-world-map.neo-city-theme-cyan-orbit .neo-building-pixel-art{filter:hue-rotate(165deg) saturate(1.08) drop-shadow(0 4px 3px rgba(0,0,0,.54))}
 .neo-world-map.neo-city-theme-gold-port .neo-building-pixel-art{filter:hue-rotate(325deg) saturate(1.12) drop-shadow(0 4px 3px rgba(0,0,0,.54))}
 .neo-world-map.neo-city-theme-sun-islands .neo-building-pixel-art{filter:hue-rotate(295deg) saturate(1.04) drop-shadow(0 4px 3px rgba(0,0,0,.54))}
-.neo-world-map .neo-vehicle-car{width:42px;height:20px;border-radius:10px 11px 5px 5px}
-.neo-world-map .neo-car-cabin{left:10px;top:-6px;width:21px;height:10px}
-.neo-world-map .neo-car-wheel{bottom:-5px;width:8px;height:8px}
-.neo-world-map .neo-car-wheel.wheel-left{left:5px}
-.neo-world-map .neo-car-wheel.wheel-right{right:5px}
-.neo-world-map .neo-vehicle-car.neo-vehicle-taxi{width:42px;height:20px}
-.neo-world-map .neo-vehicle-car.neo-vehicle-bus{width:66px;height:27px;border-radius:7px 10px 5px 5px}
-.neo-world-map .neo-vehicle-car.neo-vehicle-bus .neo-bus-windows{left:6px;top:4px;width:52px;height:10px}
+.neo-world-map .neo-vehicle-car{
+  width:44px;height:24px;border-radius:3px;
+  border:2px solid #111b26;
+  box-shadow:0 3px 0 rgba(5,12,18,.62),0 0 0 1px rgba(236,225,171,.32);
+  image-rendering:pixelated;
+}
+.neo-world-map .neo-vehicle-car::before{
+  content:"";position:absolute;z-index:2;right:2px;top:2px;width:8px;height:16px;
+  border-left:1px solid rgba(255,255,255,.28);background:linear-gradient(90deg,rgba(255,255,255,.2),transparent 2px);
+}
+.neo-world-map .neo-vehicle-car::after{
+  content:"";position:absolute;z-index:2;left:0;top:4px;width:3px;height:4px;
+  background:#ef6a68;box-shadow:0 9px #ef6a68;
+}
+.neo-world-map .neo-car-cabin{
+  z-index:3;left:10px;top:3px;width:22px;height:14px;border-radius:2px;
+  border:2px solid #172633;
+  background:linear-gradient(90deg,#7fc6ca 0 8%,#284b5b 9% 44%,#142e3c 45% 54%,#284b5b 55% 91%,#7fc6ca 92%);
+  box-shadow:inset 0 2px rgba(205,245,232,.48),inset 0 -2px rgba(9,24,34,.65);
+}
+.neo-world-map .neo-car-cabin::before{
+  content:"";position:absolute;left:8px;top:1px;width:2px;height:8px;background:#a6ded4;
+  box-shadow:0 2px rgba(8,26,36,.75);
+}
+.neo-world-map .neo-car-wheel{
+  z-index:1;bottom:auto;top:-2px;width:7px;height:4px;border-radius:1px;
+  background:#10171e;border:1px solid #74838a;
+  box-shadow:0 0 0 1px #17222c;
+}
+.neo-world-map .neo-car-wheel.wheel-left{left:10px;box-shadow:0 0 0 1px #17222c,0 18px #10171e,0 18px 0 1px #74838a}
+.neo-world-map .neo-car-wheel.wheel-right{right:10px;box-shadow:0 0 0 1px #17222c,0 18px #10171e,0 18px 0 1px #74838a}
+.neo-world-map .neo-car-light{
+  z-index:4;right:-2px;top:4px;width:3px;height:4px;border-radius:0;
+  background:#fff0a6;box-shadow:0 9px #fff0a6,3px 0 7px #f5c451,3px 9px 7px #f5c451;
+}
+.neo-world-map .neo-vehicle-car.neo-vehicle-taxi{width:44px;height:24px}
+.neo-world-map .neo-vehicle-car.neo-vehicle-bus{
+  width:66px;height:27px;border-radius:3px;
+  background:linear-gradient(180deg,#72c7c9 0 17%,#4d9aa5 18% 72%,#255566 73%);
+}
+.neo-world-map .neo-vehicle-car.neo-vehicle-bus::before{
+  right:2px;top:3px;width:7px;height:19px;background:linear-gradient(180deg,#f9df84 0 3px,transparent 3px 16px,#7ec2bb 16px);
+}
+.neo-world-map .neo-vehicle-car.neo-vehicle-bus .neo-car-cabin{display:none}
+.neo-world-map .neo-vehicle-car.neo-vehicle-bus .neo-bus-windows{
+  left:5px;top:4px;width:48px;height:11px;border:2px solid #203c4b;border-radius:1px;
+  background:repeating-linear-gradient(90deg,#b8e4d7 0 7px,#345a67 7px 10px);
+  box-shadow:inset 0 2px rgba(255,255,255,.55);
+}
 .neo-world-map .neo-vehicle-car.neo-vehicle-truck{width:58px;height:24px}
-.neo-world-map .neo-vehicle-car.neo-vehicle-truck .neo-truck-cargo{left:-20px;top:-3px;width:34px;height:26px}
-.neo-world-map .neo-vehicle-car.neo-vehicle-emergency{width:46px;height:21px}
-.neo-world-map .neo-vehicle-car.neo-vehicle-van{width:48px;height:22px}
-.neo-world-map .neo-vehicle-car.neo-vehicle-van .neo-van-cargo{left:-12px;top:-3px;width:19px;height:24px}
+.neo-world-map .neo-vehicle-car.neo-vehicle-truck .neo-car-cabin{left:38px;top:4px;width:15px;height:12px}
+.neo-world-map .neo-vehicle-car.neo-vehicle-truck .neo-truck-cargo{
+  left:-2px;top:-2px;width:34px;height:26px;border:2px solid #26384a;border-radius:2px;
+  background:repeating-linear-gradient(90deg,#9bb0bb 0 4px,#667f89 4px 7px);
+  box-shadow:inset 0 0 0 2px rgba(232,232,206,.24),0 3px 0 rgba(0,0,0,.4);
+}
+.neo-world-map .neo-vehicle-car.neo-vehicle-emergency{width:46px;height:24px}
+.neo-world-map .neo-vehicle-car.neo-vehicle-emergency .neo-car-cabin{background:linear-gradient(90deg,#8bcbd0 0 8%,#315461 9% 44%,#1d3645 45% 54%,#315461 55% 91%,#8bcbd0 92%)}
+.neo-world-map .neo-vehicle-car.neo-vehicle-van{width:48px;height:24px}
+.neo-world-map .neo-vehicle-car.neo-vehicle-van .neo-car-cabin{left:17px;top:3px;width:18px;height:15px}
+.neo-world-map .neo-vehicle-car.neo-vehicle-van .neo-van-cargo{
+  left:-1px;top:-2px;width:16px;height:26px;border-radius:2px;
+  border:2px solid #26384a;background:repeating-linear-gradient(90deg,#b6c7c7 0 3px,#6e8a94 3px 6px);
+  box-shadow:inset 0 0 0 2px rgba(232,232,206,.22),0 3px 0 rgba(0,0,0,.4);
+}
+.neo-world-map .neo-taxi-sign{
+  z-index:5;left:15px;top:-4px;width:13px;height:5px;border-radius:1px;
+  font-size:4px;box-shadow:0 0 5px #c7b3eb;
+}
 .neo-world-map .neo-vlt-car{width:40px;height:20px;border-radius:5px}
 .neo-world-map .neo-vlt-window{width:8px;height:7px}
 .neo-world-map .neo-vehicle-bike{width:30px;height:23px}

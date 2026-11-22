@@ -2,6 +2,7 @@ export const CITY_PROFILES = Object.freeze([
   {
     id: 'neolife',
     name: 'NeoLife City',
+    mapTag: 'NEO',
     subtitle: 'Capital Estadual',
     theme: 'magenta-cyber',
     focus: 'governo, comércio e vida comunitária',
@@ -13,6 +14,7 @@ export const CITY_PROFILES = Object.freeze([
   {
     id: 'fortaleza',
     name: 'Fortaleza Azul',
+    mapTag: 'AZUL',
     subtitle: 'Costa Comercial',
     theme: 'blue-coast',
     focus: 'comércio, cultura e portos',
@@ -24,6 +26,7 @@ export const CITY_PROFILES = Object.freeze([
   {
     id: 'nova',
     name: 'Nova Esperança',
+    mapTag: 'NOVA',
     subtitle: 'Vale Tecnológico',
     theme: 'green-tech',
     focus: 'inovação e pesquisa',
@@ -35,6 +38,7 @@ export const CITY_PROFILES = Object.freeze([
   {
     id: 'serra',
     name: 'Serra do Conhecimento',
+    mapTag: 'SERRA',
     subtitle: 'Montanhas Acadêmicas',
     theme: 'violet-academy',
     focus: 'educação e observatórios',
@@ -46,6 +50,7 @@ export const CITY_PROFILES = Object.freeze([
   {
     id: 'litoral',
     name: 'Litoral Estelar',
+    mapTag: 'LIT',
     subtitle: 'Costa Científica',
     theme: 'cyan-orbit',
     focus: 'ciência e exploração',
@@ -57,6 +62,7 @@ export const CITY_PROFILES = Object.freeze([
   {
     id: 'porto',
     name: 'Porto Dourado',
+    mapTag: 'PORTO',
     subtitle: 'Distrito Industrial',
     theme: 'gold-port',
     focus: 'logística e indústria',
@@ -68,6 +74,7 @@ export const CITY_PROFILES = Object.freeze([
   {
     id: 'ilhada',
     name: 'Ilhas da Amanhã',
+    mapTag: 'ILHAS',
     subtitle: 'Arquipélago do Bem-estar',
     theme: 'sun-islands',
     focus: 'turismo e natureza',
