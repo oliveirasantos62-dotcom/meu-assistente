@@ -667,3 +667,107 @@
   .neo-state-map .neo-state-city-mark i{left:13px;top:4px}
   .neo-state-map .neo-state-city-mark b{left:5px;right:5px;bottom:5px}
 }
+
+
+/* HUD e legibilidade do mapa regional */
+.neo-mini-map-wrap{
+  width:clamp(190px,25vw,270px);
+  left:12px;
+  bottom:12px;
+  gap:6px;
+}
+.neo-route-map.compact{
+  aspect-ratio: 5 / 3.25;
+  border-width:3px;
+  box-shadow:inset 0 0 0 1px rgba(255,240,166,.5),0 4px 0 rgba(7,15,20,.65),0 0 18px rgba(65,220,232,.16);
+}
+.neo-route-map svg{shape-rendering:geometricPrecision}
+.neo-region-route{stroke-width:3;opacity:.7}
+.neo-region-route.active{stroke-width:4;opacity:1}
+.neo-region-pin{z-index:4;gap:3px}
+.neo-region-pin i{width:11px;height:11px;border-width:2px}
+.neo-region-pin span{
+  padding:2px 4px;
+  border:1px solid rgba(110,194,201,.72);
+  background:rgba(7,17,32,.94);
+  font-size:8px;
+  box-shadow:0 2px 4px rgba(0,0,0,.45);
+}
+.neo-region-pin.active{z-index:6}
+.neo-region-pin.active i{
+  width:15px;height:15px;
+  border:3px solid #fff;
+  box-shadow:0 0 0 3px rgba(245,196,81,.45),0 0 15px #fff0a6;
+}
+.neo-map-hud{
+  position:absolute;z-index:7;left:5px;right:5px;bottom:5px;
+  display:flex;align-items:center;justify-content:space-between;gap:5px;
+  padding:4px 6px;border:1px solid rgba(110,194,201,.65);
+  border-radius:3px;background:rgba(7,17,32,.94);color:#eaf7f4;
+  font:700 8px/1.2 monospace;pointer-events:none;
+}
+.neo-map-hud strong{display:flex;align-items:center;gap:4px;color:#fff0a6;min-width:0}
+.neo-map-hud strong i{width:6px;height:6px;border-radius:50%;background:#f52ba8;box-shadow:0 0 6px #f52ba8}
+.neo-map-hud span{color:#9bdde1;white-space:nowrap}
+.neo-map-hud small{display:flex;align-items:center;gap:3px;color:#d4dced;white-space:nowrap}
+.neo-map-hud small b{display:inline-block;width:8px;height:3px}
+.neo-map-hud .land-key{background:#f5c451}
+.neo-map-hud .sea-key{background:#72dded}
+.neo-route-map.expanded .neo-map-hud{left:10px;right:10px;bottom:10px;padding:7px 9px;font-size:11px}
+.neo-route-map.expanded .neo-map-hud strong i{width:8px;height:8px}
+.neo-route-map.expanded .neo-map-hud small b{width:12px}
+.neo-mini-map-expand{min-height:28px;font-size:10px;letter-spacing:1px}
+.neo-state-map{backdrop-filter:blur(8px)}
+.neo-state-city{transition:transform .18s,border-color .18s,box-shadow .18s}
+.neo-state-city:focus-visible,.neo-region-pin:focus-visible{
+  outline:2px solid #fff0a6;outline-offset:3px;
+}
+@media(max-width:640px){
+  .neo-mini-map-wrap{width:190px;left:7px;bottom:7px}
+  .neo-map-hud{font-size:7px}
+  .neo-map-hud small{display:none}
+  .neo-state-map{inset:5px;padding:9px}
+  .neo-state-cities{grid-template-columns:1fr}
+}
+
+
+/* Acabamento cyberpunk: contraste noturno, asfalto tecnológico e sinalização neon */
+.neo-world-map{
+  background:
+    radial-gradient(ellipse at 50% 28%,rgba(31,83,103,.25),transparent 45%),
+    radial-gradient(ellipse at 50% 90%,rgba(29,35,83,.28),transparent 48%),
+    repeating-linear-gradient(90deg,rgba(83,226,224,.045) 0 1px,transparent 1px 16px),
+    linear-gradient(135deg,#183d3d 0%,#28513f 36%,#1b3c3c 70%,#263d4d 100%);
+}
+.neo-world-tile.city-road{
+  background:
+    linear-gradient(90deg,transparent 0 46%,rgba(74,222,225,.72) 46% 47%,rgba(230,197,124,.55) 47% 53%,rgba(74,222,225,.72) 53% 54%,transparent 54%),
+    repeating-linear-gradient(90deg,rgba(126,225,226,.09) 0 2px,transparent 2px 12px),
+    linear-gradient(180deg,#253b4e 0 8%,#172d40 8% 92%,#122535 92%);
+  box-shadow:inset 0 2px rgba(110,194,201,.5),inset 0 -2px rgba(17,26,34,.7),inset 0 0 0 1px rgba(12,18,30,.3),0 0 5px rgba(69,220,229,.12);
+}
+.neo-world-tile.city-water{
+  background:
+    repeating-linear-gradient(135deg,rgba(88,224,237,.22) 0 3px,transparent 3px 10px),
+    linear-gradient(135deg,#155b83,#102e57);
+}
+.neo-world-tile.tile-ground{
+  background:
+    radial-gradient(ellipse at 23% 29%,rgba(191,204,128,.3) 0 1px,transparent 2px),
+    radial-gradient(ellipse at 76% 74%,rgba(20,54,43,.42) 0 1px,transparent 2px),
+    repeating-linear-gradient(90deg,rgba(93,218,194,.07) 0 1px,transparent 1px 16px),
+    linear-gradient(135deg,#315d48,#234b42);
+}
+.neo-world-map.period-night{
+  filter:saturate(1.14) brightness(.82);
+}
+.neo-world-map.period-night .neo-building-pixel-art{
+  filter:drop-shadow(0 0 5px rgba(79,225,235,.34)) drop-shadow(0 4px 3px rgba(0,0,0,.65));
+}
+.neo-world-map .neo-building-visual.has-pixel-art .neo-building-sign{
+  border-color:#5be7ee;background:#101d36;color:#fff0a6;
+  box-shadow:0 0 5px rgba(91,231,238,.9),0 0 11px rgba(245,43,168,.34);
+}
+.neo-world-map .neo-world-tree i{
+  filter:saturate(.9) drop-shadow(0 0 3px rgba(80,224,180,.18));
+}

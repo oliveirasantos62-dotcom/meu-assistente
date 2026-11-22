@@ -2168,6 +2168,11 @@ function CityRouteMap({ activeCityId, onSelectCity, size = 'compact' }) {
           </button>
         );
       })}
+      <div className={`neo-map-hud ${expanded ? 'expanded' : ''}`}>
+        <strong><i /> {activeCity.name}</strong>
+        <span>{activeCity.routes.length} rotas conectadas</span>
+        <small><b className='land-key' /> VLT <b className='sea-key' /> Balsa</small>
+      </div>
     </div>
   );
 }
