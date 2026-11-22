@@ -2249,7 +2249,7 @@ export default function NeoLifeCity({ data = {}, save, onNavigate }) {
     return Boolean(savedMapState?.boatBoarded && CITY_MAPS[savedCityId]?.harbor);
   });
   const worldViewportRef = useRef(null);
-  const [worldZoom, setWorldZoom] = useState(1.15);
+  const [worldZoom, setWorldZoom] = useState(1);
   const [cameraOffset, setCameraOffset] = useState({ x: 0, y: 0 });
   const [insideBuilding, setInsideBuilding] = useState(null);
   const [homeRoomIndex, setHomeRoomIndex] = useState(0);
@@ -3850,15 +3850,13 @@ export default function NeoLifeCity({ data = {}, save, onNavigate }) {
     if (!viewport) return;
 
     const updateCamera = () => {
-      const worldWidth = activeMap.width * 50.4 * worldZoom;
-      const worldHeight = activeMap.height * 47.25 * worldZoom;
-      const playerX = (player.x + 0.5) * 50.4 * worldZoom;
-      const playerY = (player.y + 0.5) * 47.25 * worldZoom;
+      const playerX = (player.x + 0.5) * 58 * worldZoom;
+      const playerY = (player.y + 0.5) * 54 * worldZoom;
       const targetX = viewport.clientWidth / 2 - playerX;
       const targetY = viewport.clientHeight / 2 - playerY;
-      const left = Math.min(0, Math.max(viewport.clientWidth - worldWidth, targetX));
-      const top = Math.min(0, Math.max(viewport.clientHeight - worldHeight, targetY));
-      setCameraOffset({ x: left, y: top });
+      // Câmera livre: mantém o personagem no centro mesmo perto das bordas.
+      // O fundo do viewport funciona como área de respiro fora dos limites do mapa.
+      setCameraOffset({ x: targetX, y: targetY });
     };
 
     updateCamera();
@@ -5023,8 +5021,8 @@ export default function NeoLifeCity({ data = {}, save, onNavigate }) {
                 <div
                   className='neo-world-camera-plane'
                   style={{
-                    width: `${activeMap.width * 50.4 * worldZoom}px`,
-                    height: `${activeMap.height * 47.25 * worldZoom}px`,
+                    width: `${activeMap.width * 58 * worldZoom}px`,
+                    height: `${activeMap.height * 54 * worldZoom}px`,
                     transform: `translate3d(${cameraOffset.x}px, ${cameraOffset.y}px, 0)`,
                   }}
                 >
@@ -5044,10 +5042,10 @@ export default function NeoLifeCity({ data = {}, save, onNavigate }) {
                         type='button'
                         className={`neo-harbor-vessel ${activeMap.harbor.ship.orientation} ${boatBoarded ? 'boarded' : ''} vessel-${activeCityId}`}
                         style={{
-                          left: `${activeMap.harbor.ship.x * 50.4}px`,
-                          top: `${activeMap.harbor.ship.y * 47.25}px`,
-                          width: `${activeMap.harbor.ship.width * 50.4}px`,
-                          height: `${activeMap.harbor.ship.height * 47.25}px`,
+                          left: `${activeMap.harbor.ship.x * 58}px`,
+                          top: `${activeMap.harbor.ship.y * 54}px`,
+                          width: `${activeMap.harbor.ship.width * 58}px`,
+                          height: `${activeMap.harbor.ship.height * 54}px`,
                         }}
                         aria-label={`${boatBoarded ? 'Desembarcar do' : 'Embarcar no'} ${activeMap.harbor.name}`}
                         title={`${activeMap.harbor.name} · ${boatBoarded ? 'clique para desembarcar' : 'clique para embarcar'}`}
@@ -5072,7 +5070,7 @@ export default function NeoLifeCity({ data = {}, save, onNavigate }) {
                       <span
                         key={`world-tree-${x}-${y}`}
                         className={`neo-world-tree ${type}`}
-                        style={{ left:`${(x+.5)*50.4}px`, top:`${(y+.5)*47.25}px` }}
+                        style={{ left:`${(x+.5)*58}px`, top:`${(y+.5)*54}px` }}
                       >
                         <i /><b />
                       </span>
@@ -5084,7 +5082,7 @@ export default function NeoLifeCity({ data = {}, save, onNavigate }) {
                       <span
                         key={`world-fence-${x}-${y}`}
                         className='neo-world-fence'
-                        style={{ left:`${x*50.4+12}px`, top:`${y*47.25+18}px` }}
+                        style={{ left:`${x*58+12}px`, top:`${y*54+18}px` }}
                       />
                     ))}
                     {[
@@ -5096,8 +5094,8 @@ export default function NeoLifeCity({ data = {}, save, onNavigate }) {
                         key={variant}
                         className={`neo-neon-rooftop ${variant}`}
                         style={{
-                          left: `${(x + 0.15) * 50.4}px`,
-                          top: `${(y + 0.15) * 47.25}px`,
+                          left: `${(x + 0.15) * 58}px`,
+                          top: `${(y + 0.15) * 54}px`,
                         }}
                       >
                         <i /><b /><em />
@@ -5108,8 +5106,8 @@ export default function NeoLifeCity({ data = {}, save, onNavigate }) {
                         key={stop.id}
                         className='neo-transit-stop-marker'
                         style={{
-                          left: `${(stop.x + 0.5) * 50.4}px`,
-                          top: `${stop.y * 47.25 - 6}px`,
+                          left: `${(stop.x + 0.5) * 58}px`,
+                          top: `${stop.y * 54 - 6}px`,
                         }}
                       >
                         🚏 {stop.name.replace('Estação ', '')}
@@ -5133,7 +5131,7 @@ export default function NeoLifeCity({ data = {}, save, onNavigate }) {
                       <span
                         key={`lamp-${x}-${y}`}
                         className='neo-street-lamp'
-                        style={{ left: `${(x + 0.5) * 50.4}px`, top: `${(y + 0.5) * 47.25}px` }}
+                        style={{ left: `${(x + 0.5) * 58}px`, top: `${(y + 0.5) * 54}px` }}
                       >
                         <i />
                       </span>
@@ -5142,8 +5140,8 @@ export default function NeoLifeCity({ data = {}, save, onNavigate }) {
                     <div
                       className={`neo-public-transit ${transitState.dwellTicks > 0 ? 'stopped' : ''}`}
                       style={{
-                        left: `${transitState.x * 50.4}px`,
-                        top: `${6 * 47.25 + 10}px`,
+                        left: `${transitState.x * 58}px`,
+                        top: `${6 * 54 + 10}px`,
                         transform: transitState.dir < 0 ? 'scaleX(-1)' : 'none',
                       }}
                     >
@@ -5170,7 +5168,7 @@ export default function NeoLifeCity({ data = {}, save, onNavigate }) {
                     {vehicles.map((v) => {
                       if (['car', 'taxi', 'bus', 'truck', 'emergency', 'van'].includes(v.type)) {
                         const topPx =
-                          v.lane === 'east' ? 7 * 47.25 + 14 : 6 * 47.25 + 26;
+                          v.lane === 'east' ? 7 * 54 + 14 : 6 * 54 + 26;
                         return (
                           <div
                             key={v.id}
@@ -5194,7 +5192,7 @@ export default function NeoLifeCity({ data = {}, save, onNavigate }) {
                         );
                       }
                       if (v.type === 'motorcycle') {
-                        const topPx = v.lane === 'moto-east' ? 6 * 47.25 + 20 : 7 * 47.25 + 18;
+                        const topPx = v.lane === 'moto-east' ? 6 * 54 + 20 : 7 * 54 + 18;
                         return (
                           <div
                             key={v.id}
@@ -5329,7 +5327,7 @@ export default function NeoLifeCity({ data = {}, save, onNavigate }) {
                       ))}
                   </div>
 
-                  {/* GRADE DO MAPA 20×12 */}
+                  {/* GRADE DO MAPA EXPANDIDA 30×18 */}
                   {Array.from({ length: activeMap.width * activeMap.height }, (_, index) => {
                     const x = index % activeMap.width;
                     const y = Math.floor(index / activeMap.width);
@@ -5405,8 +5403,8 @@ export default function NeoLifeCity({ data = {}, save, onNavigate }) {
                             className={`neo-building-visual building-${building.id} ${building.spriteTile && sprites?.buildings ? 'has-pixel-art' : ''} ${bOpenStatus.isOpen ? 'open' : 'closed'}`}
                             aria-hidden='true'
                             style={{
-                              width: `${building.w * 50.4}px`,
-                              height: `${building.h * 47.25}px`,
+                              width: `${building.w * 58}px`,
+                              height: `${building.h * 54}px`,
                             }}
                           >
                             {building.spriteTile && sprites?.buildings ? (
@@ -7560,21 +7558,24 @@ const styles = `
 
 /* MAPA 16-BIT, ILUMINAÇÃO DINÂMICA E CENÁRIO WEBP */
 .neo-world-scroll{
-  overflow:hidden;position:relative;height:min(62vh,520px);min-height:390px;
+  overflow:hidden;position:relative;height:min(72vh,680px);min-height:460px;
   padding:0;border:3px solid #53618f;border-radius:8px;
-  background:radial-gradient(ellipse at 50% 40%,#20264d,#101629 72%);
+  background:
+    radial-gradient(ellipse at 52% 44%,rgba(43,71,104,.72),transparent 48%),
+    repeating-linear-gradient(135deg,rgba(71,112,142,.08) 0 2px,transparent 2px 28px),
+    linear-gradient(145deg,#101b2d,#11152b 58%,#20172d);
   box-shadow:inset 0 0 24px rgba(61,104,255,.18);
 }
 .neo-world-camera-plane{
   position:absolute;left:0;top:0;
-  transition:transform .18s ease-out;
+  transition:transform .12s linear;
   will-change:transform;
 }
 .neo-world-map{
   position:relative;display:grid;
-  grid-template-columns:repeat(20,50.4px);
-  grid-template-rows:repeat(12,47.25px);
-  gap:0;width:1008px;height:567px;aspect-ratio:1672 / 941;margin:auto;
+  grid-template-columns:repeat(30,58px);
+  grid-template-rows:repeat(18,54px);
+  gap:0;width:1740px;height:972px;aspect-ratio:1740 / 972;margin:auto;
   border:4px solid #52618f;border-radius:4px;
   background:
     linear-gradient(90deg,transparent 0 4.5%,rgba(110,194,201,.16) 4.5% 5%,transparent 5% 94.5%,rgba(110,194,201,.16) 94.5% 95%,transparent 95%),
@@ -8771,7 +8772,7 @@ const styles = `
   .neo-arcade-card,.neo-avatar-editor{grid-template-columns:1fr}
 }
 @media (max-width:600px){
-  .neo-world-scroll{height:58vh;min-height:340px}
+  .neo-world-scroll{height:64vh;min-height:390px}
   .neo-world-toolbar{align-items:flex-start}
   .neo-toolbar-btns{width:100%;overflow-x:auto;flex-wrap:nowrap}
   .neo-city-telemetry{overflow-x:auto}

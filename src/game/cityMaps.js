@@ -26,15 +26,41 @@ function addPath(target, points) {
   }
 }
 
-function createMap(definition) {
+function createMap(definition, cityId) {
   const roads = new Set();
   definition.roads.forEach((path) => addPath(roads, path));
+  // Novas avenidas e vias de bairro ampliam a malha urbana para além do antigo mapa.
+  [
+    [[19, 6], [29, 6]],
+    [[8, 11], [8, 17]],
+    [[21, 0], [21, 17]],
+    [[2, 14], [27, 14]],
+    [[21, 6], [21, 14]],
+    [[15, 14], [15, 17]],
+    [[21, 10], [29, 10]],
+  ].forEach((path) => addPath(roads, path));
 
   const features = {};
   Object.entries(definition.features).forEach(([name, rectangles]) => {
     const cells = new Set();
     rectangles.forEach((rect) => addRect(cells, rect));
     features[name] = cells;
+  });
+
+  // Cada cidade ganha uma borda explorável com paisagem própria, em vez de apenas
+  // esticar o mapa com chão vazio.
+  const outskirts = {
+    neolife: { plaza: [[22, 4, 24, 6]], forest: [[25, 1, 29, 4]], industry: [[22, 10, 26, 12]] },
+    fortaleza: { water: [[27, 0, 29, 5]], shore: [[25, 0, 26, 7]], forest: [[22, 10, 25, 12]] },
+    nova: { forest: [[22, 1, 26, 4], [24, 9, 29, 12]], plaza: [[22, 5, 24, 7]], water: [[28, 15, 29, 17]] },
+    serra: { mountain: [[23, 0, 29, 3], [26, 10, 29, 13]], industry: [[22, 8, 25, 11]] },
+    litoral: { water: [[27, 0, 29, 12]], shore: [[25, 0, 26, 12]], plaza: [[22, 6, 24, 8]] },
+    porto: { industry: [[22, 2, 28, 5]], mountain: [[25, 9, 29, 13]], forest: [[22, 15, 26, 17]] },
+    ilhada: { water: [[27, 0, 29, 17]], shore: [[25, 0, 26, 17]], forest: [[22, 1, 24, 4]], plaza: [[22, 9, 24, 11]] },
+  }[cityId] || {};
+  Object.entries(outskirts).forEach(([name, rectangles]) => {
+    if (!features[name]) features[name] = new Set();
+    rectangles.forEach((rect) => addRect(features[name], rect));
   });
 
   const water = features.water || new Set();
@@ -201,7 +227,7 @@ export const CITY_MAPS = Object.freeze(
   Object.fromEntries(
     Object.entries(definitions).map(([cityId, definition]) => [
       cityId,
-      createMap(definition),
+      createMap(definition, cityId),
     ]),
   ),
 );

@@ -1,5 +1,5 @@
-export const WORLD_WIDTH = 20;
-export const WORLD_HEIGHT = 12;
+export const WORLD_WIDTH = 30;
+export const WORLD_HEIGHT = 18;
 
 export function isInsideWorld(x, y) {
   return x >= 0 && x < WORLD_WIDTH && y >= 0 && y < WORLD_HEIGHT;
