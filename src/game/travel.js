@@ -1,5 +1,5 @@
 export function getTravelRoute(fromId, toId) {
-  const isCoastal = ['fortaleza','porto','ilhada','litoral'].includes(toId);
+  const isCoastal = ['fortaleza','porto'].includes(toId);
   return {
     mode: isCoastal ? 'navio' : 'VLT',
     cost: isCoastal ? 35 : 24,

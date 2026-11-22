@@ -1,147 +1,31 @@
 export const CITY_NPCS = {
   neolife: [
-    { id:'luna', name:'Luna', role:'Estudante de cibernética', home:{x:2,y:3}, work:{x:9,y:2}, routines:['morning','afternoon','sunset','night'] },
-    { id:'kai', name:'Kai', role:'Engenheiro urbano', home:{x:4,y:10}, work:{x:4,y:9}, routines:['morning','afternoon','sunset','night'] },
+    { id:'luna', name:'Luna', role:'Investigadora de segurança digital', home:{x:2,y:3}, work:{x:9,y:2}, workBuilding:'innovation-lab', focus:'investigation', interest:'mistérios da rede', personality:'curiosa e metódica', dialogues:{morning:'Recebi um sinal estranho vindo dos terminais do centro.',afternoon:'Estou rastreando uma invasão. Cada pista importa.',sunset:'As luzes da Neo-Cidade escondem mais do que mostram.',night:'Se houver outro apagão, procure o terminal de emergência.'}, weekendDialogue:'Hoje vou investigar os arquivos antigos do distrito.', weatherDialogue:'O sistema está instável. Melhor manter os equipamentos protegidos.', storyChapters:[{affinity:20,title:'Sinal Fantasma',text:'Luna encontrou uma transmissão que não pertence a nenhuma rede conhecida.'},{affinity:55,title:'Código de Origem',text:'Ela precisa de ajuda para descobrir quem está por trás das invasões digitais.'}], routines:['morning','afternoon','sunset','night'] },
+    { id:'kai', name:'Kai', role:'Comerciante de equipamentos', home:{x:4,y:10}, work:{x:15,y:9}, workBuilding:'neon-market', focus:'commerce', interest:'gadgets e ferramentas', personality:'comunicativo e inventivo', dialogues:{morning:'Chegaram componentes novos para quem gosta de explorar.',afternoon:'Posso montar um kit de investigação com desconto.',sunset:'O mercado fica movimentado quando as luzes acendem.',night:'Fechando a loja. Amanhã chegam novos equipamentos.'}, weekendDialogue:'Hoje estou testando um dispositivo de rastreamento.', weatherDialogue:'Apagão? Tenho lanternas e baterias de emergência.', storyChapters:[{affinity:20,title:'Mercado Noturno',text:'Kai quer ampliar o acesso a equipamentos para todos os moradores.'},{affinity:55,title:'Rede de Confiança',text:'Ele está organizando comerciantes para proteger o distrito durante invasões.'}], routines:['morning','afternoon','sunset','night'] },
   ],
   fortaleza: [
-    {
-      id:'marina', name:'Marina', role:'Capitã comercial', home:{x:2,y:4}, work:{x:15,y:8},
-      workBuilding:'neon-market', spriteRow:5, focus:'commerce', interest:'as rotas costeiras',
-      personality:'prática e acolhedora',
-      dialogues:{
-        morning:'O primeiro ferry sai quando o céu clareia. Gosto de ver a cidade acordando pelo cais.',
-        afternoon:'Estou conferindo as encomendas da feira. Cada ilha tem um produto que conta sua história.',
-        sunset:'No fim do expediente, observo as luzes do porto e planejo a próxima travessia.',
-        night:'O cais fica mais calmo à noite; ainda assim, deixo uma lanterna acesa para quem chega.',
-      },
-      weekendDialogue:'Hoje trabalho sem pressa. Se tiver tempo, quero lhe mostrar a enseada protegida.',
-      weatherDialogue:'Com esse tempo, prefiro manter as embarcações no abrigo. O mar merece respeito.',
-      relations:[{ targetId:'bento', label:'Parceria no cais', bond:82 }],
-      storyChapters:[
-        { affinity:20, title:'Mapas de Maré', text:'Marina guarda mapas feitos à mão para ajudar viajantes a encontrar enseadas seguras.' },
-        { affinity:55, title:'Uma Rota para Todos', text:'Ela quer transformar o antigo ferry em uma rota comunitária acessível às pequenas ilhas.' },
-      ],
-      routines:['morning','afternoon','sunset','night'],
-    },
-    {
-      id:'bento', name:'Bento', role:'Artesão naval', home:{x:5,y:10}, work:{x:5,y:9},
-      workBuilding:'innovation-lab', spriteRow:6, focus:'projects', interest:'consertos e barcos',
-      personality:'paciente e inventivo',
-      dialogues:{
-        morning:'Começo o dia conferindo cada rebite. Um casco bem cuidado deixa todo mundo viajar tranquilo.',
-        afternoon:'Estou ajustando um leme solar. Pequenos reparos evitam grandes problemas no mar.',
-        sunset:'Gosto de guardar as ferramentas e ouvir as histórias de quem acabou de chegar.',
-        night:'A oficina descansa comigo, mas amanhã termino aquele projeto de navegação.',
-      },
-      weekendDialogue:'Hoje fecho a oficina mais cedo. Vou testar um modelo leve perto do farol.',
-      weatherDialogue:'Chuva é hora de revisar as juntas e proteger a madeira; o trabalho também sabe esperar.',
-      relations:[{ targetId:'marina', label:'Parceria no cais', bond:82 }],
-      storyChapters:[
-        { affinity:20, title:'O Primeiro Convés', text:'Bento aprendeu a trabalhar com madeira observando as embarcações antigas do porto.' },
-        { affinity:55, title:'Madeira e Sol', text:'Ele está projetando um pequeno barco solar para levar ferramentas às comunidades costeiras.' },
-      ],
-      routines:['morning','afternoon','sunset','night'],
-    },
+    { id:'marina', name:'Marina', role:'Capitã de balsa', home:{x:2,y:4}, work:{x:15,y:8}, workBuilding:'neon-market', focus:'travel', interest:'rotas marítimas', personality:'prática e acolhedora', dialogues:{morning:'A primeira balsa está quase pronta para partir.',afternoon:'O mercado aquático recebeu espécies registradas nas últimas expedições.',sunset:'O horizonte está bonito, mas precisamos observar as nuvens.',night:'As embarcações estão ancoradas. Travessias só com segurança.'}, weekendDialogue:'Posso mostrar uma rota curta entre os píeres.',weatherDialogue:'Tempestade chegando. Vamos suspender as viagens até passar.',storyChapters:[{affinity:20,title:'Rota Segura',text:'Marina está mapeando trajetos seguros entre as plataformas marítimas.'},{affinity:55,title:'Travessia Comunitária',text:'Ela quer tornar o transporte acessível aos moradores das ilhas.'}],routines:['morning','afternoon','sunset','night'] },
+    { id:'bento', name:'Bento', role:'Mecânico naval', home:{x:5,y:10}, work:{x:5,y:9}, workBuilding:'innovation-lab', focus:'crafting', interest:'barcos e motores', personality:'paciente e inventivo', dialogues:{morning:'Estou revisando o motor elétrico da balsa.',afternoon:'Uma peça bem ajustada evita problemas no meio do mar.',sunset:'Hoje terminei um casco resistente às ondas.',night:'A oficina fecha, mas as ideias continuam.'},weekendDialogue:'Vou testar um pequeno barco de exploração.',weatherDialogue:'Com ondas altas, reforço os cabos e espero a maré baixar.',storyChapters:[{affinity:20,title:'Motor de Maré',text:'Bento está adaptando motores para aproveitar a energia das ondas.'},{affinity:55,title:'Frota Azul',text:'Ele quer construir embarcações menores para missões de pesquisa.'}],routines:['morning','afternoon','sunset','night'] },
   ],
   nova: [
-    {
-      id:'nova', name:'Nóva', role:'Pesquisadora de IA', home:{x:15,y:2}, work:{x:5,y:9},
-      workBuilding:'innovation-lab', spriteRow:7, focus:'study', interest:'inteligência artificial',
-      personality:'curiosa e metódica',
-      dialogues:{
-        morning:'Antes de abrir as simulações, gosto de observar como a luz muda nas estufas solares.',
-        afternoon:'Estou comparando hipóteses, não pessoas. Aqui, uma boa pergunta vale mais que uma resposta rápida.',
-        sunset:'O laboratório fica bonito quando os painéis começam a refletir o entardecer.',
-        night:'Anotei a ideia para amanhã. Descansar também faz parte de uma pesquisa cuidadosa.',
-      },
-      weekendDialogue:'Hoje deixei as simulações para depois. Estou explorando os caminhos verdes do vale.',
-      weatherDialogue:'A chuva altera os sensores externos, então estou trabalhando com os dados já registrados.',
-      storyChapters:[
-        { affinity:20, title:'Perguntas Melhores', text:'Nóva começou sua pesquisa tentando ensinar sistemas a fazer perguntas mais cuidadosas.' },
-        { affinity:55, title:'Dados com Consentimento', text:'Seu próximo projeto só usa medições autorizadas e deixa as pessoas decidirem o que compartilhar.' },
-      ],
-      routines:['morning','afternoon','sunset','night'],
-    },
+    { id:'flora', name:'Flora', role:'Botânica de bioengenharia', home:{x:15,y:2}, work:{x:7,y:3}, workBuilding:'greenhouse', focus:'nature', interest:'plantas adaptativas', personality:'atenta e gentil', dialogues:{morning:'As estufas estão acordando. Hoje vou observar uma nova muda.',afternoon:'Algumas plantas estão reagindo de forma inesperada à luz.',sunset:'O jardim fica mais bonito quando os sensores diminuem.',night:'Deixei as estufas em modo de conservação.'},weekendDialogue:'Vou coletar sementes sem prejudicar as espécies.',weatherDialogue:'A umidade mudou. Precisamos ajustar a irrigação.',storyChapters:[{affinity:20,title:'Semente Estranha',text:'Flora encontrou uma semente com comportamento bioluminescente.'},{affinity:55,title:'Jardim Vivo',text:'Ela quer criar um espaço de cultivo comunitário e biodiversidade.'}],routines:['morning','afternoon','sunset','night'] },
+    { id:'caio', name:'Caio', role:'Guardião ambiental', home:{x:4,y:10}, work:{x:5,y:9}, workBuilding:'innovation-lab', focus:'environment', interest:'recuperação de ecossistemas', personality:'calmo e determinado', dialogues:{morning:'Vou verificar os sensores de qualidade do solo.',afternoon:'A área norte precisa de recuperação vegetal.',sunset:'Cada muda plantada ajuda a cidade a respirar.',night:'Os drones de monitoramento estão funcionando.'},weekendDialogue:'Hoje teremos mutirão no jardim comunitário.',weatherDialogue:'A alteração biológica parece estar avançando. Vamos investigar.',storyChapters:[{affinity:20,title:'Solo em Alerta',text:'Caio detectou alterações em uma área próxima às estufas.'},{affinity:55,title:'Corredor Verde',text:'Ele planeja conectar jardins para proteger as criaturas locais.'}],routines:['morning','afternoon','sunset','night'] },
   ],
   serra: [
-    {
-      id:'orion', name:'Órion', role:'Astrônomo', home:{x:3,y:3}, work:{x:14,y:1},
-      workBuilding:'university', spriteRow:8, focus:'study', interest:'astronomia e observação',
-      personality:'sereno e contemplativo',
-      dialogues:{
-        morning:'A névoa ainda cobre as trilhas. Vou registrar o céu quando ela se abrir.',
-        afternoon:'Estou calibrando o observatório; cada ajuste melhora a próxima leitura.',
-        sunset:'Esse é meu horário favorito: a serra fica violeta antes das primeiras estrelas.',
-        night:'Encontrei uma constelação nova no mapa local. Quer olhar comigo depois?',
-      },
-      weekendDialogue:'Hoje não há aula nem palestra. Vou deixar o telescópio aberto para quem passar.',
-      weatherDialogue:'Com nuvens baixas, troco o telescópio pelo arquivo de mapas celestes.',
-      storyChapters:[
-        { affinity:20, title:'Céu de Inverno', text:'Órion começou a observar o céu em noites frias, usando um telescópio emprestado do instituto.' },
-        { affinity:55, title:'Observatório Aberto', text:'Ele sonha em manter o mirante aberto para qualquer morador curioso, sem exigir conhecimento prévio.' },
-      ],
-      routines:['morning','afternoon','sunset','night'],
-    },
+    { id:'dara', name:'Dara', role:'Engenheira de mineração', home:{x:2,y:3}, work:{x:5,y:9}, workBuilding:'innovation-lab', focus:'mining', interest:'minerais raros', personality:'objetiva e corajosa', dialogues:{morning:'A equipe encontrou um veio mineral perto das dunas.',afternoon:'Use proteção: a areia reduz a visibilidade rapidamente.',sunset:'A temperatura cai e a oficina começa a receber materiais.',night:'As máquinas estão desligadas para manutenção.'},weekendDialogue:'Vou explorar uma área de mineração desativada.',weatherDialogue:'Tempestade de areia! Procure abrigo e não saia da rota marcada.',storyChapters:[{affinity:20,title:'Veio Oculto',text:'Dara encontrou sinais de um depósito mineral ainda não catalogado.'},{affinity:55,title:'Oficina do Deserto',text:'Ela está criando ferramentas resistentes ao calor e à areia.'}],routines:['morning','afternoon','sunset','night'] },
+    { id:'rami', name:'Rami', role:'Mecânico de equipamentos', home:{x:15,y:2}, work:{x:15,y:9}, workBuilding:'neon-market', focus:'crafting', interest:'ferramentas e melhorias', personality:'bem-humorado e habilidoso', dialogues:{morning:'Traga peças usadas. Sempre dá para reaproveitar algo.',afternoon:'Terminei uma proteção nova para equipamentos de mineração.',sunset:'A oficina está cheia de projetos para amanhã.',night:'Vou guardar as ferramentas antes que a areia entre em tudo.'},weekendDialogue:'Hoje faço manutenção nos veículos de exploração.',weatherDialogue:'Com esse vento, cubra os mecanismos e espere a areia baixar.',storyChapters:[{affinity:20,title:'Peça por Peça',text:'Rami está recuperando máquinas antigas para reduzir desperdício.'},{affinity:55,title:'Ferramenta de Campo',text:'Ele quer desenvolver um kit para exploração segura das dunas.'}],routines:['morning','afternoon','sunset','night'] },
   ],
   litoral: [
-    {
-      id:'sel', name:'Sel', role:'Oceanógrafa', home:{x:3,y:4}, work:{x:15,y:2},
-      workBuilding:'innovation-lab', spriteRow:9, focus:'projects', interest:'vida marinha',
-      personality:'atenta e otimista',
-      dialogues:{
-        morning:'Estou verificando a maré antes de liberar os sensores. O oceano sempre dá sinais.',
-        afternoon:'Os recifes estão mais ativos hoje. Anoto tudo sem interferir no habitat.',
-        sunset:'A aurora começa cedo aqui; gosto de acompanhar a mudança de cor na água.',
-        night:'Deixei os instrumentos em monitoramento. Agora o mar precisa de silêncio.',
-      },
-      weekendDialogue:'Hoje faço uma caminhada curta pela praia e recolho apenas dados, nunca lembranças do recife.',
-      weatherDialogue:'Com a chuva, adio a saída para o mar e reviso as medições no laboratório.',
-      storyChapters:[
-        { affinity:20, title:'Ouvindo o Recife', text:'Sel aprendeu a reconhecer mudanças na água antes de elas aparecerem nos instrumentos.' },
-        { affinity:55, title:'Refúgio Azul', text:'Ela está preparando uma área de proteção marinha construída com os pescadores locais.' },
-      ],
-      routines:['morning','afternoon','sunset','night'],
-    },
+    { id:'iris', name:'Íris', role:'Cientista de energia', home:{x:3,y:4}, work:{x:15,y:2}, workBuilding:'innovation-lab', focus:'science', interest:'cristais energéticos', personality:'brilhante e inquieta', dialogues:{morning:'Os cristais estão emitindo uma frequência diferente.',afternoon:'Precisamos estabilizar o reator antes do próximo teste.',sunset:'A luz atravessa as montanhas e revela novas cores.',night:'O laboratório está em modo de segurança.'},weekendDialogue:'Vou observar as formações cristalinas nas encostas.',weatherDialogue:'A rede está sobrecarregada. Evite tocar nos terminais expostos.',storyChapters:[{affinity:20,title:'Pulso Prisma',text:'Íris identificou uma fonte de energia em uma formação cristalina.'},{affinity:55,title:'Núcleo Estável',text:'Ela busca uma forma segura de distribuir energia para as outras cidades.'}],routines:['morning','afternoon','sunset','night'] },
+    { id:'noah', name:'Noah', role:'Pesquisador de campo', home:{x:6,y:10}, work:{x:4,y:3}, workBuilding:'university', focus:'research', interest:'fenômenos elétricos', personality:'observador e paciente', dialogues:{morning:'Vou registrar a atividade elétrica nas encostas.',afternoon:'Os dados indicam uma sobrecarga localizada.',sunset:'O céu daqui parece um prisma.',night:'Os sensores continuam coletando dados.'},weekendDialogue:'Hoje haverá uma visita guiada ao laboratório.',weatherDialogue:'A instabilidade energética exige cautela nas trilhas.',storyChapters:[{affinity:20,title:'Sinais na Montanha',text:'Noah encontrou padrões elétricos que se repetem nas rochas.'},{affinity:55,title:'Rede de Energia',text:'Ele está conectando os laboratórios a uma rede mais resiliente.'}],routines:['morning','afternoon','sunset','night'] },
   ],
   porto: [
-    {
-      id:'darius', name:'Darius', role:'Operador logístico', home:{x:3,y:4}, work:{x:5,y:9},
-      workBuilding:'innovation-lab', spriteRow:10, focus:'tasks', interest:'logística e manutenção',
-      personality:'direto e confiável',
-      dialogues:{
-        morning:'Já organizei as partidas do turno. Um porto eficiente também precisa de pausas bem marcadas.',
-        afternoon:'Estou conferindo a carga por região para evitar viagens desnecessárias.',
-        sunset:'O guindaste solar encerra o dia em silêncio. É meu sinal para fechar a planilha.',
-        night:'Tudo seguro no cais. Amanhã volto cedo para abrir as rotas.',
-      },
-      weekendDialogue:'No fim de semana, só acompanho o essencial. O porto também precisa respirar.',
-      weatherDialogue:'Com nevoeiro, diminuímos o ritmo e priorizamos a segurança dos trabalhadores.',
-      storyChapters:[
-        { affinity:20, title:'Rotas Seguras', text:'Darius aprendeu a planejar rotas observando como as equipes se ajudam durante as mudanças de turno.' },
-        { affinity:55, title:'Carga Compartilhada', text:'Ele está reorganizando as entregas para que oficinas menores também recebam materiais a tempo.' },
-      ],
-      routines:['morning','afternoon','sunset','night'],
-    },
+    { id:'maya', name:'Maya', role:'Arqueóloga marinha', home:{x:3,y:4}, work:{x:7,y:3}, workBuilding:'university', focus:'exploration', interest:'ruínas e cavernas', personality:'curiosa e respeitosa', dialogues:{morning:'A maré baixa revelou uma entrada na caverna.',afternoon:'Nunca retire um artefato antes de registrar sua posição.',sunset:'As inscrições parecem contar a história de uma antiga expedição.',night:'A área está isolada até a próxima janela de maré.'},weekendDialogue:'Vou mapear uma trilha costeira nova.',weatherDialogue:'Com mar agitado, as cavernas ficam fechadas.',storyChapters:[{affinity:20,title:'Inscrição Submersa',text:'Maya encontrou símbolos em uma câmara costeira.'},{affinity:55,title:'Arquivo de Mirage',text:'Ela quer preservar as descobertas em um museu aberto à comunidade.'}],routines:['morning','afternoon','sunset','night'] },
+    { id:'téo', name:'Téo', role:'Biólogo de criaturas raras', home:{x:15,y:2}, work:{x:8,y:10}, workBuilding:'greenhouse', focus:'wildlife', interest:'fauna insular', personality:'cuidadoso e entusiasmado', dialogues:{morning:'Vi rastros perto das piscinas naturais.',afternoon:'Registre a criatura à distância. O habitat vem primeiro.',sunset:'Algumas espécies só aparecem quando a luz diminui.',night:'Os sensores noturnos estão ativos.'},weekendDialogue:'Vou observar a enseada sem interferir na fauna.',weatherDialogue:'A maré está forte. Vamos adiar a observação costeira.',storyChapters:[{affinity:20,title:'Pegadas na Areia',text:'Téo está tentando identificar uma criatura que aparece raramente.'},{affinity:55,title:'Santuário Mirage',text:'Ele quer criar uma área protegida para espécies insulares.'}],routines:['morning','afternoon','sunset','night'] },
   ],
   ilhada: [
-    {
-      id:'nami', name:'Nami', role:'Guia sustentável', home:{x:3,y:4}, work:{x:16,y:2},
-      workBuilding:'greenhouse', spriteRow:11, focus:'habits', interest:'trilhas e conservação',
-      personality:'alegre e cuidadosa',
-      dialogues:{
-        morning:'Antes da trilha, confiro água e sinalização. Cuidar do grupo vem antes de chegar rápido.',
-        afternoon:'Os visitantes estão aprendendo a observar sem deixar marcas. Esse é o melhor passeio.',
-        sunset:'A lagoa fica dourada no fim da tarde. É um bom lugar para agradecer pelo dia.',
-        night:'A mata fica mais tranquila quando as luzes diminuem. Vou recolher os últimos materiais.',
-      },
-      weekendDialogue:'Hoje guio um passeio pequeno pela costa. Vamos no ritmo de quem está caminhando.',
-      weatherDialogue:'Com monção, mudamos a rota e ficamos perto do abrigo. A natureza dita o caminho.',
-      storyChapters:[
-        { affinity:20, title:'Trilha Sem Marcas', text:'Nami criou um guia de caminhada que ensina a observar a ilha sem deixar rastros.' },
-        { affinity:55, title:'A Lagoa Compartilhada', text:'Ela está reunindo moradores para proteger os caminhos que ligam a lagoa às casas da ilha.' },
-      ],
-      routines:['morning','afternoon','sunset','night'],
-    },
+    { id:'aurora', name:'Aurora', role:'Coordenadora de missões da capital', home:{x:3,y:4}, work:{x:10,y:6}, workBuilding:'central-hub', focus:'main-quest', interest:'história da cidade', personality:'inspiradora e estratégica', dialogues:{morning:'A capital recebeu notícias de todas as regiões.',afternoon:'Há um desafio novo no centro de torneios.',sunset:'A história desta cidade está ligada às outras seis.',night:'Amanhã começa uma nova etapa da missão principal.'},weekendDialogue:'Hoje teremos um encontro de representantes das regiões.',weatherDialogue:'Mesmo com o clima instável, os eventos globais seguem no abrigo central.',storyChapters:[{affinity:20,title:'Chamado de Aurora',text:'Aurora está reunindo pistas sobre a origem da rede que conecta as cidades.'},{affinity:55,title:'Convergência',text:'Ela prepara uma missão que exigirá cooperação entre todas as regiões.'}],routines:['morning','afternoon','sunset','night'] },
+    { id:'enzo', name:'Enzo', role:'Organizador de torneios', home:{x:15,y:2}, work:{x:15,y:9}, workBuilding:'neon-market', focus:'tournaments', interest:'desafios e competições', personality:'competitivo e justo', dialogues:{morning:'As inscrições para o torneio estão abertas.',afternoon:'O desafio de hoje testa estratégia e exploração.',sunset:'A arena está pronta para receber os finalistas.',night:'A classificação será atualizada amanhã.'},weekendDialogue:'Hoje teremos uma competição especial entre distritos.',weatherDialogue:'A etapa externa foi transferida para a arena coberta.',storyChapters:[{affinity:20,title:'Primeiro Desafio',text:'Enzo quer criar torneios acessíveis para jogadores iniciantes.'},{affinity:55,title:'Campeonato Global',text:'Ele está organizando uma competição entre todas as cidades.'}],routines:['morning','afternoon','sunset','night'] },
   ],
 };
 

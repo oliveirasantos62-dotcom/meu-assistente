@@ -83,7 +83,7 @@ const definitions = {
       plaza: [[9, 5, 11, 7], [5, 2, 6, 3]],
       forest: [[0, 8, 2, 11], [17, 1, 19, 3]],
     },
-    landmarks: [{ id: 'pulse-garden', name: 'Jardim de Pulso', x: 6, y: 3, kind: 'garden' }],
+    landmarks: [{ id: 'pulse-garden', name: 'Praça dos Terminais', x: 6, y: 3, kind: 'garden' }],
   },
   fortaleza: {
     spawn: { x: 10, y: 6 },
@@ -103,7 +103,7 @@ const definitions = {
       plaza: [[10, 5, 12, 7]],
       forest: [[4, 1, 5, 2], [11, 1, 13, 2]],
     },
-    landmarks: [{ id: 'blue-lighthouse', name: 'Farol das Marés', x: 2, y: 1, kind: 'lighthouse' }],
+    landmarks: [{ id: 'cybernetic-lighthouse', name: 'Farol Cibernético', x: 2, y: 1, kind: 'lighthouse' }],
   },
   nova: {
     spawn: { x: 10, y: 6 },
@@ -118,7 +118,7 @@ const definitions = {
       plaza: [[10, 5, 12, 7], [6, 2, 7, 3]],
       forest: [[0, 0, 1, 4], [4, 1, 6, 2], [12, 8, 17, 9]],
     },
-    landmarks: [{ id: 'aurora-arboretum', name: 'Arboreto Aurora', x: 6, y: 2, kind: 'garden' }],
+    landmarks: [{ id: 'bio-greenhouse', name: 'Estufa Bioluminescente', x: 6, y: 2, kind: 'garden' }],
   },
   serra: {
     spawn: { x: 10, y: 6 },
@@ -133,7 +133,7 @@ const definitions = {
       plaza: [[10, 5, 12, 7]],
       shore: [[6, 10, 8, 11]],
     },
-    landmarks: [{ id: 'cloud-observatory', name: 'Mirante das Nuvens', x: 7, y: 4, kind: 'observatory' }],
+    landmarks: [{ id: 'desert-oasis', name: 'Oásis das Dunas', x: 7, y: 4, kind: 'observatory' }],
   },
   litoral: {
     spawn: { x: 10, y: 6 },
@@ -153,12 +153,12 @@ const definitions = {
       plaza: [[10, 5, 12, 7]],
       forest: [[4, 1, 6, 3], [5, 8, 7, 10]],
     },
-    landmarks: [{ id: 'tidal-research', name: 'Boia de Pesquisa Tidal', x: 16, y: 4, kind: 'buoy' }],
+    landmarks: [{ id: 'prism-energy-core', name: 'Núcleo de Energia Prisma', x: 16, y: 4, kind: 'buoy' }],
   },
   porto: {
     spawn: { x: 10, y: 6 },
     harbor: {
-      name: 'Cargueiro Solar',
+      name: 'Balsa Mirage',
       ship: { x: 17, y: 0, width: 3, height: 2, orientation: 'horizontal' },
       dock: { x: 16, y: 4 },
     },
@@ -169,11 +169,11 @@ const definitions = {
     ],
     features: {
       water: [[0, 8, 2, 11], [17, 0, 19, 2]],
-      shore: [[3, 8, 3, 11], [16, 0, 16, 2]],
-      industry: [[12, 1, 16, 3], [6, 8, 10, 9], [16, 8, 19, 11]],
+      shore: [[3, 8, 4, 11], [16, 0, 17, 7]],
+      forest: [[10, 1, 13, 3], [6, 8, 10, 9], [16, 8, 18, 10]],
       plaza: [[10, 5, 11, 7]],
     },
-    landmarks: [{ id: 'cargo-crane', name: 'Guindaste Solar', x: 17, y: 4, kind: 'crane' }],
+    landmarks: [{ id: 'mirage-ruins', name: 'Ruínas da Enseada', x: 17, y: 4, kind: 'crane' }],
   },
   ilhada: {
     spawn: { x: 10, y: 6 },
@@ -193,7 +193,7 @@ const definitions = {
       forest: [[4, 0, 5, 2], [10, 0, 11, 2], [2, 8, 5, 9], [16, 8, 17, 9]],
       plaza: [[9, 5, 11, 7]],
     },
-    landmarks: [{ id: 'solar-lagoon', name: 'Lagoa Solar', x: 4, y: 3, kind: 'lagoon' }],
+    landmarks: [{ id: 'aurora-plaza', name: 'Praça da Capital', x: 4, y: 3, kind: 'lagoon' }],
   },
 };
 

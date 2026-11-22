@@ -2019,7 +2019,7 @@ function cityWorldStart(data, cityId = 'neolife') {
 }
 
 const REGION_MAP_SIZE = Object.freeze({ width: 600, height: 360 });
-const COASTAL_CITY_IDS = new Set(['fortaleza', 'porto', 'ilhada', 'litoral']);
+const COASTAL_CITY_IDS = new Set(['fortaleza', 'porto', 'litoral']);
 const REGION_ISLAND_SHAPES = Object.freeze({
   neolife:
     'M-48 -6 L-37 -21 -19 -18 -9 -27 13 -24 23 -16 42 -13 48 -1 39 12 23 14 12 25 -5 22 -17 16 -34 17 -45 8 Z',
