@@ -771,3 +771,16 @@
 .neo-world-map .neo-world-tree i{
   filter:saturate(.9) drop-shadow(0 0 3px rgba(80,224,180,.18));
 }
+
+
+/* Mapa limpo: identificação dos pontos fica em tooltip/acessibilidade,
+   sem placas permanentes sobrecarregando a exploração. */
+.neo-region-pin span{display:none!important}
+.neo-building-marker{
+  width:22px!important;height:22px!important;min-width:22px!important;
+  padding:0!important;border-radius:50%!important;
+  display:grid!important;place-items:center!important;
+  font-size:11px!important;line-height:1!important;
+  box-shadow:0 2px 7px rgba(0,0,0,.45)!important;
+  transform:translate(-50%,-50%)!important;
+}

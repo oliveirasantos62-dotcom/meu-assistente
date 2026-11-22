@@ -2164,7 +2164,6 @@ function CityRouteMap({ activeCityId, onSelectCity, size = 'compact' }) {
             onClick={() => onSelectCity(city.id)}
           >
             <i aria-hidden='true' />
-            <span>{expanded ? city.name : tag}</span>
           </button>
         );
       })}
@@ -3246,6 +3245,35 @@ export default function NeoLifeCity({ data = {}, save, onNavigate }) {
     let targetX = player.x;
     let targetY = player.y;
 
+    const attemptedX = player.x + dx;
+    const attemptedY = player.y + dy;
+    const exitsWorld =
+      attemptedX < 0 || attemptedX >= activeMap.width ||
+      attemptedY < 0 || attemptedY >= activeMap.height;
+    if (exitsWorld && !boatBoarded) {
+      const direction = dx > 0 ? 'east' : dx < 0 ? 'west' : dy > 0 ? 'south' : 'north';
+      const candidates = activeCity.routes
+        .map((id) => CITIES.find((city) => city.id === id))
+        .filter(Boolean)
+        .map((city) => {
+          const deltaX = city.mapPosition.x - activeCity.mapPosition.x;
+          const deltaY = city.mapPosition.y - activeCity.mapPosition.y;
+          const score = direction === 'east' ? deltaX - Math.abs(deltaY) * 0.35
+            : direction === 'west' ? -deltaX - Math.abs(deltaY) * 0.35
+              : direction === 'south' ? deltaY - Math.abs(deltaX) * 0.35
+                : -deltaY - Math.abs(deltaX) * 0.35;
+          return { city, score };
+        })
+        .filter((item) => item.score > 0)
+        .sort((a, b) => b.score - a.score);
+      const nextCity = candidates[0]?.city;
+      if (nextCity && canUnlockTravel(nextCity.world || {}, activeCityId, nextCity.id)) {
+        travelToCity(nextCity.id, { walking: true, entryDirection: direction });
+      } else {
+        setNotice('Não há uma passagem aberta nessa direção. Explore as saídas conectadas.');
+      }
+      return;
+    }
     for (let s = 1; s <= stepMultiplier; s++) {
       const nx = Math.max(0, Math.min(activeMap.width - 1, player.x + dx * s));
       const ny = Math.max(0, Math.min(activeMap.height - 1, player.y + dy * s));
@@ -3785,7 +3813,8 @@ export default function NeoLifeCity({ data = {}, save, onNavigate }) {
     });
   }, [worldZoom, activeCityId, player, boatBoarded]);
 
-  const travelToCity = (cityId) => {
+  const travelToCity = (cityId, travelOptions = {}) => {
+    const { walking = false, entryDirection = null } = travelOptions;
     const destination = CITIES.find((city) => city.id === cityId);
     if (!destination) return;
     const world = city.world && typeof city.world === 'object' ? city.world : {};
@@ -3803,7 +3832,7 @@ export default function NeoLifeCity({ data = {}, save, onNavigate }) {
     }
     const route = getTravelRoute(activeCityId, cityId);
     const travelMinutes = destination.id === activeCityId ? 0 : route.minutes;
-    if (destination.id !== activeCityId && coins < route.cost) {
+    if (!walking && destination.id !== activeCityId && coins < route.cost) {
       setNotice(`Passagem indisponível: faltam ${route.cost - coins} moedas.`);
       return;
     }
@@ -3832,7 +3861,7 @@ export default function NeoLifeCity({ data = {}, save, onNavigate }) {
       savedDestination.player.y >= destinationMap.harbor.ship.y &&
       savedDestination.player.y <
         destinationMap.harbor.ship.y + destinationMap.harbor.ship.height;
-    const nextPlayer =
+    let nextPlayer =
       savedDestination.player &&
       Number.isFinite(savedDestination.player.x) &&
       Number.isFinite(savedDestination.player.y) &&
@@ -3843,6 +3872,19 @@ export default function NeoLifeCity({ data = {}, save, onNavigate }) {
         savedBoatPosition)
         ? savedDestination.player
         : { ...destinationMap.spawn };
+    if (walking && entryDirection) {
+      const edgeEntry = {
+        east: { x: 1, y: Math.round(destinationMap.height / 2) },
+        west: { x: destinationMap.width - 2, y: Math.round(destinationMap.height / 2) },
+        north: { x: Math.round(destinationMap.width / 2), y: destinationMap.height - 2 },
+        south: { x: Math.round(destinationMap.width / 2), y: 1 },
+      }[entryDirection];
+      if (edgeEntry && !destinationMap.isWaterTile(edgeEntry.x, edgeEntry.y)) {
+        nextPlayer = edgeEntry;
+      } else {
+        nextPlayer = { ...destinationMap.spawn };
+      }
+    }
     const nextZoom =
       Number.isFinite(savedDestination.zoom) &&
       savedDestination.zoom >= 0.78 &&
@@ -3871,12 +3913,14 @@ export default function NeoLifeCity({ data = {}, save, onNavigate }) {
           mapStates,
         },
       },
-      destination.id === activeCityId ? {} : { coins: coins - route.cost },
+      !walking && destination.id !== activeCityId ? { coins: coins - route.cost } : {},
     );
     setNotice(
-      travelMinutes > 0
-        ? `Viagem concluída por ${route.mode}: ${destination.name} · ${travelMinutes} min · ${route.cost} moedas.`
-        : `Você já está em ${destination.name}.`,
+      walking
+        ? `Você chegou caminhando a ${destination.name}.`
+        : travelMinutes > 0
+          ? `Viagem concluída por ${route.mode}: ${destination.name} · ${travelMinutes} min · ${route.cost} moedas.`
+          : `Você já está em ${destination.name}.`,
     );
   };
 
@@ -5238,7 +5282,6 @@ export default function NeoLifeCity({ data = {}, save, onNavigate }) {
                         {landmark ? (
                           <span
                             className={`neo-world-landmark landmark-${landmark.kind}`}
-                            title={landmark.name}
                             aria-hidden='true'
                           >
                             <i /><b />
@@ -5290,11 +5333,12 @@ export default function NeoLifeCity({ data = {}, save, onNavigate }) {
                         {isBuildingAnchor && bOpenStatus ? (
                           <button
                             type='button'
-                            className={`neo-building-hours-badge ${bOpenStatus.isOpen ? 'open' : 'closed'}`}
+                            className={`neo-building-hours-badge neo-building-marker ${bOpenStatus.isOpen ? 'open' : 'closed'}`}
                             onClick={() => enterBuilding(building)}
+                            aria-label={`Entrar em ${building.name} · ${bOpenStatus.isOpen ? 'aberto' : 'fechado'}`}
+                            title={`${building.name} · ${bOpenStatus.isOpen ? 'Aberto' : 'Fechado'}`}
                           >
-                            {building.icon} {building.name} ·{' '}
-                            {bOpenStatus.isOpen ? 'ABERTO' : 'FECHADO'}
+                            {building.icon}
                           </button>
                         ) : null}
 
