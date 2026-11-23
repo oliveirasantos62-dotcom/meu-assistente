@@ -208,8 +208,23 @@ export default function Tasks({ data, save, completeTask }) {
   const tagsList = Array.isArray(data?.tags) ? data.tags : [];
   const colorIndex = Array.isArray(data?.colorIndex) ? data.colorIndex : [];
   const saveColorIndex = (next) => save({ ...data, colorIndex: next });
-  const colorFor = (id) => colorIndex.find((c) => String(c.id) === String(id))?.color || '';
-  const colorPicker = (value, onChange, aria='Associar cor') => <select className='color-index-select' value={value || ''} onChange={(e) => onChange(e.target.value)} aria-label={aria}><option value=''>Sem cor</option>{colorIndex.map((c) => <option value={c.id} key={c.id}>{c.name}</option>)}</select>;
+  const colorFor = (id) =>
+    colorIndex.find((c) => String(c.id) === String(id))?.color || '';
+  const colorPicker = (value, onChange, aria = 'Associar cor') => (
+    <select
+      className='color-index-select'
+      value={value || ''}
+      onChange={(e) => onChange(e.target.value)}
+      aria-label={aria}
+    >
+      <option value=''>Sem cor</option>
+      {colorIndex.map((c) => (
+        <option value={c.id} key={c.id}>
+          {c.name}
+        </option>
+      ))}
+    </select>
+  );
 
   // Localiza a área de uma tarefa.
   // Também reconhece tarefas antigas que guardavam o nome em "area".
@@ -344,36 +359,142 @@ export default function Tasks({ data, save, completeTask }) {
       ...prev,
       subtasks: removeSubtaskTree(prev.subtasks, id),
     }));
-  const addSubtaskColumn = () => updateForm('subtaskColumns', [...(form.subtaskColumns || []), { id: createId(), title: '', items: [] }]);
-  const updateSubtaskColumn = (columnId, changes) => setForm((prev) => ({ ...prev, subtaskColumns: (prev.subtaskColumns || []).map((col) => col.id === columnId ? { ...col, ...changes } : col) }));
-  const deleteSubtaskColumn = (columnId) => setForm((prev) => ({ ...prev, subtaskColumns: (prev.subtaskColumns || []).filter((col) => col.id !== columnId) }));
-  const addSubtaskColumnItem = (columnId) => updateSubtaskColumn(columnId, { items: [...((form.subtaskColumns || []).find(c => c.id === columnId)?.items || []), { id: createId(), text: '', done: false, colorId: '' }] });
-  const updateSubtaskColumnItem = (columnId, itemId, text) => updateSubtaskColumn(columnId, { items: ((form.subtaskColumns || []).find(c => c.id === columnId)?.items || []).map(item => item.id === itemId ? { ...item, text } : item) });
-  const toggleFormColumnItem = (columnId, itemId) => updateSubtaskColumn(columnId, { items: ((form.subtaskColumns || []).find(c => c.id === columnId)?.items || []).map(item => item.id === itemId ? { ...item, done: !item.done } : item) });
+  const addSubtaskColumn = () =>
+    updateForm('subtaskColumns', [
+      ...(form.subtaskColumns || []),
+      { id: createId(), title: '', items: [] },
+    ]);
+  const updateSubtaskColumn = (columnId, changes) =>
+    setForm((prev) => ({
+      ...prev,
+      subtaskColumns: (prev.subtaskColumns || []).map((col) =>
+        col.id === columnId ? { ...col, ...changes } : col,
+      ),
+    }));
+  const deleteSubtaskColumn = (columnId) =>
+    setForm((prev) => ({
+      ...prev,
+      subtaskColumns: (prev.subtaskColumns || []).filter(
+        (col) => col.id !== columnId,
+      ),
+    }));
+  const addSubtaskColumnItem = (columnId) =>
+    updateSubtaskColumn(columnId, {
+      items: [
+        ...((form.subtaskColumns || []).find((c) => c.id === columnId)?.items ||
+          []),
+        { id: createId(), text: '', done: false, colorId: '' },
+      ],
+    });
+  const updateSubtaskColumnItem = (columnId, itemId, text) =>
+    updateSubtaskColumn(columnId, {
+      items: (
+        (form.subtaskColumns || []).find((c) => c.id === columnId)?.items || []
+      ).map((item) => (item.id === itemId ? { ...item, text } : item)),
+    });
+  const toggleFormColumnItem = (columnId, itemId) =>
+    updateSubtaskColumn(columnId, {
+      items: (
+        (form.subtaskColumns || []).find((c) => c.id === columnId)?.items || []
+      ).map((item) =>
+        item.id === itemId ? { ...item, done: !item.done } : item,
+      ),
+    });
   const toggleTaskColumnItem = (task, columnId, itemId) => {
-    const subtaskColumns = (task.subtaskColumns || []).map(column => column.id !== columnId ? column : { ...column, items: (column.items || []).map(item => item.id === itemId ? { ...item, done: !item.done } : item) });
-    save({ ...data, tasks: tasksList.map(item => item.id === task.id ? { ...item, subtaskColumns, updatedAt: new Date().toISOString() } : item) });
+    const subtaskColumns = (task.subtaskColumns || []).map((column) =>
+      column.id !== columnId
+        ? column
+        : {
+            ...column,
+            items: (column.items || []).map((item) =>
+              item.id === itemId ? { ...item, done: !item.done } : item,
+            ),
+          },
+    );
+    save({
+      ...data,
+      tasks: tasksList.map((item) =>
+        item.id === task.id
+          ? { ...item, subtaskColumns, updatedAt: new Date().toISOString() }
+          : item,
+      ),
+    });
   };
-  const setFormColumnItemColor = (columnId, itemId, colorId) => updateSubtaskColumn(columnId, { items: ((form.subtaskColumns || []).find(c => c.id === columnId)?.items || []).map(item => item.id === itemId ? { ...item, colorId } : item) });
-  const setFormSubtaskColor = (id, colorId) => updateFormSubtask(id, { colorId });
-  const deleteSubtaskColumnItem = (columnId, itemId) => updateSubtaskColumn(columnId, { items: ((form.subtaskColumns || []).find(c => c.id === columnId)?.items || []).filter(item => item.id !== itemId) });
+  const setFormColumnItemColor = (columnId, itemId, colorId) =>
+    updateSubtaskColumn(columnId, {
+      items: (
+        (form.subtaskColumns || []).find((c) => c.id === columnId)?.items || []
+      ).map((item) => (item.id === itemId ? { ...item, colorId } : item)),
+    });
+  const setFormSubtaskColor = (id, colorId) =>
+    updateFormSubtask(id, { colorId });
+  const deleteSubtaskColumnItem = (columnId, itemId) =>
+    updateSubtaskColumn(columnId, {
+      items: (
+        (form.subtaskColumns || []).find((c) => c.id === columnId)?.items || []
+      ).filter((item) => item.id !== itemId),
+    });
 
-  const renderIndependentSubtaskColumns = () => (form.subtaskColumns || []).map((column) => (
-    <div className='subtask-independent-column' key={column.id}>
-      <div className='subtask-independent-column-heading'>
-        <input value={column.title || ''} placeholder='Título da coluna' aria-label='Título da coluna' onChange={(e) => updateSubtaskColumn(column.id, { title: e.target.value })} />
-        <button type='button' className='ghost' title='Excluir coluna' onClick={() => deleteSubtaskColumn(column.id)}>🗑️</button>
-      </div>
-      {(column.items || []).map((item) => (
-        <div className='subtask-independent-item' key={item.id}>
-          <input type='checkbox' checked={!!item.done} aria-label='Marcar item' onChange={() => toggleFormColumnItem(column.id, item.id)} />
-          <input value={item.text || ''} placeholder='Item...' onChange={(e) => updateSubtaskColumnItem(column.id, item.id, e.target.value)} />{colorPicker(item.colorId, (colorId) => setFormColumnItemColor(column.id, item.id, colorId), 'Cor do item')}
-          <button type='button' className='ghost' title='Excluir item' onClick={() => deleteSubtaskColumnItem(column.id, item.id)}>×</button>
+  const renderIndependentSubtaskColumns = () =>
+    (form.subtaskColumns || []).map((column) => (
+      <div className='subtask-independent-column' key={column.id}>
+        <div className='subtask-independent-column-heading'>
+          <input
+            value={column.title || ''}
+            placeholder='Título da coluna'
+            aria-label='Título da coluna'
+            onChange={(e) =>
+              updateSubtaskColumn(column.id, { title: e.target.value })
+            }
+          />
+          <button
+            type='button'
+            className='ghost'
+            title='Excluir coluna'
+            onClick={() => deleteSubtaskColumn(column.id)}
+          >
+            🗑️
+          </button>
         </div>
-      ))}
-      <button type='button' className='secondary' onClick={() => addSubtaskColumnItem(column.id)}>＋ Item</button>
-    </div>
-  ));
+        {(column.items || []).map((item) => (
+          <div className='subtask-independent-item' key={item.id}>
+            <input
+              type='checkbox'
+              checked={!!item.done}
+              aria-label='Marcar item'
+              onChange={() => toggleFormColumnItem(column.id, item.id)}
+            />
+            <input
+              value={item.text || ''}
+              placeholder='Item...'
+              onChange={(e) =>
+                updateSubtaskColumnItem(column.id, item.id, e.target.value)
+              }
+            />
+            {colorPicker(
+              item.colorId,
+              (colorId) => setFormColumnItemColor(column.id, item.id, colorId),
+              'Cor do item',
+            )}
+            <button
+              type='button'
+              className='ghost'
+              title='Excluir item'
+              onClick={() => deleteSubtaskColumnItem(column.id, item.id)}
+            >
+              ×
+            </button>
+          </div>
+        ))}
+        <button
+          type='button'
+          className='secondary'
+          onClick={() => addSubtaskColumnItem(column.id)}
+        >
+          ＋ Item
+        </button>
+      </div>
+    ));
 
   const renderSubtaskEditor = (items, depth = 0) =>
     (Array.isArray(items) ? items : []).map((subtask) => (
@@ -393,7 +514,11 @@ export default function Tasks({ data, save, completeTask }) {
             onChange={() => toggleFormSubtask(subtask.id)}
             aria-label={`Concluir ${subtask.title}`}
           />
-          {colorPicker(subtask.colorId, (colorId) => setFormSubtaskColor(subtask.id, colorId), 'Cor da subtarefa')}
+          {colorPicker(
+            subtask.colorId,
+            (colorId) => setFormSubtaskColor(subtask.id, colorId),
+            'Cor da subtarefa',
+          )}
           <input
             className='subtask-edit-name'
             type='text'
@@ -904,10 +1029,19 @@ export default function Tasks({ data, save, completeTask }) {
           note: String(item.note || '').trim(),
         }))
         .filter((item) => item.title),
-      subtaskColumns: (Array.isArray(form.subtaskColumns) ? form.subtaskColumns : []).map((column) => ({
+      subtaskColumns: (Array.isArray(form.subtaskColumns)
+        ? form.subtaskColumns
+        : []
+      ).map((column) => ({
         ...column,
         title: String(column.title || '').trim(),
-        items: (Array.isArray(column.items) ? column.items : []).map((item) => ({ ...item, text: String(item.text || '').trim(), done: !!item.done })),
+        items: (Array.isArray(column.items) ? column.items : []).map(
+          (item) => ({
+            ...item,
+            text: String(item.text || '').trim(),
+            done: !!item.done,
+          }),
+        ),
       })),
       updatedAt: new Date().toISOString(),
     };
@@ -1522,7 +1656,9 @@ export default function Tasks({ data, save, completeTask }) {
                   checked={Boolean(subtask.done)}
                   onChange={() => toggleTaskSubtask(task, subtask.id)}
                 />
-                <span style={{ color: colorFor(subtask.colorId) || undefined }}>{subtask.title}</span>
+                <span style={{ color: colorFor(subtask.colorId) || undefined }}>
+                  {subtask.title}
+                </span>
               </label>
               {(hasNote || hasChildren) && (
                 <button
@@ -1588,11 +1724,85 @@ export default function Tasks({ data, save, completeTask }) {
       </div>
 
       <section className='color-index-panel'>
-        <button type='button' className='secondary' onClick={() => setShowColorIndex(v => !v)}>{showColorIndex ? '▾ Ocultar índice de cores' : '▸ Índice de cores'}</button>
-        {showColorIndex && <div className='color-index-content'><p className='subtitle'>Crie cores e associe um significado. Depois use o seletor de cor nas tarefas, subtarefas e itens de coluna.</p>
-          {(colorIndex || []).map(c => <div className='color-index-row' key={c.id}><span className='color-index-swatch' style={{background:c.color}}/><strong>{c.name}</strong><input type='color' value={c.color} aria-label={`Editar cor ${c.name}`} onChange={e=>saveColorIndex(colorIndex.map(x=>x.id===c.id?{...x,color:e.target.value}:x))}/><button type='button' className='ghost' onClick={()=>saveColorIndex(colorIndex.filter(x=>x.id!==c.id))}>Excluir</button></div>)}
-          <div className='color-index-add'><input value={colorDraft.name} placeholder='Significado (ex.: urgente)' onChange={e=>setColorDraft(v=>({...v,name:e.target.value}))}/><input type='color' value={colorDraft.color} onChange={e=>setColorDraft(v=>({...v,color:e.target.value}))}/><button type='button' className='secondary' disabled={!colorDraft.name.trim()} onClick={()=>{saveColorIndex([...colorIndex,{id:createId(),name:colorDraft.name.trim(),color:colorDraft.color}]);setColorDraft({name:'',color:'#38bdf8'});}}>＋ Adicionar</button></div>
-        </div>}
+        <button
+          type='button'
+          className='secondary'
+          onClick={() => setShowColorIndex((v) => !v)}
+        >
+          {showColorIndex ? '▾ Ocultar índice de cores' : '▸ Índice de cores'}
+        </button>
+        {showColorIndex && (
+          <div className='color-index-content'>
+            <p className='subtitle'>
+              Crie cores e associe um significado. Depois use o seletor de cor
+              nas tarefas, subtarefas e itens de coluna.
+            </p>
+            {(colorIndex || []).map((c) => (
+              <div className='color-index-row' key={c.id}>
+                <span
+                  className='color-index-swatch'
+                  style={{ background: c.color }}
+                />
+                <strong>{c.name}</strong>
+                <input
+                  type='color'
+                  value={c.color}
+                  aria-label={`Editar cor ${c.name}`}
+                  onChange={(e) =>
+                    saveColorIndex(
+                      colorIndex.map((x) =>
+                        x.id === c.id ? { ...x, color: e.target.value } : x,
+                      ),
+                    )
+                  }
+                />
+                <button
+                  type='button'
+                  className='ghost'
+                  onClick={() =>
+                    saveColorIndex(colorIndex.filter((x) => x.id !== c.id))
+                  }
+                >
+                  Excluir
+                </button>
+              </div>
+            ))}
+            <div className='color-index-add'>
+              <input
+                value={colorDraft.name}
+                placeholder='Significado (ex.: urgente)'
+                onChange={(e) =>
+                  setColorDraft((v) => ({ ...v, name: e.target.value }))
+                }
+              />
+              <input
+                type='color'
+                value={colorDraft.color}
+                onChange={(e) =>
+                  setColorDraft((v) => ({ ...v, color: e.target.value }))
+                }
+              />
+              <button
+                type='button'
+                className='secondary'
+                disabled={!colorDraft.name.trim()}
+                onClick={() => {
+                  saveColorIndex([
+                    ...colorIndex,
+                    {
+                      id: createId(),
+                      name: colorDraft.name.trim(),
+                      color: colorDraft.color,
+                    },
+                  ]);
+                  setColorDraft({ name: '', color: '#38bdf8' });
+                }}
+              >
+                ＋ Adicionar
+              </button>
+            </div>
+          </div>
+        )}
       </section>
 
       {/* INDICADORES */}
@@ -2165,7 +2375,16 @@ export default function Tasks({ data, save, completeTask }) {
 
                     <div className='task-content'>
                       <div className='task-title-row'>
-                        <strong className='task-name' style={{ color: colorFor(task.colorId) || undefined, borderLeft: colorFor(task.colorId) ? `3px solid ${colorFor(task.colorId)}` : undefined, paddingLeft: colorFor(task.colorId) ? 6 : undefined }}>
+                        <strong
+                          className='task-name'
+                          style={{
+                            color: colorFor(task.colorId) || undefined,
+                            borderLeft: colorFor(task.colorId)
+                              ? `3px solid ${colorFor(task.colorId)}`
+                              : undefined,
+                            paddingLeft: colorFor(task.colorId) ? 6 : undefined,
+                          }}
+                        >
                           {task.name}
                           {cancelled && (
                             <span className='status-chip status-cancelled'>
@@ -2175,56 +2394,52 @@ export default function Tasks({ data, save, completeTask }) {
                             </span>
                           )}
                         </strong>
-                        {Array.isArray(task.subtasks) &&
-                          task.subtasks.length > 0 && (
-                            <button
-                              type='button'
-                              className={`task-subtasks-toggle ${collapsedSubtasks[task.id] ? 'is-collapsed' : ''}`}
-                              onClick={(event) => {
-                                event.stopPropagation();
-                                toggleSubtasksVisibility(task.id);
-                              }}
-                              onMouseDown={(event) => event.stopPropagation()}
-                              draggable={false}
-                              aria-label={`${collapsedSubtasks[task.id] ? 'Mostrar' : 'Ocultar'} subtarefas de ${task.name}`}
-                              aria-expanded={!collapsedSubtasks[task.id]}
-                              title={
-                                collapsedSubtasks[task.id]
-                                  ? 'Mostrar subtarefas'
-                                  : 'Ocultar subtarefas'
-                              }
-                            >
-                              <span aria-hidden='true'>
-                                {collapsedSubtasks[task.id] ? '▸' : '▾'}
-                              </span>
-                            </button>
-                          )}
+                        {((Array.isArray(task.subtasks) &&
+                          task.subtasks.length > 0) ||
+                          (Array.isArray(task.subtaskColumns) &&
+                            task.subtaskColumns.length > 0)) && (
+                          <button
+                            type='button'
+                            className={`task-subtasks-toggle ${collapsedSubtasks[task.id] ? 'is-collapsed' : ''}`}
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              toggleSubtasksVisibility(task.id);
+                            }}
+                            onMouseDown={(event) => event.stopPropagation()}
+                            draggable={false}
+                            aria-label={`${collapsedSubtasks[task.id] ? 'Mostrar' : 'Ocultar'} subtarefas de ${task.name}`}
+                            aria-expanded={!collapsedSubtasks[task.id]}
+                            title={
+                              collapsedSubtasks[task.id]
+                                ? 'Mostrar subtarefas'
+                                : 'Ocultar subtarefas'
+                            }
+                          >
+                            <span aria-hidden='true'>
+                              {collapsedSubtasks[task.id] ? '▸' : '▾'}
+                            </span>
+                          </button>
+                        )}
                       </div>
 
                       {task.description && (
                         <p className='subtitle'>{task.description}</p>
                       )}
-                      {Array.isArray(task.subtaskColumns) && task.subtaskColumns.length > 0 && (
-                        <div className='task-independent-columns-display'>
-                          {task.subtaskColumns.map((column) => (
-                            <section className='task-independent-column-display' key={column.id}>
-                              <strong>{column.title || 'Coluna'}</strong>
-                              {(column.items || []).map((item) => <label className={`task-independent-column-item${item.done ? ' is-done' : ''}`} key={item.id}><input type='checkbox' checked={!!item.done} onChange={() => toggleTaskColumnItem(task, column.id, item.id)} /><span style={{ color: colorFor(item.colorId) || undefined }}>{item.text || '—'}</span></label>)}
-                            </section>
-                          ))}
-                        </div>
-                      )}
-
-                      {Array.isArray(task.subtasks) &&
-                        task.subtasks.length > 0 &&
+                      {((Array.isArray(task.subtasks) &&
+                        task.subtasks.length > 0) ||
+                        (Array.isArray(task.subtaskColumns) &&
+                          task.subtaskColumns.length > 0)) &&
                         !collapsedSubtasks[task.id] && (
                           <div className='task-subtasks'>
                             <div className='task-subtasks-heading'>
-                              <strong>Subtarefas</strong>
-                              <small>
-                                {countCompletedSubtasks(task.subtasks)}/
-                                {countSubtasks(task.subtasks)} concluídas
-                              </small>
+                              <strong>Subtarefas e colunas</strong>
+                              {Array.isArray(task.subtasks) &&
+                                task.subtasks.length > 0 && (
+                                  <small>
+                                    {countCompletedSubtasks(task.subtasks)}/
+                                    {countSubtasks(task.subtasks)} concluídas
+                                  </small>
+                                )}
                               <select
                                 className='subtask-status-filter'
                                 value={subtaskFilters[task.id] || 'all'}
@@ -2241,21 +2456,84 @@ export default function Tasks({ data, save, completeTask }) {
                                 <option value='pending'>Só pendentes</option>
                               </select>
                             </div>
-                            <div className='cyber-subtask-progress'>
-                              <span
-                                style={{
-                                  width: `${countSubtasks(task.subtasks) ? (countCompletedSubtasks(task.subtasks) / countSubtasks(task.subtasks)) * 100 : 0}%`,
-                                }}
-                              />
-                            </div>
-                            <div className='task-subtasks-list'>
-                              {renderRuntimeSubtasks(
-                                task,
-                                task.subtasks,
-                                0,
-                                subtaskFilters[task.id] || 'all',
+                            {Array.isArray(task.subtasks) &&
+                              task.subtasks.length > 0 && (
+                                <>
+                                  <div className='cyber-subtask-progress'>
+                                    <span
+                                      style={{
+                                        width: `${countSubtasks(task.subtasks) ? (countCompletedSubtasks(task.subtasks) / countSubtasks(task.subtasks)) * 100 : 0}%`,
+                                      }}
+                                    />
+                                  </div>
+                                  <div className='task-subtasks-list'>
+                                    {renderRuntimeSubtasks(
+                                      task,
+                                      task.subtasks,
+                                      0,
+                                      subtaskFilters[task.id] || 'all',
+                                    )}
+                                  </div>
+                                </>
                               )}
-                            </div>
+                            {Array.isArray(task.subtaskColumns) &&
+                              task.subtaskColumns.length > 0 && (
+                                <div className='task-independent-columns-display'>
+                                  {task.subtaskColumns.map((column) => {
+                                    const visibleItems = (
+                                      column.items || []
+                                    ).filter(
+                                      (item) =>
+                                        (subtaskFilters[task.id] || 'all') ===
+                                          'all' ||
+                                        ((subtaskFilters[task.id] || 'all') ===
+                                          'done' &&
+                                          item.done) ||
+                                        ((subtaskFilters[task.id] || 'all') ===
+                                          'pending' &&
+                                          !item.done),
+                                    );
+                                    if (!visibleItems.length) return null;
+                                    return (
+                                      <section
+                                        className='task-independent-column-display'
+                                        key={column.id}
+                                      >
+                                        <strong>
+                                          {column.title || 'Coluna'}
+                                        </strong>
+                                        {visibleItems.map((item) => (
+                                          <label
+                                            className={`task-independent-column-item${item.done ? ' is-done' : ''}`}
+                                            key={item.id}
+                                          >
+                                            <input
+                                              type='checkbox'
+                                              checked={!!item.done}
+                                              onChange={() =>
+                                                toggleTaskColumnItem(
+                                                  task,
+                                                  column.id,
+                                                  item.id,
+                                                )
+                                              }
+                                            />
+                                            <span
+                                              style={{
+                                                color:
+                                                  colorFor(item.colorId) ||
+                                                  undefined,
+                                              }}
+                                            >
+                                              {item.text || '—'}
+                                            </span>
+                                          </label>
+                                        ))}
+                                      </section>
+                                    );
+                                  })}
+                                </div>
+                              )}
                           </div>
                         )}
 
@@ -2682,7 +2960,11 @@ export default function Tasks({ data, save, completeTask }) {
 
             <label>
               Cor da tarefa
-              {colorPicker(form.colorId, (colorId) => updateForm('colorId', colorId), 'Cor da tarefa')}
+              {colorPicker(
+                form.colorId,
+                (colorId) => updateForm('colorId', colorId),
+                'Cor da tarefa',
+              )}
             </label>
             <label>
               Descrição
@@ -2695,8 +2977,19 @@ export default function Tasks({ data, save, completeTask }) {
             </label>
 
             <section className='subtask-editor' aria-label='Subtarefas'>
-              <div className='subtask-editor-title'><strong>▦ Colunas independentes</strong><button type='button' className='secondary' onClick={addSubtaskColumn}>＋ Criar coluna</button></div>
-              <div className='subtask-independent-columns'>{renderIndependentSubtaskColumns()}</div>
+              <div className='subtask-editor-title'>
+                <strong>▦ Colunas independentes</strong>
+                <button
+                  type='button'
+                  className='secondary'
+                  onClick={addSubtaskColumn}
+                >
+                  ＋ Criar coluna
+                </button>
+              </div>
+              <div className='subtask-independent-columns'>
+                {renderIndependentSubtaskColumns()}
+              </div>
               <div className='subtask-editor-title'>
                 <strong>☑️ Subtarefas tradicionais</strong>
                 <small>
